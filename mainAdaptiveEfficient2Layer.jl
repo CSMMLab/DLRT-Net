@@ -2,39 +2,6 @@ using LinearAlgebra
 using PyPlot
 using DelimitedFiles
 
-# loss function
-function Loss(z::Array{Float64,1},y::Array{Float64,1})
-    return 0.5*norm(z - y,2).^2;
-end
-
-function Layer(W::Array{Float64,2},x::Array{Float64,1})
-    return ReLU(W*x);
-end
-
-function Network(W::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
-    return Loss(Layer(W,x),y);
-end
-
-function Network(U::Array{Float64,2},S::Array{Float64,2},VTx::Array{Float64,1},y::Array{Float64,1})
-    return 0.5*norm(ReLU(U*S*VTx) - y,2).^2;
-end
-
-function dNetwork(W::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
-    return (ReLU(W*x)-y).*dReLU(W*x)*x';
-end
-
-function dNetworkK(K::Array{Float64,2},VTx::Array{Float64,1},y::Array{Float64,1})
-    return (ReLU(K*VTx)-y).*dReLU(K*VTx)*(VTx');
-end
-
-function dNetworkL(U::Array{Float64,2},LTx::Array{Float64,1},y::Array{Float64,1})
-    return ((ReLU(U*LTx)-y).*dReLU(U*LTx)*x')'*U;
-end
-
-function dNetworkS(U::Array{Float64,2},S::Array{Float64,2},VTx::Array{Float64,1},y::Array{Float64,1})
-    return U'*((ReLU(U*S*VTx)-y).*dReLU(U*S*VTx))*(VTx');
-end
-
 function ReLU(x)
     n = length(x);
     y = zeros(n,1)
@@ -49,7 +16,7 @@ end
 
 function dReLU(x)
     n = length(x);
-    y = zeros(n)
+    y = zeros(n,1)
     for i = 1:n
         if x[i] > 0
             y[i] = 1.0;
@@ -59,22 +26,67 @@ function dReLU(x)
     return y;
 end
 
+# loss function
+function Loss(z::Array{Float64,1},y::Array{Float64,1})
+    return 0.5*norm(z - y,2).^2;
+end
+
+function Layer(W::Array{Float64,2},x::Array{Float64,1})
+    return ReLU(W*x);
+end
+
+function Network(W1::Array{Float64,2},W2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    return 0.5*norm(ReLU(W2*ReLU(W1*x)) - y,2).^2;
+end
+
+function dNetwork(W1::Array{Float64,2},W2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    #an = Wn*znM
+    #zn = ReLU(an)
+    z0 = x;
+    a1 = W1*z0;
+    z1 = ReLU(a1);
+    
+    a2 = W2*z1;
+    z2 = ReLU(a2);
+    dLoss = (z2 - y);
+    dAct1 = dReLU(a1);
+    dAct2 = dReLU(a2);
+    dweight2 = z1'; # 
+    dlayerinput2 = W2;
+    dweight1 = z0';
+    dLossAct2 = (dLoss.*dAct2)'
+
+    println(size(dLossAct2*z1))
+    println(size(dLossAct2*W2))
+    println(size(dLossAct2*W2))
+    println(size(dAct2))
+    println(size((dLossAct2*W2)*dAct1))
+
+
+    return dLossAct2*dweight2,0;# dLossAct2'*dlayerinput2.*dAct1*dweight1;
+end
+
 cStop = 20;
 
-readData = true
+readData = false
 
 if !readData
-    N = 1000;
-    M = 1000;
-    x = rand(M).-0.5;
-    x ./= norm(x)*10;
-    y = rand(N).-0.5;
-    y ./= norm(y);
-    W = rand(Float64, (N, M));
-    W ./= norm(W)
-    writedlm("x.txt", x)
-    writedlm("y.txt", y)
-    writedlm("W.txt", W)
+    N = 10;
+    q = 200;
+    M = 100;
+
+    W1 = rand(Float64, (q, M));
+    W1 ./= norm(W1)
+    W2 = rand(Float64, (N, q));
+    W2 ./= norm(W2)
+    #writedlm("x.txt", x)
+    #writedlm("y.txt", y)
+    x = rand(M).-0.5
+    y = rand(N).-0.5
+    writedlm("W1.txt", W1)
+    writedlm("W2.txt", W2)
+    writedlm("x1.txt", x)
+    writedlm("y1.txt", y)
 else
     x = vec(readdlm("x.txt"))
     y = vec(readdlm("y.txt"))
@@ -83,42 +95,26 @@ else
     M = length(x)
 end
 
-Wsave = deepcopy(W);
-
-# Low-rank approx of init data:
-WTarget = rand(Float64, (N, M));
-WTarget ./= norm(WTarget)*1e-3;
-U,S,V = svd(WTarget); 
-rt = 15;
-# rank-r truncation:
-U = U[:,1:rt]; 
-V = V[:,1:rt];
-S = Diagonal(S);
-S = S[1:rt, 1:rt]; 
-
-WTargetlow = U*S*V';
-y = WTargetlow*x;
-
 alpha = 10^-1;
 eps = 1e-5;
 
-sdHistory = [ Network(W,x,y)];
+sdHistory = [ Network(W1,W2,x,y)];
 
 counter = 0;
 
-println("Network SD initial: ", Network(W,x,y))
+println("Network SD initial: ", Network(W1,W2,x,y))
 # steepest descent
-while Network(W,x,y) > eps && counter <= cStop
+while Network(W1,W2,x,y) > eps && counter <= cStop
     global counter;
-    W .= W - alpha*dNetwork(W,x,y);
-    push!(sdHistory, Network(W,x,y))
+    W .= W - alpha*dNetwork(W1,W2,x,y);
+    push!(sdHistory, Network(W1,W2,x,y))
     #println("W = ",W)
-    println("Network = ",Network(W,x,y))
+    println("Network = ",Network(W1,W2,x,y))
     #println("dNetwork = ",dNetwork(W,x,y))
     #println(norm(W))
     counter += 1;
 end
-
+#=
 ############# DLR #############
 r = 10;
 rMaxTotal = 100;
@@ -224,10 +220,10 @@ while true
     counter +=1;
     Network(U,S,V'*x,y) > eps && counter <= cStop || break
 end
-
+=#
 fig, ax = subplots()
 ax[:plot](collect(1:length(sdHistory)),sdHistory, "k-", linewidth=2, label="sd", alpha=0.6)
-ax[:plot](collect(1:length(DLRHistory)),DLRHistory, "r--", linewidth=2, label="DLR", alpha=0.6)
+#ax[:plot](collect(1:length(DLRHistory)),DLRHistory, "r--", linewidth=2, label="DLR", alpha=0.6)
 ax[:legend](loc="upper right")
 ax.set_yscale("log")
 ax.tick_params("both",labelsize=20) 
