@@ -15,13 +15,29 @@ function Network(W::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
     return Loss(Layer(W,x),y);
 end
 
+function Network(U::Array{Float64,2},S::Array{Float64,2},VTx::Array{Float64,1},y::Array{Float64,1})
+    return 0.5*norm(ReLU(U*S*VTx) - y,2).^2;
+end
+
 function dNetwork(W::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
     return (ReLU(W*x)-y).*dReLU(W*x)*x';
 end
 
+function dNetworkK(K::Array{Float64,2},VTx::Array{Float64,1},y::Array{Float64,1})
+    return (ReLU(K*VTx)-y).*dReLU(K*VTx)*(VTx');
+end
+
+function dNetworkL(U::Array{Float64,2},LTx::Array{Float64,1},y::Array{Float64,1})
+    return ((ReLU(U*LTx)-y).*dReLU(U*LTx)*x')'*U;
+end
+
+function dNetworkS(U::Array{Float64,2},S::Array{Float64,2},VTx::Array{Float64,1},y::Array{Float64,1})
+    return U'*((ReLU(U*S*VTx)-y).*dReLU(U*S*VTx))*(VTx');
+end
+
 function ReLU(x)
     n = length(x);
-    y = zeros(n)
+    y = zeros(n,1)
     for i = 1:n
         if x[i] > 0
             y[i] = x[i];
@@ -43,7 +59,7 @@ function dReLU(x)
     return y;
 end
 
-cStop = 200;
+cStop = 20;
 
 readData = true
 
@@ -86,11 +102,11 @@ y = WTargetlow*x;
 alpha = 10^-1;
 eps = 1e-5;
 
-sdHistory = [Network(W,x,y)];
+sdHistory = [ Network(W,x,y)];
 
 counter = 0;
 
-println("Network SD initial: ",Network(W,x,y))
+println("Network SD initial: ", Network(W,x,y))
 # steepest descent
 while Network(W,x,y) > eps && counter <= cStop
     global counter;
@@ -125,16 +141,14 @@ DLRHistory = [Network(U*S*V',x,y)];
 # unconventional integrator
 counter = 0;
 println("Network DLRA initial: ",Network(U*S*V',x,y))
-while Network(U*S*V',x,y) > eps && counter <= cStop
+while true
     #println("counter ",counter)
     global counter,U,S,V,r,alpha,tol,epsAdapt;
-
-    gradient = dNetwork(U*S*V',x,y);
 
     ###### K-step ######
     K = U*S;
 
-    K = K .- alpha*gradient*V;
+    K = K .- alpha*dNetworkK(K,V'x,y);
 
     UNew,STmp = qr([K U]); # optimize bei choosing XFull, SFull
     UNew = UNew[:, 1:2*r]; 
@@ -144,7 +158,7 @@ while Network(U*S*V',x,y) > eps && counter <= cStop
     ###### L-step ######
     L = V*S';
 
-    L = L .- alpha*(U'*gradient)';
+    L = L .- alpha*dNetworkL(U,L'*x,y);
             
     VNew,STmp = qr([L V]);
     VNew = VNew[:, 1:2*r]; 
@@ -156,7 +170,7 @@ while Network(U*S*V',x,y) > eps && counter <= cStop
     ################## S-step ##################
     S = MUp*S*(NUp')
 
-    S .= S .- alpha.*U'*dNetwork(U*S*V',x,y)*V;
+    S .= S .- alpha.*dNetworkS(U,S,V'x,y);
 
     ################## truncate ##################
 
@@ -203,10 +217,12 @@ while Network(U*S*V',x,y) > eps && counter <= cStop
     # update rank
     r = rmax;
 
-    push!(DLRHistory, Network(U*S*V',x,y))
-    println("residual: ",Network(U*S*V',x,y))
+    net = Network(U,S,V'*x,y);
+    push!(DLRHistory, net)
+    println("residual: ",net)
     println("rank: ",r)
     counter +=1;
+    Network(U,S,V'*x,y) > eps && counter <= cStop || break
 end
 
 fig, ax = subplots()
