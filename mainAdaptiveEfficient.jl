@@ -12,7 +12,7 @@ function Layer(W::Array{Float64,2},x::Array{Float64,1})
 end
 
 function Network(W::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
-    return Loss(Layer(W,x),y);
+    return  0.5*norm(Layer(W,x) - y,2).^2;
 end
 
 function Network(U::Array{Float64,2},S::Array{Float64,2},VTx::Array{Float64,1},y::Array{Float64,1})
@@ -59,7 +59,7 @@ function dReLU(x)
     return y;
 end
 
-cStop = 20;
+cStop = 2000;
 
 readData = true
 
@@ -221,6 +221,7 @@ while true
     push!(DLRHistory, net)
     println("residual: ",net)
     println("rank: ",r)
+    println("counter: ",counter)
     counter +=1;
     Network(U,S,V'*x,y) > eps && counter <= cStop || break
 end

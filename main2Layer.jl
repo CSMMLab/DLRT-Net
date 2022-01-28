@@ -113,8 +113,8 @@ else
     q = size(W1,1)
 end
 
-W1Save = W1;
-W2Save = W2;
+W1Save = deepcopy(W1);
+W2Save = deepcopy(W2);
 
 
 
