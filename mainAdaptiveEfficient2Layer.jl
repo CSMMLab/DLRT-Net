@@ -4,7 +4,7 @@ using DelimitedFiles
 
 function ReLU(x)
     n = length(x);
-    y = zeros(n,1)
+    y = zeros(n)
     for i = 1:n
         if x[i] > 0
             y[i] = x[i];
@@ -16,7 +16,7 @@ end
 
 function dReLU(x)
     n = length(x);
-    y = zeros(n,1)
+    y = zeros(n)
     for i = 1:n
         if x[i] > 0
             y[i] = 1.0;
@@ -48,32 +48,24 @@ function dNetwork(W1::Array{Float64,2},W2::Array{Float64,2},x::Array{Float64,1},
     
     a2 = W2*z1;
     z2 = ReLU(a2);
-    dLoss = (z2 - y);
-    dAct1 = dReLU(a1);
-    dAct2 = dReLU(a2);
-    dweight2 = z1'; # 
-    dlayerinput2 = W2;
-    dweight1 = z0';
-    dLossAct2 = (dLoss.*dAct2)'
 
-    println(size(dLossAct2*z1))
-    println(size(dLossAct2*W2))
-    println(size(dLossAct2*W2))
-    println(size(dAct2))
-    println(size((dLossAct2*W2)*dAct1))
+    dz1 = dReLU(a1);
+    dz2 = dReLU(a2);
 
-
-    return dLossAct2*dweight2,0;# dLossAct2'*dlayerinput2.*dAct1*dweight1;
+    println(size(vec(((z2.-y).*dz2)'*W2).*dz1))
+    println(size((z2.-y).*dz2*z1'))
+    
+    return (z2.-y).*dz2*z1',vec(((z2.-y).*dz2)'*W2).*dz1*vec(x)';# dLossAct2'*dlayerinput2.*dAct1*dweight1;
 end
 
 cStop = 20;
 
-readData = false
+readData = true
 
 if !readData
-    N = 10;
-    q = 200;
-    M = 100;
+    N = 100;
+    q = 2000;
+    M = 150;
 
     W1 = rand(Float64, (q, M));
     W1 ./= norm(W1)
@@ -83,19 +75,53 @@ if !readData
     #writedlm("y.txt", y)
     x = rand(M).-0.5
     y = rand(N).-0.5
+
+    W1Target = rand(Float64, (q, M));
+    W1Target ./= norm(W1Target)*1e-1;
+    U,S,V = svd(W1Target); 
+    rt = 15;
+    # rank-r truncation:
+    U = U[:,1:rt]; 
+    V = V[:,1:rt];
+    S = Diagonal(S);
+    S = S[1:rt, 1:rt]; 
+
+    W1Targetlow = U*S*V';
+
+    W2Target = rand(Float64, (N,q));
+    W2Target ./= norm(W2Target)*1e-1;
+    U,S,V = svd(W2Target); 
+    rt = 15;
+    # rank-r truncation:
+    U = U[:,1:rt]; 
+    V = V[:,1:rt];
+    S = Diagonal(S);
+    S = S[1:rt, 1:rt]; 
+
+    W2Targetlow = U*S*V';
+
+    y = ReLU(W2Target*ReLU(W1Target*x));
+
     writedlm("W1.txt", W1)
     writedlm("W2.txt", W2)
     writedlm("x1.txt", x)
     writedlm("y1.txt", y)
 else
-    x = vec(readdlm("x.txt"))
-    y = vec(readdlm("y.txt"))
-    W = readdlm("W.txt")
+    x = vec(readdlm("x1.txt"))
+    y = vec(readdlm("y1.txt"))
+    W1 = readdlm("W1.txt")
+    W2 = readdlm("W2.txt")
     N = length(y)
     M = length(x)
+    q = size(W1,1)
 end
 
-alpha = 10^-1;
+W1Save = W1;
+W2Save = W2;
+
+
+
+alpha = 10^-2;
 eps = 1e-5;
 
 sdHistory = [ Network(W1,W2,x,y)];
@@ -106,7 +132,9 @@ println("Network SD initial: ", Network(W1,W2,x,y))
 # steepest descent
 while Network(W1,W2,x,y) > eps && counter <= cStop
     global counter;
-    W .= W - alpha*dNetwork(W1,W2,x,y);
+    dW2,dW1 = dNetwork(W1,W2,x,y);
+    W1 .= W1 .- alpha*dW1;
+    W2 .= W2 .- alpha*dW2;
     push!(sdHistory, Network(W1,W2,x,y))
     #println("W = ",W)
     println("Network = ",Network(W1,W2,x,y))
@@ -114,116 +142,111 @@ while Network(W1,W2,x,y) > eps && counter <= cStop
     #println(norm(W))
     counter += 1;
 end
-#=
+
+
 ############# DLR #############
 r = 10;
-rMaxTotal = 100;
-tol = 1e-2;
-epsAdapt = 0.1;
 # Low-rank approx of init data:
-U,S,V = svd(Wsave); 
+U1,S1,V1 = svd(W1Save); 
     
 # rank-r truncation:
-U = U[:,1:r]; 
-V = V[:,1:r];
-S = Diagonal(S);
-S = S[1:r, 1:r]; 
+U1 = U1[:,1:r]; 
+V1 = V1[:,1:r];
+S1 = Diagonal(S1);
+S1 = S1[1:r, 1:r]; 
 
-K = zeros(N,r);
-L = zeros(M,r);
+K1 = zeros(q,r);
+L1 = zeros(M,r);
 
-DLRHistory = [Network(U*S*V',x,y)];
+U2,S2,V2 = svd(W2Save); 
+    
+# rank-r truncation:
+U2 = U2[:,1:r]; 
+V2 = V2[:,1:r];
+S2 = Diagonal(S2);
+S2 = S2[1:r, 1:r]; 
+
+K2 = zeros(N,r);
+L2 = zeros(q,r);
+
+DLRHistory = [Network(U1*S1*V1',U2*S2*V2',x,y)];
 
 # unconventional integrator
 counter = 0;
-println("Network DLRA initial: ",Network(U*S*V',x,y))
-while true
-    #println("counter ",counter)
-    global counter,U,S,V,r,alpha,tol,epsAdapt;
+println("Network DLRA initial: ",Network(U1*S1*V1',U2*S2*V2',x,y))
+while Network(U1*S1*V1',U2*S2*V2',x,y) > eps && counter <= cStop
+    global counter;
 
-    ###### K-step ######
-    K = U*S;
+    gradient2,gradient1 = dNetwork(U1*S1*V1',U2*S2*V2',x,y);
 
-    K = K .- alpha*dNetworkK(K,V'x,y);
+    ################## K-step W1 ##################
+    K1 .= U1*S1;
 
-    UNew,STmp = qr([K U]); # optimize bei choosing XFull, SFull
-    UNew = UNew[:, 1:2*r]; 
+    K1 .= K1 .- alpha*gradient1*V1;
 
-    MUp = UNew' * U;
+    U1New,STmp = qr(K1); # optimize bei choosing XFull, SFull
+    U1New = U1New[:, 1:r]; 
 
-    ###### L-step ######
-    L = V*S';
+    M1Up = U1New' * U1;
 
-    L = L .- alpha*dNetworkL(U,L'*x,y);
+    ################## L-step W1 ##################
+    L1 .= V1*S1';
+
+    L1 .= L1 .- alpha*(U1'*gradient1)';
             
-    VNew,STmp = qr([L V]);
-    VNew = VNew[:, 1:2*r]; 
+    V1New,STmp = qr(L1);
+    V1New = V1New[:, 1:r]; 
 
-    NUp = VNew' * V;
-    V = VNew;
-    U = UNew;
+    N1Up = V1New' * V1;
 
-    ################## S-step ##################
-    S = MUp*S*(NUp')
+    ################## S-step W1 ##################
+    S1New = M1Up*S1*(N1Up')
 
-    S .= S .- alpha.*dNetworkS(U,S,V'x,y);
+    tmp,gradient1New = dNetwork(U1New*S1New*V1New',U2*S2*V2',x,y)
 
-    ################## truncate ##################
+    S1New .= S1New .- alpha.*U1New'*gradient1New*V1New;
 
-    # Compute singular values of S1 and decide how to truncate:
-    U2,D,V2 = svd(S);
-    rmax = -1;
-    S .= zeros(size(S));
+    ################## K-step W2 ##################
+    K2 .= U2*S2;
 
+    K2 .= K2 .- alpha*gradient2*V2;
 
-    tmp = 0.0;
-    tol = epsAdapt*norm(D);
-    
-    rmax = Int(floor(size(D,1)/2));
-    
-    for j=1:2*rmax
-        tmp = sqrt(sum(D[j:2*rmax]).^2);
-        if(tmp<tol)
-            rmax = j;
-            break;
-        end
-    end
-    
-    rmax = min(rmax,rMaxTotal);
-    rmax = max(rmax,2);
+    U2New,STmp = qr(K2); # optimize bei choosing XFull, SFull
+    U2New = U2New[:, 1:r]; 
 
-    for l = 1:rmax
-        S[l,l] = D[l];
-    end
+    M2Up = U2New' * U2;
 
-    # if 2*r was actually not enough move to highest possible rank
-    if rmax == -1
-        rmax = rMaxTotal;
-    end
+    ################## L-step W1 ##################
+    L2 .= V2*S2';
 
-    # update solution with new rank
-    UNew = U*U2;
-    VNew = V*V2;
+    L2 .= L2 .- alpha*(U2'*gradient2)';
+            
+    V2New,STmp = qr(L2);
+    V2New = V2New[:, 1:r]; 
 
-    # update solution with new rank
-    S = S[1:rmax,1:rmax];
-    U = UNew[:,1:rmax];
-    V = VNew[:,1:rmax];
+    N2Up = V2New' * V2;
 
-    # update rank
-    r = rmax;
+    ################## S-step W1 ##################
+    S2New = M2Up*S2*(N2Up')
 
-    net = Network(U,S,V'*x,y);
-    push!(DLRHistory, net)
-    println("residual: ",net)
-    println("rank: ",r)
+    gradient2,tmp = dNetwork(U1*S1*V1',U2New*S2New*V2New',x,y)
+
+    S2New .= S2New .- alpha.*U2New'*gradient2*V2New;
+
+    V1 .= V1New;
+    U1 .= U1New;
+    S1 .= S1New;
+    V2 .= V2New;
+    U2 .= U2New;
+    S2 .= S2New;
+    push!(DLRHistory, Network(U1*S1*V1',U2*S2*V2',x,y))
+    println("residual: ",Network(U1*S1*V1',U2*S2*V2',x,y))
     counter +=1;
-    Network(U,S,V'*x,y) > eps && counter <= cStop || break
 end
-=#
+
 fig, ax = subplots()
 ax[:plot](collect(1:length(sdHistory)),sdHistory, "k-", linewidth=2, label="sd", alpha=0.6)
-#ax[:plot](collect(1:length(DLRHistory)),DLRHistory, "r--", linewidth=2, label="DLR", alpha=0.6)
+ax[:plot](collect(1:length(DLRHistory)),DLRHistory, "r--", linewidth=2, label="DLR", alpha=0.6)
 ax[:legend](loc="upper right")
 ax.set_yscale("log")
 ax.tick_params("both",labelsize=20) 
