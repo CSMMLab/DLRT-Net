@@ -8,7 +8,6 @@ function ReLU(x)
     for i = 1:n
         if x[i] > 0
             y[i] = x[i];
-            #println("here")
         end
     end
     return y;
@@ -20,7 +19,6 @@ function dReLU(x)
     for i = 1:n
         if x[i] > 0
             y[i] = 1.0;
-            #println("here dReLU")
         end
     end
     return y;
@@ -51,11 +49,108 @@ function dNetwork(W1::Array{Float64,2},W2::Array{Float64,2},x::Array{Float64,1},
 
     dz1 = dReLU(a1);
     dz2 = dReLU(a2);
-
-    println(size(vec(((z2.-y).*dz2)'*W2).*dz1))
-    println(size((z2.-y).*dz2*z1'))
     
     return (z2.-y).*dz2*z1',vec(((z2.-y).*dz2)'*W2).*dz1*vec(x)';# dLossAct2'*dlayerinput2.*dAct1*dweight1;
+end
+
+function dNetworkS1(U1::Array{Float64,2},S1::Array{Float64,2},V1::Array{Float64,2},U2::Array{Float64,2},S2::Array{Float64,2},V2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    #an = Wn*znM
+    #zn = ReLU(an)
+    V1Tx = V1'*x
+    a1 = U1*S1*V1Tx;
+    z1 = ReLU(a1);
+    
+    V2Tx = V2'*z1
+    a2 = U2*S2*V2Tx;
+    z2 = ReLU(a2);
+
+    dz1 = dReLU(a1);
+    dz2 = dReLU(a2);
+    
+    return U1'*(vec(((z2.-y).*dz2)'*W2).*dz1*vec(x)')*V1;# dLossAct2'*dlayerinput2.*dAct1*dweight1;
+end
+
+function dNetworkS2(U1::Array{Float64,2},S1::Array{Float64,2},V1::Array{Float64,2},U2::Array{Float64,2},S2::Array{Float64,2},V2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    #an = Wn*znM
+    #zn = ReLU(an)
+    V1Tx = V1'*x
+    a1 = U1*S1*V1Tx;
+    z1 = ReLU(a1);
+    
+    V2Tx = V2'*z1
+    a2 = U2*S2*V2Tx;
+    z2 = ReLU(a2);
+
+    dz2 = dReLU(a2);
+    
+    return U2'*((z2.-y).*dz2*z1')*V2;# dLossAct2'*dlayerinput2.*dAct1*dweight1;
+end
+
+# todo: combine K1 and K2 steps
+function dNetworkK1(K1::Array{Float64,2},V1::Array{Float64,2},U2::Array{Float64,2},S2::Array{Float64,2},V2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    #an = Wn*znM
+    #zn = ReLU(an)
+    V1Tx = V1'*x;
+    a1 = K1*V1Tx;
+    z1 = ReLU(a1);
+    
+    V2Tz1 = V2'*z1
+    a2 = U2*S2*V2Tz1;
+    z2 = ReLU(a2);
+
+    dz1 = dReLU(a1);
+    dz2 = dReLU(a2);
+    
+    return vec(((z2.-y).*dz2)'*W2).*dz1*vec(x)'*V1;#gradient1
+end
+
+function dNetworkK2(U1::Array{Float64,2},S1::Array{Float64,2},V1::Array{Float64,2},K2::Array{Float64,2},V2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    #an = Wn*znM
+    #zn = ReLU(an)
+    V1Tx = V1'*x;
+    a1 = U1*S1*V1Tx;
+    z1 = ReLU(a1);
+    
+    V2Tz1 = V2'*z1
+    a2 = K2*V2Tz1;
+    z2 = ReLU(a2);
+
+    dz2 = dReLU(a2);
+    
+    return (z2.-y).*dz2*z1'*V2;#gradient2
+end
+
+function dNetworkL1(U1::Array{Float64,2},L1::Array{Float64,2},U2::Array{Float64,2},S2::Array{Float64,2},V2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    #an = Wn*znM
+    #zn = ReLU(an)
+    L1Tx = L1'*x
+    a1 = U1*L1Tx;
+    z1 = ReLU(a1);
+    
+    V2Tz1 = V2'*z1
+    a2 = U2*S2*V2Tz1;
+    z2 = ReLU(a2);
+
+    dz1 = dReLU(a1);
+    dz2 = dReLU(a2);
+    
+    return (vec(((z2.-y).*dz2)'*W2).*dz1*vec(x)')'*U1;
+end
+
+function dNetworkL2(U1::Array{Float64,2},S1::Array{Float64,2},V1::Array{Float64,2},U2::Array{Float64,2},L2::Array{Float64,2},x::Array{Float64,1},y::Array{Float64,1})
+    #an = Wn*znM
+    #zn = ReLU(an)
+    V1Tx = V1'*x
+    a1 = U1*S1*V1Tx;
+    z1 = ReLU(a1);
+    
+    L2Tz1 = L2'*z1
+    a2 = U2*L2Tz1;
+    z2 = ReLU(a2);
+
+    dz2 = dReLU(a2);
+    
+    return ((z2.-y).*dz2*z1')'*U2;
 end
 
 cStop = 20;
@@ -153,7 +248,7 @@ U1,S1,V1 = svd(W1Save);
 U1 = U1[:,1:r]; 
 V1 = V1[:,1:r];
 S1 = Diagonal(S1);
-S1 = S1[1:r, 1:r]; 
+S1 = Matrix(S1[1:r, 1:r]); 
 
 K1 = zeros(q,r);
 L1 = zeros(M,r);
@@ -164,7 +259,7 @@ U2,S2,V2 = svd(W2Save);
 U2 = U2[:,1:r]; 
 V2 = V2[:,1:r];
 S2 = Diagonal(S2);
-S2 = S2[1:r, 1:r]; 
+S2 = Matrix(S2[1:r, 1:r]); 
 
 K2 = zeros(N,r);
 L2 = zeros(q,r);
@@ -177,12 +272,10 @@ println("Network DLRA initial: ",Network(U1*S1*V1',U2*S2*V2',x,y))
 while Network(U1*S1*V1',U2*S2*V2',x,y) > eps && counter <= cStop
     global counter;
 
-    gradient2,gradient1 = dNetwork(U1*S1*V1',U2*S2*V2',x,y);
-
     ################## K-step W1 ##################
     K1 .= U1*S1;
 
-    K1 .= K1 .- alpha*gradient1*V1;
+    K1 .= K1 .- alpha*dNetworkK1(K1,V1,U2,S2,V2,x,y);
 
     U1New,STmp = qr(K1); # optimize bei choosing XFull, SFull
     U1New = U1New[:, 1:r]; 
@@ -192,7 +285,7 @@ while Network(U1*S1*V1',U2*S2*V2',x,y) > eps && counter <= cStop
     ################## L-step W1 ##################
     L1 .= V1*S1';
 
-    L1 .= L1 .- alpha*(U1'*gradient1)';
+    L1 .= L1 .- alpha*dNetworkL1(U1,L1,U2,S2,V2,x,y);
             
     V1New,STmp = qr(L1);
     V1New = V1New[:, 1:r]; 
@@ -202,14 +295,12 @@ while Network(U1*S1*V1',U2*S2*V2',x,y) > eps && counter <= cStop
     ################## S-step W1 ##################
     S1New = M1Up*S1*(N1Up')
 
-    tmp,gradient1New = dNetwork(U1New*S1New*V1New',U2*S2*V2',x,y)
-
-    S1New .= S1New .- alpha.*U1New'*gradient1New*V1New;
+    S1New .= S1New .- alpha.*dNetworkS1(U1New,S1New,V1New,U2,S2,V2,x,y);
 
     ################## K-step W2 ##################
     K2 .= U2*S2;
 
-    K2 .= K2 .- alpha*gradient2*V2;
+    K2 .= K2 .- alpha*dNetworkK2(U1,S1,V1,K2,V2,x,y);
 
     U2New,STmp = qr(K2); # optimize bei choosing XFull, SFull
     U2New = U2New[:, 1:r]; 
@@ -219,7 +310,7 @@ while Network(U1*S1*V1',U2*S2*V2',x,y) > eps && counter <= cStop
     ################## L-step W1 ##################
     L2 .= V2*S2';
 
-    L2 .= L2 .- alpha*(U2'*gradient2)';
+    L2 .= L2 .- alpha*dNetworkL2(U1,S1,V1,U2,L2,x,y);
             
     V2New,STmp = qr(L2);
     V2New = V2New[:, 1:r]; 
@@ -229,9 +320,7 @@ while Network(U1*S1*V1',U2*S2*V2',x,y) > eps && counter <= cStop
     ################## S-step W1 ##################
     S2New = M2Up*S2*(N2Up')
 
-    gradient2,tmp = dNetwork(U1*S1*V1',U2New*S2New*V2New',x,y)
-
-    S2New .= S2New .- alpha.*U2New'*gradient2*V2New;
+    S2New .= S2New .- alpha.*dNetworkS2(U1,S1,V1,U2New,S2New,V2New,x,y);
 
     V1 .= V1New;
     U1 .= U1New;
