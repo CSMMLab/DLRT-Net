@@ -59,7 +59,7 @@ function dReLU(x)
     return y;
 end
 
-cStop = 2000;
+cStop = 50;
 
 readData = true
 
@@ -97,7 +97,7 @@ S = Diagonal(S);
 S = S[1:rt, 1:rt]; 
 
 WTargetlow = U*S*V';
-y = WTargetlow*x;
+#y = WTargetlow*x;
 
 alpha = 10^-1;
 eps = 1e-5;
