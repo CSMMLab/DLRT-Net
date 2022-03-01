@@ -40,7 +40,7 @@ def main():
 
     # build the network
     model = NeuralNetwork().to(device)
-    # print(model)
+    # --- summary of the model
     summary(model, input_size=(28, 28))
 
     # print params
@@ -144,7 +144,7 @@ def svd_inspection(model):
     list_svdParams = []
     for param in model.parameters():
         if len(param.size()) > 1:  # skip bias terms
-            U, S, Vh = torch.svd(param)
+            U, S, Vh = torch.svd(param,some=True)
             list_svdParams.append([U, S, Vh])
 
     # check the S matrices
@@ -163,13 +163,15 @@ def svd_inspection(model):
 
 
 def inspect_matrices():
-    for i in range(0, 7):
+    for i in range(0, 3):
         U = torch.load('mat/U_' + str(i) + '.pt')
         S = torch.load('mat/S_' + str(i) + '.pt')
         V = torch.load('mat/V_' + str(i) + '.pt')
 
         print("layer: " + str(i) + " maxSV: " + str(torch.max(S)) + " minSV: " + str(torch.min(S)))
         print(U.size())
+        print(S.size())
+        print(V.size())
         print(S)
 
         print("---------")
@@ -189,6 +191,7 @@ def load_model_save_matrices():
 
 
 if __name__ == '__main__':
-    # inspect_matrices()
-    main()
-    # load_model_save_matrices()
+    
+    # main()
+    load_model_save_matrices()
+    inspect_matrices()
