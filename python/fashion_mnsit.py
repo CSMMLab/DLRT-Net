@@ -3,6 +3,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
+from torchsummary import summary
 
 
 def main():
@@ -39,21 +40,22 @@ def main():
 
     # build the network
     model = NeuralNetwork().to(device)
-    print(model)
+    # print(model)
+    summary(model, input_size=(28, 28))
 
     # print params
-    for param in model.parameters():
-        print(param.data)
+    # for param in model.parameters():
+    #    print(param.data)
 
     loss_fn = nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
     # train the network
-    epochs = 5
+    epochs = 200
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
-        train(train_dataloader, model, loss_fn, optimizer)
-        test(test_dataloader, model, loss_fn)
+        train(train_dataloader, model, loss_fn, optimizer, device)
+        test(test_dataloader, model, loss_fn, device)
     print("Done!")
 
     # evaluate
@@ -72,9 +74,11 @@ class NeuralNetwork(nn.Module):
         self.linear_relu_stack = nn.Sequential(
             nn.Linear(28 * 28, 512),
             nn.ReLU(),
-            nn.Linear(512, 512),
+            nn.Dropout(p=0.2),
+            nn.Linear(512, 10000),
             nn.ReLU(),
-            nn.Linear(512, 10)
+            nn.Dropout(p=0.2),
+            nn.Linear(10000, 10)
         )
 
     def forward(self, x):
@@ -140,15 +144,51 @@ def svd_inspection(model):
     list_svdParams = []
     for param in model.parameters():
         if len(param.size()) > 1:  # skip bias terms
-            U, S, Vh = torch.linalg.svd(param, full_matrices=True)
-        list_svdParams.append([U, S, Vh])
+            U, S, Vh = torch.svd(param)
+            list_svdParams.append([U, S, Vh])
 
     # check the S matrices
     for decomp in list_svdParams:
         print(decomp[1].size())
 
+    # print the matrices to file
+    count = 0
+    for decomp in list_svdParams:
+        torch.save(decomp[0], 'mat/U_' + str(count) + '.pt')
+        torch.save(decomp[1], 'mat/S_' + str(count) + '.pt')
+        torch.save(decomp[2], 'mat/V_' + str(count) + '.pt')
+        count += 1
+
+    return 0
+
+
+def inspect_matrices():
+    for i in range(0, 7):
+        U = torch.load('mat/U_' + str(i) + '.pt')
+        S = torch.load('mat/S_' + str(i) + '.pt')
+        V = torch.load('mat/V_' + str(i) + '.pt')
+
+        print("layer: " + str(i) + " maxSV: " + str(torch.max(S)) + " minSV: " + str(torch.min(S)))
+        print(U.size())
+        print(S)
+
+        print("---------")
+
+    return 0
+
+
+def load_model_save_matrices():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using {device} device")
+    model = NeuralNetwork().to(device)
+    model.load_state_dict(torch.load("model.pth"))
+
+    # print the matrices to file
+    svd_inspection(model)
     return 0
 
 
 if __name__ == '__main__':
+    # inspect_matrices()
     main()
+    # load_model_save_matrices()
