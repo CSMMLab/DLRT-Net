@@ -4,11 +4,12 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torchsummary import summary
+import torchvision.models as models
 
 
 def main():
     # Download training data from open datasets.
-    training_data = datasets.FashionMNIST(
+    training_data = datasets.MNIST(
         root="data",
         train=True,
         download=True,
@@ -16,7 +17,7 @@ def main():
     )
 
     # Download test data from open datasets.
-    test_data = datasets.FashionMNIST(
+    test_data = datasets.MNIST(
         root="data",
         train=False,
         download=True,
@@ -38,10 +39,13 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
 
-    # build the network
-    model = NeuralNetwork().to(device)
+    # --- build the network
+    resnet18 = models.resnet18(num_classes=10)
+    resnet18.conv1 = nn.Conv2d(1, 64, kernel_size=(
+        7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    model = resnet18.to(device)
     # --- summary of the model
-    summary(model, input_size=(28, 28))
+    summary(model, input_size=(1, 7, 7))
 
     # print params
     # for param in model.parameters():
@@ -51,7 +55,7 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
     # train the network
-    epochs = 200
+    epochs = 2
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, device)
@@ -66,37 +70,14 @@ def main():
     return 0
 
 
-# Define model
-class NeuralNetwork(nn.Module):
-    def __init__(self):
-        super(NeuralNetwork, self).__init__()
-        self.flatten = nn.Flatten()
-        self.linear_relu_stack = nn.Sequential(
-            nn.Linear(28 * 28, 512),  # Ax+b, dim(A) = 512x784, dim(b) =  512 || A=USVt
-            nn.ReLU(),  # ptswise evaluation Relu(Ax+b)
-            nn.Dropout(p=0.2),  # regularisierungstechnik
-            nn.Linear(512, 10000),
-            nn.ReLU(),
-            nn.Dropout(p=0.2),
-            nn.Linear(10000, 10)  # ten labels in dataset
-        )
-        # ----
-        self.A1 = torch.zeros((784, 512))
-
-    def forward(self, x):
-        x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
-
-
 def train(dataloader, model, loss_fn, optimizer, device):
     size = len(dataloader.dataset)
-    model.train()  # tell the model that it's currently training
+    model.train()
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
 
         # Compute prediction error
-        pred = model(X)  # calls forward function
+        pred = model(X)
         loss = loss_fn(pred, y)
 
         # Backpropagation
@@ -122,16 +103,19 @@ def test(dataloader, model, loss_fn, device):
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
-    print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    print(
+        f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
 def save_and_eval(model, test_data):
-    torch.save(model.state_dict(), "model.pth")
-    print("Saved PyTorch Model State to model.pth")
-    model = NeuralNetwork()
-    model.load_state_dict(torch.load("model.pth"))
-    classes = ["T-shirt/top", "Trouser", "Pullover", "Dress", "Coat", "Sandal", "Shirt", "Sneaker", "Bag",
-               "Ankle boot", ]
+    torch.save(model.state_dict(), "resNet18.pth")
+    print("Saved PyTorch Model State to resNet18.pth")
+    resnet18 = models.resnet18(num_classes=10)
+    resnet18.conv1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+        7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    model = resnet18
+    model.load_state_dict(torch.load("resNet18.pth"))
+    classes = ["1", "2", "3", "4", "5", "6", "7", "8", "9",  "0"]
     model.eval()
     x, y = test_data[0][0], test_data[0][1]
     with torch.no_grad():
@@ -144,9 +128,24 @@ def save_and_eval(model, test_data):
 def svd_inspection(model):
     # perform svd for all weight matrices
     list_svdParams = []
+    count = 0
     for param in model.parameters():
-        if len(param.size()) > 1:  # skip bias terms
-            U, S, Vh = torch.svd(param,some=True)
+        if count > 3:
+            break
+
+        if len(param.size()) == 4:  # skip bias terms
+            #count += 1
+            print(param.size())
+            # print(param)
+            w = torch.flatten(param, start_dim=1, end_dim=3)
+            print(w.size())
+            U, S, Vh = torch.svd(w, some=True)
+            print(U.size())
+            print(S.size())
+            print(Vh.size())
+            print(S)
+            print("----")
+
             list_svdParams.append([U, S, Vh])
 
     # check the S matrices
@@ -170,7 +169,8 @@ def inspect_matrices():
         S = torch.load('mat/S_' + str(i) + '.pt')
         V = torch.load('mat/V_' + str(i) + '.pt')
 
-        print("layer: " + str(i) + " maxSV: " + str(torch.max(S)) + " minSV: " + str(torch.min(S)))
+        print("layer: " + str(i) + " maxSV: " +
+              str(torch.max(S)) + " minSV: " + str(torch.min(S)))
         print(U.size())
         print(S.size())
         print(V.size())
@@ -184,8 +184,11 @@ def inspect_matrices():
 def load_model_save_matrices():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
-    model = NeuralNetwork().to(device)
-    model.load_state_dict(torch.load("model.pth"))
+    resnet18 = models.resnet18(num_classes=10)
+    resnet18.conv1 = nn.Conv2d(in_channels=1, out_channels=64, kernel_size=(
+        7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+    model = resnet18
+    model.load_state_dict(torch.load("resNet18.pth"))
 
     # print the matrices to file
     svd_inspection(model)
@@ -193,7 +196,7 @@ def load_model_save_matrices():
 
 
 if __name__ == '__main__':
-    
+
     # main()
     load_model_save_matrices()
-    inspect_matrices()
+    # inspect_matrices()

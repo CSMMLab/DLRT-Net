@@ -8,7 +8,7 @@ from torchsummary import summary
 
 def main():
     # Download training data from open datasets.
-    training_data = datasets.FashionMNIST(
+    training_data = datasets.MNIST(
         root="data",
         train=True,
         download=True,
@@ -16,7 +16,7 @@ def main():
     )
 
     # Download test data from open datasets.
-    test_data = datasets.FashionMNIST(
+    test_data = datasets.MNIST(
         root="data",
         train=False,
         download=True,
@@ -39,7 +39,9 @@ def main():
     print(f"Using {device} device")
 
     # build the network
-    model = NeuralNetwork().to(device)
+    model = NeuralNetwork()
+    #model.svd_initialization()
+    model = model.to(device)
     # --- summary of the model
     summary(model, input_size=(28, 28))
 
@@ -51,7 +53,7 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), lr=1e-3)
 
     # train the network
-    epochs = 200
+    epochs = 100
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
         train(train_dataloader, model, loss_fn, optimizer, device)
@@ -72,31 +74,62 @@ class NeuralNetwork(nn.Module):
         super(NeuralNetwork, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(28 * 28, 512),  # Ax+b, dim(A) = 512x784, dim(b) =  512 || A=USVt
-            nn.ReLU(),  # ptswise evaluation Relu(Ax+b)
-            nn.Dropout(p=0.2),  # regularisierungstechnik
-            nn.Linear(512, 10000),
+            nn.Linear(28 * 28, 20000),
             nn.ReLU(),
             nn.Dropout(p=0.2),
-            nn.Linear(10000, 10)  # ten labels in dataset
+            nn.Linear(20000, 2000),
+            nn.ReLU(),
+            nn.Dropout(p=0.2),
+            nn.Linear(2000, 10)
         )
-        # ----
-        self.A1 = torch.zeros((784, 512))
 
     def forward(self, x):
         x = self.flatten(x)
         logits = self.linear_relu_stack(x)
         return logits
 
+    def svd_initialization(self):
+        count = 0
+        with torch.no_grad():
+            t = self.linear_relu_stack
+            for i in range(len(self.linear_relu_stack)):
+                print(i)
+                if hasattr(t[i], 'weight'):
+                    param = t[i].weight
+                    if len(param.size()) > 1:  # skip bias terms
+                        #print("---")
+                        U, S, V = torch.svd(param)
+                        Vt = V.transpose(-2, -1)
+                        dis = torch.dist(param, torch.matmul(torch.matmul(U, torch.diag_embed(S)), V.transpose(-2, -1)))
+                        print(dis)
+                        print(param.size())
+                        print(U.size())
+                        print(S.size())
+                        print(Vt.size())
+                        print("----")
+                        # print(S)
+                        rank_param =10
+                        rank = int(len(S)/rank_param)
+                        S_trunc = S[:rank]
+                        S_new =torch.cat( [S_trunc, torch.zeros(len(S)-int(len(S)/rank_param))])
+                        tmp = torch.matmul(U,torch.diag_embed(S_new))
+                        W = torch.matmul(tmp,Vt)
+                        #U, S, V = torch.svd(W)
+                        # print(S)
+                        t[i].weight = torch.nn.Parameter(W)
+                        #print("---")
+
+        return 0
+
 
 def train(dataloader, model, loss_fn, optimizer, device):
     size = len(dataloader.dataset)
-    model.train()  # tell the model that it's currently training
+    model.train()
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
 
         # Compute prediction error
-        pred = model(X)  # calls forward function
+        pred = model(X)
         loss = loss_fn(pred, y)
 
         # Backpropagation
@@ -122,7 +155,8 @@ def test(dataloader, model, loss_fn, device):
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
     test_loss /= num_batches
     correct /= size
-    print(f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    print(
+        f"Test Error: \n Accuracy: {(100 * correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
 def save_and_eval(model, test_data):
@@ -146,7 +180,7 @@ def svd_inspection(model):
     list_svdParams = []
     for param in model.parameters():
         if len(param.size()) > 1:  # skip bias terms
-            U, S, Vh = torch.svd(param,some=True)
+            U, S, Vh = torch.svd(param, some=True)
             list_svdParams.append([U, S, Vh])
 
     # check the S matrices
@@ -170,7 +204,8 @@ def inspect_matrices():
         S = torch.load('mat/S_' + str(i) + '.pt')
         V = torch.load('mat/V_' + str(i) + '.pt')
 
-        print("layer: " + str(i) + " maxSV: " + str(torch.max(S)) + " minSV: " + str(torch.min(S)))
+        print("layer: " + str(i) + " maxSV: " +
+              str(torch.max(S)) + " minSV: " + str(torch.min(S)))
         print(U.size())
         print(S.size())
         print(V.size())
@@ -193,7 +228,7 @@ def load_model_save_matrices():
 
 
 if __name__ == '__main__':
-    
-    # main()
-    load_model_save_matrices()
+
+    main()
+    #load_model_save_matrices()
     inspect_matrices()
