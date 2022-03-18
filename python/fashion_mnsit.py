@@ -35,13 +35,13 @@ def main():
         break
 
     # Get cpu or gpu device for training.
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    device = "cpu"  # "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
 
     # build the network
     model = NeuralNetwork().to(device)
     # --- summary of the model
-    summary(model, input_size=(28, 28))
+    summary(model, input_size=(28, 28), device=device)
 
     # print params
     # for param in model.parameters():
@@ -146,7 +146,7 @@ def svd_inspection(model):
     list_svdParams = []
     for param in model.parameters():
         if len(param.size()) > 1:  # skip bias terms
-            U, S, Vh = torch.svd(param,some=True)
+            U, S, Vh = torch.svd(param, some=True)
             list_svdParams.append([U, S, Vh])
 
     # check the S matrices
@@ -185,7 +185,7 @@ def load_model_save_matrices():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using {device} device")
     model = NeuralNetwork().to(device)
-    model.load_state_dict(torch.load("model.pth"))
+    model.load_state_dict(torch.load("model_fashion_mnist.pth"))
 
     # print the matrices to file
     svd_inspection(model)
@@ -193,7 +193,6 @@ def load_model_save_matrices():
 
 
 if __name__ == '__main__':
-    
-    # main()
+    main()
     load_model_save_matrices()
     inspect_matrices()
