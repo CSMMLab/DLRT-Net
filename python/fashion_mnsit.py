@@ -72,14 +72,16 @@ class NeuralNetwork(nn.Module):
         super(NeuralNetwork, self).__init__()
         self.flatten = nn.Flatten()
         self.linear_relu_stack = nn.Sequential(
-            nn.Linear(28 * 28, 512),
-            nn.ReLU(),
-            nn.Dropout(p=0.2),
+            nn.Linear(28 * 28, 512),  # Ax+b, dim(A) = 512x784, dim(b) =  512 || A=USVt
+            nn.ReLU(),  # ptswise evaluation Relu(Ax+b)
+            nn.Dropout(p=0.2),  # regularisierungstechnik
             nn.Linear(512, 10000),
             nn.ReLU(),
             nn.Dropout(p=0.2),
-            nn.Linear(10000, 10)
+            nn.Linear(10000, 10)  # ten labels in dataset
         )
+        # ----
+        self.A1 = torch.zeros((784, 512))
 
     def forward(self, x):
         x = self.flatten(x)
@@ -89,12 +91,12 @@ class NeuralNetwork(nn.Module):
 
 def train(dataloader, model, loss_fn, optimizer, device):
     size = len(dataloader.dataset)
-    model.train()
+    model.train()  # tell the model that it's currently training
     for batch, (X, y) in enumerate(dataloader):
         X, y = X.to(device), y.to(device)
 
         # Compute prediction error
-        pred = model(X)
+        pred = model(X)  # calls forward function
         loss = loss_fn(pred, y)
 
         # Backpropagation

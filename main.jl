@@ -131,26 +131,32 @@ while Network(U*S*V',x,y) > eps && counter <= cStop
     K .= U*S;
 
     K .= K .- alpha*gradient*V;
+    println(size(K))
 
     UNew,STmp = qr(K); # optimize bei choosing XFull, SFull
     UNew = UNew[:, 1:r]; 
 
-    MUp = UNew' * U;
+    NUp = UNew' * U;
 
     ###### L-step ######
     L .= V*S';
 
     L .= L .- alpha*(U'*gradient)';
-            
+    println("L")
+    println(size(L))
+
     VNew,STmp = qr(L);
     VNew = VNew[:, 1:r]; 
-
-    NUp = VNew' * V;
+    println("vnew")
+    println(size(VNew))
+    println("STmp")
+    println(size(STmp))
+    MUp = VNew' * V;
     V .= VNew;
     U .= UNew;
 
     ################## S-step ##################
-    S .= MUp*S*(NUp')
+    S .= NUp*S*(MUp')
 
     S .= S .- alpha.*U'*dNetwork(U*S*V',x,y)*V;
     push!(DLRHistory, Network(U*S*V',x,y))
