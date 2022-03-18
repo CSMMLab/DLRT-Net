@@ -43,7 +43,7 @@ function dReLU(x)
     return y;
 end
 
-cStop = 100000;
+cStop = 2;
 
 readData = false
 
