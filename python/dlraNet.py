@@ -2,6 +2,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+import itertools
+
 print(torch.__version__)
 # define the network
 # Get cpu or gpu device for training.
@@ -10,18 +12,22 @@ print(f"Using {device} device")
 
 
 class DLRANet(nn.Module):
-    weights_K: list[torch.Tensor]  # n1 x r
-    weights_Lt: list[torch.Tensor]  # n2 x r
-    weights_S: list[torch.Tensor]  # r x r
-    aux_U: list[torch.Tensor]  # n1 x r
-    aux_Unp1: list[torch.Tensor]  # n1 x r
-    aux_Vt: list[torch.Tensor]  # r x n2
-    aux_Vtnp1: list[torch.Tensor]  # r x n2
-    aux_N: list[torch.Tensor]  # r x r
-    aux_M: list[torch.Tensor]  # r x r
-    biases: list[torch.Tensor]  # n2
+    weights_K: list  # [torch.Tensor]  # n1 x r
+    weights_Lt: list  # [torch.Tensor]  # n2 x r
+    weights_S: list  # [torch.Tensor]  # r x r
+    aux_U: list  # [torch.Tensor]  # n1 x r
+    aux_Unp1: list  # [torch.Tensor]  # n1 x r
+    aux_Vt: list  # [torch.Tensor]  # r x n2
+    aux_Vtnp1: list  # [torch.Tensor]  # r x n2
+    aux_N: list  # [torch.Tensor]  # r x r
+    aux_M: list  # [torch.Tensor]  # r x r
+    biases: list  # [torch.Tensor]  # n2
     num_layers: int
     layer_width: int
+
+    optim_K: torch.optim.SGD  # optimizer for K step
+    optim_Lt: torch.optim.SGD  # optimizer for L step
+    optim_S: torch.optim.SGD  # optimizer for S step
 
     def __init__(self, input_dim: int, output_dim: int, layer_width: int, num_layers: int, low_rank: int = 10):
         self.num_layers = num_layers
@@ -98,7 +104,11 @@ class DLRANet(nn.Module):
                 self.aux_N[i].requires_grad = False
                 self.aux_M[i].requires_grad = False
                 self.biases[i].requires_grad = True
-        return None
+
+        # Create optimizers
+        self.optim_K = torch.optim.SGD(self.weights_K, lr=1e-3)
+        self.optim_Lt = torch.optim.SGD(self.weights_Lt, lr=1e-3)
+        self.optim_S = torch.optim.SGD(self.weights_S, lr=1e-3)
 
     def K_step_forward(self, input_tensor: torch.Tensor) -> torch.Tensor:
         # K-step of DRLA (forward pass)
@@ -117,12 +127,17 @@ class DLRANet(nn.Module):
         return F.log_softmax(
             torch.matmul(z, torch.matmul(self.weights_K[self.num_layers - 1], self.aux_Vt[self.num_layers - 1])), -1)
 
-    def K_step_update(self, stepsize: float = 1e-3):
+    def K_step_update(self):
         # K-step of DRLA (update)
+
+        # 1) Apply optimizer t K matrix
+        self.optim_K.step()
+
+        # 2) Update auxiliary matrices Unp1 and N
         with torch.no_grad():
             for i in range(0, self.num_layers):
                 # gradient update
-                self.weights_K[i] = self.weights_K[i] - stepsize * self.weights_K[i].grad
+                # self.weights_K[i] = self.weights_K[i] - stepsize * self.weights_K[i].grad
                 self.weights_K[i].requires_grad = True
                 # Create U
                 self.aux_Unp1[i], _ = torch.qr(self.weights_K[i])
@@ -156,12 +171,16 @@ class DLRANet(nn.Module):
         return F.log_softmax(
             torch.matmul(z, torch.matmul(self.aux_U[self.num_layers - 1], self.weights_Lt[self.num_layers - 1])), -1)
 
-    def L_step_update(self, stepsize: float = 1e-3):
+    def L_step_update(self):
         # L-step of DRLA (update)
+        # 1) Apply optimizer to Lt matrix
+        self.optim_Lt.step()
+
+        # 2) Update auxiliary matrices Vtnp1 and M
         with torch.no_grad():
             for i in range(0, self.num_layers):
                 # gradient update
-                self.weights_Lt[i] = self.weights_Lt[i] - stepsize * self.weights_Lt[i].grad
+                # self.weights_Lt[i] = self.weights_Lt[i] - stepsize * self.weights_Lt[i].grad
                 self.weights_Lt[i].requires_grad = True
                 # Create V_np1
                 self.aux_Vtnp1[i], _ = torch.qr(torch.transpose(self.weights_Lt[i], 0, 1))
@@ -194,26 +213,24 @@ class DLRANet(nn.Module):
         with torch.no_grad():
             for i in range(0, self.num_layers):
                 # a) update S
-                if i == self.num_layers - 2:
-                    S_tilde = torch.matmul(torch.matmul(self.aux_N[i], self.weights_S[i]),
-                                           torch.transpose(self.aux_M[i], 0, 1))  # S
-                    W = torch.matmul(self.aux_Unp1[i], torch.matmul(S_tilde, self.aux_Vtnp1[i]))
-                    print("U-N-Ut identity check")
-                    u_id = torch.matmul(torch.matmul(self.aux_Unp1[i], self.aux_N[i]),
-                                        torch.transpose(self.aux_U[i], 0, 1))
-                    print(u_id - torch.eye(self.layer_width))
-                    print("Vt-M-V identity check")
-                    v_id = torch.matmul(
-                        torch.matmul(torch.transpose(self.aux_Vt[i], 0, 1), torch.transpose(self.aux_M[i], 0, 1)),
-                        self.aux_Vtnp1[i])
-                    print(v_id - torch.eye(self.layer_width))
-                    print("W= Unp1NSMtVtnp1 identity check")
-                    print(self.W - W)
-
-                else:
-                    self.weights_S[i] = torch.matmul(torch.matmul(self.aux_N[i], self.weights_S[i]),
-                                                     torch.transpose(self.aux_M[i], 0, 1))  # S
+                self.weights_S[i] = torch.matmul(torch.matmul(self.aux_N[i], self.weights_S[i]),
+                                                 torch.transpose(self.aux_M[i], 0, 1))  # S
                 self.weights_S[i].requires_grad = True
+                # if i == self.num_layers - 2:
+                # S_tilde = torch.matmul(torch.matmul(self.aux_N[i], self.weights_S[i]), torch.transpose(self.aux_M[i], 0, 1))  # S
+                # W = torch.matmul(self.aux_Unp1[i], torch.matmul(S_tilde, self.aux_Vtnp1[i]))
+                # print("U-N-Ut identity check")
+                # u_id = torch.matmul(torch.matmul(self.aux_Unp1[i], self.aux_N[i]),
+                #                    torch.transpose(self.aux_U[i], 0, 1))
+                # print(u_id - torch.eye(self.layer_width))
+                # print("Vt-M-V identity check")
+                # v_id = torch.matmul(
+                #    torch.matmul(torch.transpose(self.aux_Vt[i], 0, 1), torch.transpose(self.aux_M[i], 0, 1)),
+                #    self.aux_Vtnp1[i])
+                # print(v_id - torch.eye(self.layer_width))
+                # print("W= Unp1NSMtVtnp1 identity check")
+                # print(self.W - W)
+                # else:
 
         z = input_tensor
         # pass forward
@@ -221,23 +238,27 @@ class DLRANet(nn.Module):
             # z = f(xW+b) \approx f(xUnp1 S Vnp1^T + b)
             z = F.relu(
                 torch.matmul(z, torch.matmul(self.aux_Unp1[i], torch.matmul(self.weights_S[i], self.aux_Vtnp1[i]))))
-        print(self.W.size())
-        print(self.W)
-        t = torch.matmul(self.aux_Unp1[self.num_layers - 2],
-                         torch.matmul(self.weights_S[self.num_layers - 2], self.aux_Vtnp1[self.num_layers - 2]))
-        print(t.size())
-        print(t)
-        print("____")
+        # print(self.W.size())
+        # print(self.W)
+        # t = torch.matmul(self.aux_Unp1[self.num_layers - 2],
+        #                 torch.matmul(self.weights_S[self.num_layers - 2], self.aux_Vtnp1[self.num_layers - 2]))
+        # print(t.size())
+        # print(t)
+        # print("____")
         return F.log_softmax(torch.matmul(z, torch.matmul(self.aux_Unp1[self.num_layers - 1],
                                                           torch.matmul(self.weights_S[self.num_layers - 1],
                                                                        self.aux_Vtnp1[self.num_layers - 1]))), -1)
 
-    def S_step_update(self, stepsize: float = 1e-3):
+    def S_step_update(self, ):
         # S-step of DRLA (update)
+        # 1) Apply optimizer to S matrix
+        self.optim_S.step()
+
+        # 2) Update auxiliary matrices Vtnp1 and M
         with torch.no_grad():
             for i in range(0, self.num_layers):
                 # gradient update
-                self.weights_S[i] = self.weights_S[i] - stepsize * self.weights_S[i].grad
+                # self.weights_S[i] = self.weights_S[i] - stepsize * self.weights_S[i].grad
                 self.weights_S[i].requires_grad = True
                 # update U to Unp1 and V to Vnp1
                 self.aux_U[i] = self.aux_Unp1[i]
@@ -349,49 +370,50 @@ class DLRANet(nn.Module):
             print(self.aux_N[i])
 
 
-## some sanity checks
-test_net = DLRANet(input_dim=10, output_dim=10, layer_width=10, num_layers=3, low_rank=10)
-# test_net.print_layer_size()
-print("input")
-x = torch.rand(5, 10)  # random flattened images
-y = torch.randint(0, 9, (5,))  # random labels
-# print(x)
-# print(x.size())
-# print("labels")
-# print(y.size())
+if __name__ == '__main__':
+    ## some sanity checks
+    test_net = DLRANet(input_dim=10, output_dim=10, layer_width=10, num_layers=3, low_rank=10)
+    # test_net.print_layer_size()
+    print("input")
+    x = torch.rand(5, 10)  # random flattened images
+    y = torch.randint(0, 9, (5,))  # random labels
+    # print(x)
+    # print(x.size())
+    # print("labels")
+    # print(y.size())
 
-print("K_step")
-out = test_net.K_step_forward(x)
-# print("output")
-# print(out.size())
-loss = F.nll_loss(out, y)
-# print("loss")
-# print(loss.size())
-# print(loss)
-loss.backward()
-test_net.K_step_update(stepsize=1e-2)
-test_net.clear_grads()
+    print("K_step")
+    out = test_net.K_step_forward(x)
+    # print("output")
+    # print(out.size())
+    loss = F.nll_loss(out, y)
+    # print("loss")
+    # print(loss.size())
+    # print(loss)
+    loss.backward()
+    test_net.K_step_update(stepsize=1e-2)
+    test_net.clear_grads()
 
-print("L_step_forward")
-out = test_net.L_step_forward(x)
-# print("output")
-# print(out.size())
-loss = F.nll_loss(out, y)
-# print("loss")
-# print(loss.size())
-# print(loss)
-loss.backward()
-test_net.L_step_update(stepsize=1e-2)
-test_net.clear_grads()
+    print("L_step_forward")
+    out = test_net.L_step_forward(x)
+    # print("output")
+    # print(out.size())
+    loss = F.nll_loss(out, y)
+    # print("loss")
+    # print(loss.size())
+    # print(loss)
+    loss.backward()
+    test_net.L_step_update(stepsize=1e-2)
+    test_net.clear_grads()
 
-print("S_step_forward")
-out = test_net.S_step_forward(x)
-print("output")
-print(out.size())
-loss = F.nll_loss(out, y)
-print("loss")
-print(loss.size())
-print(loss)
-loss.backward()
-test_net.S_step_update(stepsize=1e-2)
-test_net.clear_grads()
+    print("S_step_forward")
+    out = test_net.S_step_forward(x)
+    print("output")
+    print(out.size())
+    loss = F.nll_loss(out, y)
+    print("loss")
+    print(loss.size())
+    print(loss)
+    loss.backward()
+    test_net.S_step_update(stepsize=1e-2)
+    test_net.clear_grads()
