@@ -5,7 +5,7 @@ from torchvision import datasets
 from torchvision.transforms import ToTensor
 from torchsummary import summary
 
-from dlraNet import DLRANet
+from dlraNet import DLRANet, PartialDLRANet
 
 
 def main():
@@ -45,9 +45,15 @@ def main():
     input_dim = 784
     output_dim = 10
     layer_width = 100
-    layer_num = 2
+    layer_num = 0
     low_rank = 50
-    model = DLRANet(input_dim, output_dim, layer_width, layer_num, low_rank)
+
+    num_layers_normal = 4
+    layer_width_normal = 100
+
+    model = PartialDLRANet(input_dim=input_dim, output_dim=output_dim, layer_width_dlra=layer_width,
+                           num_layers_dlra=layer_num, low_rank=low_rank, layer_width_normal=layer_width_normal,
+                           num_layers_normal=num_layers_normal)
     # model.svd_initialization()
     # model = model.to(device)
     # --- summary of the model
@@ -86,29 +92,33 @@ def train(dataloader, model, loss_fn, device):
 
         ## K-Step ##
         # print("K-Step")
-        out = model.K_step_forward(x)
+        out = model.k_step_forward(x)
         loss = loss_fn(out, y)
         # print(loss)
         model.optim_K.zero_grad()
+        model.optim_b.zero_grad()
+        model.optim_Wb.zero_grad()
+        model.optim_W.zero_grad()
         loss.backward()
-        model.K_step_update()
+        model.k_step_update()
+        model.w_and_b_update()
         # model.print_weights_K()
         # model.clear_grads()
 
         ## L-Step ##
         # print("L-Step")
-        out = model.L_step_forward(x)
+        out = model.l_step_forward(x)
         loss = loss_fn(out, y)
         # print(loss)
         model.optim_Lt.zero_grad()
         loss.backward()
-        model.L_step_update()
+        model.l_step_update()
         # model.print_weights_Lt()
         # model.clear_grads()
 
         ## S-Step ##
         # print("S-Step")
-        out = model.S_step_forward(x)
+        out = model.s_step_forward(x)
         # model.print_weights_S()
 
         loss = loss_fn(out, y)
@@ -118,7 +128,7 @@ def train(dataloader, model, loss_fn, device):
         # model.print_weights_S()
         # model.print_aux_M()
         # model.print_aux_N()
-        model.S_step_update()
+        model.s_step_update()
         # model.clear_grads()
 
         # print(model.weights[1])
@@ -137,7 +147,7 @@ def test(dataloader, model, loss_fn, device):
             X, y = X.to(device), y.to(device)
             x = nn.Flatten()(X)
             ## Only S-Step ##
-            pred = model.S_step_forward(x)
+            pred = model.s_step_forward(x)
             ## L-Step ##
             test_loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
