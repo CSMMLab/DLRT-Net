@@ -13,8 +13,8 @@ class PartDLRANet(keras.Model):
 
     def __init__(self, name="partDLRANet", **kwargs):
         super(PartDLRANet, self).__init__(name=name, **kwargs)
-        self.denseBlock = DenseBlock()
-        self.dlraBlock = DLRALayer(units=250, low_rank=100)
+        self.denseBlock = DenseBlock(units=250, input_dim=1)
+        self.dlraBlock = DLRALayer(input_dim=250, units=250, low_rank=100)
         self.outputBlock = DenseBlockOutput()
 
     def call(self, inputs, step: int):
@@ -23,14 +23,29 @@ class PartDLRANet(keras.Model):
         z = self.outputBlock(z)
         return z
 
+    @staticmethod
+    def set_none_grads_to_zero(grads, weights):
+        """
+        :param grads: gradients of current tape
+        :param weights: weights of current model
+        :return: sets the nonexistent gradients to zero (i K step, the grads of S and L step are None, which throws annoying warnings)
+        """
+        for i in range(len(grads)):
+            if grads[i] is None:
+                grads[i] = tf.zeros(shape=weights[i].shape, dtype=tf.float32)
+        return 0
+
 
 class DenseBlock(keras.layers.Layer):
-    def __init__(self, name="dense_block", **kwargs):
-        super(DenseBlock, self).__init__(name=name, **kwargs)
-        self.layer1 = Linear(units=64)
+    # self.layer1 = Linear(units=units)
+
+    def __init__(self, units=32, input_dim=32):
+        super(DenseBlock, self).__init__()
+        self.w = self.add_weight(shape=(input_dim, units), initializer="random_normal", name="_w", trainable=True)
+        self.b = self.add_weight(shape=(units,), initializer="zeros", name="_b", trainable=True)
 
     def call(self, inputs):
-        z = self.layer1(inputs)
+        z = tf.matmul(inputs, self.w) + self.b
         z = tf.keras.activations.relu(z)
         return z
 
@@ -50,32 +65,34 @@ class DenseBlockOutput(keras.layers.Layer):
 
 
 class DLRALayer(keras.layers.Layer):
-    def __init__(self, units=32, low_rank=10, name="dlra_block", **kwargs):
+    def __init__(self, input_dim: int, units=32, low_rank=10, epsAdapt=0.1, rmax_total=100, name="dlra_block",
+                 **kwargs):
         super(DLRALayer, self).__init__(**kwargs)
+        self.epsAdapt = epsAdapt  # for unconventional integrator
         self.units = units
         self.low_rank = low_rank
+        self.rmax_total = rmax_total
 
-    def build(self, input_shape):
-        self.k = self.add_weight(shape=(input_shape[-1], self.low_rank), initializer="random_normal",
-                                 trainable=True, )
+        self.k = self.add_weight(shape=(input_dim, self.low_rank), initializer="random_normal",
+                                 trainable=True, name="_k")
         self.l_t = self.add_weight(shape=(self.units, self.low_rank), initializer="random_normal",
-                                   trainable=True, )
+                                   trainable=True, name="_lt")
         self.s = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
-                                 trainable=True, )
-        self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True)
+                                 trainable=True, name="_s")
+        self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True, name="_b")
         # auxiliary variables
         self.aux_U = self.add_weight(shape=(self.units, self.low_rank), initializer="random_normal",
-                                     trainable=False, )
+                                     trainable=False, name="_aux_U")
         self.aux_Unp1 = self.add_weight(shape=(self.units, self.low_rank), initializer="random_normal",
-                                        trainable=False, )
+                                        trainable=False, name="_aux_Unp1")
         self.aux_Vt = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
-                                      trainable=False, )
+                                      trainable=False, name="_Vt")
         self.aux_Vtnp1 = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
-                                         trainable=False, )
+                                         trainable=False, name="_vtnp1")
         self.aux_N = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
-                                     trainable=False, )
+                                     trainable=False, name="_aux_N")
         self.aux_M = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
-                                     trainable=False, )
+                                     trainable=False, name="_aux_M")
 
     def call(self, inputs, step):
         """
@@ -84,30 +101,30 @@ class DLRALayer(keras.layers.Layer):
         :return:
         """
         if step == 0:  # k-step
-            z = tf.matmul(inputs, tf.matmul(self.k, self.aux_Vt))
+            z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
         elif step == 1:  # l-step
             z = tf.matmul(inputs, tf.matmul(self.aux_U, self.l_t))
         else:  # s-step
             z = tf.matmul(inputs, tf.matmul(self.aux_Unp1, tf.matmul(self.s, self.aux_Vtnp1)))
-        return z
+        return tf.keras.activations.relu(z + self.b)
 
     def k_step_preprocessing(self, ):
         k = tf.matmul(self.aux_U, self.s)
-        self.k = tf.Variable(initial_value=k, trainable=True, )
+        self.k = tf.Variable(initial_value=k, trainable=True, name="_k")
         return 0
 
     def k_step_postprocessing(self):
         aux_Unp1, _ = tf.linalg.qr(self.k)
-        self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1, trainable=False, )
+        self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1, trainable=False, name="_aux_Unp1")
         self.aux_N = tf.matmul(tf.transpose(self.aux_Unp1), self.aux_U)
         return 0
 
     def l_step_preprocessing(self, ):
         l_t = tf.matmul(self.s, self.aux_Vt)
-        self.l_t = tf.Variable(initial_value=l_t, trainable=True, )
+        self.l_t = tf.Variable(initial_value=l_t, trainable=True, name="_lt")
         return 0
 
-    def l_step_postpocessing(self):
+    def l_step_postprocessing(self):
         aux_Vtnp1, _ = tf.linalg.qr(tf.transpose(self.l_t))
         self.aux_Vtnp1 = tf.transpose(aux_Vtnp1)
         self.aux_M = tf.matmul(self.aux_Vtnp1, tf.transpose(self.aux_Vt))
@@ -115,13 +132,36 @@ class DLRALayer(keras.layers.Layer):
 
     def s_step_preprocessing(self):
         s = tf.matmul(tf.matmul(self.aux_N, self.s), tf.transpose(self.aux_M))
-        self.s = tf.Variable(initial_value=s, trainable=True, )
+        self.s = tf.Variable(initial_value=s, trainable=True, name="_s")
         return 0
 
     def s_step_postprocessing(self):
         self.aux_U = self.aux_Unp1
         self.aux_Vt = self.aux_Vtnp1
         return 0
+
+    def rank_adaption(self):
+        # 1) compute SVD of S
+        d, u2, v2 = tf.linalg.svd(self.s)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
+        s = tf.zeros(shape=self.s.shape)
+
+        tmp = 0.0
+        tol = self.epsAdapt * tf.linalg.norm(d)
+        rmax = int(tf.floor(d.shape[0] / 2))
+        for j in range(0, 2 * rmax - 1):
+            tmp = tf.sqrt(tf.linalg.norm(d[j:2 * rmax - 1]))
+            if tmp < tol:
+                rmax = j
+                break
+
+        rmax = tf.minimum(rmax, self.rmax_total)
+        rmax = tf.maximum(rmax, 2)
+
+        # update s
+        for i in range(0, rmax - 1):
+            s[i, i] = d[i]
+
+        # TODO
 
     def get_config(self):
         config = super(DLRALayer, self).get_config()

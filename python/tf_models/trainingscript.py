@@ -34,20 +34,67 @@ def main3():
         print("Start of epoch %d" % (epoch,))
 
         # Iterate over the batches of the dataset.
+
         for step, batch_train in enumerate(train_dataset):
+            # 1.a) K-Step
+            # print("K-Step")
+            model.dlraBlock.k_step_preprocessing()
+            # 1.b) Tape Gradients
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=0)
                 # Compute reconstruction loss
                 loss = mse_loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
-
+            # 1.c) Apply Gradients
             grads = tape.gradient(loss, model.trainable_weights)
+            model.set_none_grads_to_zero(grads, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
-
             loss_metric(loss)
-
+            # 1.d) Postprocessing
+            model.dlraBlock.k_step_postprocessing()
+            # 1.e) Output
             if step % 100 == 0:
-                print("step %d: mean loss = %.4f" % (step, loss_metric.result()))
+                print("step %d: mean loss K-Step = %.4f" % (step, loss_metric.result()))
+
+            # 2.a) L-Step
+            # print("L-Step")
+            model.dlraBlock.l_step_preprocessing()
+            # 2.b) Tape Gradients
+            with tf.GradientTape() as tape:
+                out = model(batch_train[0], step=1)
+                # Compute reconstruction loss
+                loss = mse_loss_fn(batch_train[1], out)
+                loss += sum(model.losses)  # Add KLD regularization loss
+            # 2.c) Apply Gradients
+            grads = tape.gradient(loss, model.trainable_weights)
+            model.set_none_grads_to_zero(grads, model.trainable_weights)
+            optimizer.apply_gradients(zip(grads, model.trainable_weights))
+            loss_metric(loss)
+            # 2.d) Postprocessing
+            model.dlraBlock.l_step_postprocessing()
+            # 2.e) Output
+            if step % 100 == 0:
+                print("step %d: mean loss L-Step = %.4f" % (step, loss_metric.result()))
+
+            # 3.a) S-Step
+            # print("S-Step")
+            model.dlraBlock.s_step_preprocessing()
+            # 3.b) Tape Gradients
+            with tf.GradientTape() as tape:
+                out = model(batch_train[0], step=2)
+                # Compute reconstruction loss
+                loss = mse_loss_fn(batch_train[1], out)
+                loss += sum(model.losses)  # Add KLD regularization loss
+            # 3.c) Apply Gradients
+            grads = tape.gradient(loss, model.trainable_weights)
+            model.set_none_grads_to_zero(grads, model.trainable_weights)
+            optimizer.apply_gradients(zip(grads, model.trainable_weights))
+            loss_metric(loss)
+            # 3.d) Postprocessing
+            model.dlraBlock.s_step_postprocessing()
+            # 3.e) Output
+            if step % 100 == 0:
+                print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
 
     test = model(test_x, step=0)
     plt.plot(test_x, test.numpy(), '-.')
@@ -149,4 +196,4 @@ def main():
 
 if __name__ == '__main__':
     # main()
-    main3()
+    main2()
