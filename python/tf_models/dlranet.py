@@ -103,7 +103,7 @@ class DLRALayer(keras.layers.Layer):
         if step == 0:  # k-step
             z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
         elif step == 1:  # l-step
-            z = tf.matmul(inputs, tf.matmul(self.aux_U, self.l_t))
+            z = tf.matmul(inputs, tf.matmul(self.aux_U, self.l_t))  # inefficient
         else:  # s-step
             z = tf.matmul(inputs, tf.matmul(self.aux_Unp1, tf.matmul(self.s, self.aux_Vtnp1)))
         return tf.keras.activations.relu(z + self.b)
@@ -162,6 +162,7 @@ class DLRALayer(keras.layers.Layer):
             s[i, i] = d[i]
 
         # TODO
+        return 0
 
     def get_config(self):
         config = super(DLRALayer, self).get_config()

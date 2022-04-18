@@ -45,7 +45,7 @@ def main3():
             model.dlraBlock.k_step_preprocessing()
             # 1.b) Tape Gradients
             with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=0)
+                out = model(batch_train[0], step=0)  # model eval k-tep
                 # Compute reconstruction loss
                 loss = mse_loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
@@ -71,7 +71,7 @@ def main3():
                 loss += sum(model.losses)  # Add KLD regularization loss
             # 2.c) Apply Gradients
             grads = tape.gradient(loss, model.trainable_weights)
-            model.set_none_grads_to_zero(grads, model.trainable_weights)
+            model.set_none_grads_to_zero(grads, model.trainable_weights)  # helper function to prevent tf warnings
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
             loss_metric(loss)
             # 2.d) Postprocessing
@@ -109,7 +109,7 @@ def main3():
 
 def main2():
     original_dim = 784
-    model = ReferenceNet()
+    model = ReferenceNet()  # Build Model
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     mse_loss_fn = tf.keras.losses.MeanSquaredError()
