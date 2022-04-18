@@ -55,7 +55,7 @@ def main3():
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
             loss_metric(loss)
             # 1.d) Postprocessing
-            model.dlraBlock.k_step_postprocessing()
+            model.dlraBlock.k_step_postprocessing_adapt()
             # 1.e) Output
             if step % 100 == 0:
                 print("step %d: mean loss K-Step = %.4f" % (step, loss_metric.result()))
@@ -75,7 +75,7 @@ def main3():
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
             loss_metric(loss)
             # 2.d) Postprocessing
-            model.dlraBlock.l_step_postprocessing()
+            model.dlraBlock.l_step_postprocessing_adapt()
             # 2.e) Output
             if step % 100 == 0:
                 print("step %d: mean loss L-Step = %.4f" % (step, loss_metric.result()))
@@ -99,6 +99,9 @@ def main3():
             # 3.e) Output
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
+
+            # 4) truncation
+            model.dlraBlock.rank_adaption()
 
     test = model(test_x, step=0)
     plt.plot(test_x, test.numpy(), '-.')
