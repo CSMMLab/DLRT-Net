@@ -1,39 +1,52 @@
 from dlranet import VariationalAutoEncoder, ReferenceNet, PartDLRANet
 
 import tensorflow as tf
+from tensorflow import keras
+
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 def main3():
     # Create Model
-    model = PartDLRANet()
+    input_dim = 784  # 28x28  pixel per image
+    output_dim = 10  # one-hot vector of digits 0-9
+    model = PartDLRANet(input_dim=input_dim, output_dim=output_dim)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
-    mse_loss_fn = tf.keras.losses.MeanSquaredError()
+    loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
 
+    # specify training
+    epochs = 10
+    batch_size = 64
     # Build dataset
-    n_train = 10000
-    n_test = 10000
+    # Prepare the training dataset.
+    batch_size = 64
+    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+    x_train = np.reshape(x_train, (-1, input_dim))
+    x_test = np.reshape(x_test, (-1, input_dim))
 
-    train_x = np.linspace(-2, 2, n_train).reshape((n_train, 1))
-    train_y = np.square(train_x)
+    # Reserve 10,000 samples for validation.
+    x_val = x_train[-10000:]
+    y_val = y_train[-10000:]
+    (x_val, y_val) = normalize_img(x_val, y_val)
 
-    test_x = np.linspace(-2, 2, n_test).reshape((n_test, 1))
-    test_y = np.square(test_x)
+    x_train = x_train[:-10000]
+    y_train = y_train[:-10000]
+    (x_train, y_train) = normalize_img(x_train, y_train)
 
-    # Choose batch size
-    batch_size = 32
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
+    # Prepare the training dataset.
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
-    # setup training
-    epochs = 10
+    # Prepare the validation dataset.
+    val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
+    val_dataset = val_dataset.batch(batch_size)
 
-    # Iterate over epochs.
+    # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
 
@@ -45,9 +58,9 @@ def main3():
             model.dlraBlock.k_step_preprocessing()
             # 1.b) Tape Gradients
             with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=0)
+                out = model(batch_train[0], step=0, training=True)
                 # Compute reconstruction loss
-                loss = mse_loss_fn(batch_train[1], out)
+                loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
             # 1.c) Apply Gradients
             grads = tape.gradient(loss, model.trainable_weights)
@@ -67,7 +80,7 @@ def main3():
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=1)
                 # Compute reconstruction loss
-                loss = mse_loss_fn(batch_train[1], out)
+                loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
             # 2.c) Apply Gradients
             grads = tape.gradient(loss, model.trainable_weights)
@@ -87,7 +100,7 @@ def main3():
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=2)
                 # Compute reconstruction loss
-                loss = mse_loss_fn(batch_train[1], out)
+                loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
             # 3.c) Apply Gradients
             grads = tape.gradient(loss, model.trainable_weights)
@@ -100,36 +113,50 @@ def main3():
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
 
-    test = model(test_x, step=0)
-    plt.plot(test_x, test.numpy(), '-.')
-    plt.plot(test_x, test_y, '--')
-    plt.show()
+    test = model(val_dataset[0], step=0)
+    # plt.plot(test_x, test.numpy(), '-.')
+    # plt.plot(test_x, test_y, '--')
+    # plt.show()
     return 0
 
 
 def main2():
-    original_dim = 784
-    model = ReferenceNet()
-
+    # Create Model
+    input_dim = 784  # 28x28  pixel per image
+    output_dim = 10  # one-hot vector of digits 0-9
+    model = ReferenceNet(output_dim=output_dim)  # input_dim gets automatically assigned
+    # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-    mse_loss_fn = tf.keras.losses.MeanSquaredError()
-
+    # Choose loss
+    loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
 
-    # Build dataset 
-    n_train = 10000
-    n_test = 10000
-
-    train_x = np.linspace(-2, 2, n_train).reshape((n_train, 1))
-    train_y = np.square(train_x)
-
-    test_x = np.linspace(-2, 2, n_test).reshape((n_test, 1))
-    test_y = np.square(test_x)
-
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_x, train_y))
-    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(32)
-
+    # specify training
     epochs = 10
+    batch_size = 64
+    # Build dataset
+    # Prepare the training dataset.
+    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+    x_train = np.reshape(x_train, (-1, input_dim))
+    x_test = np.reshape(x_test, (-1, input_dim))
+
+    # Reserve 10,000 samples for validation.
+    x_val = x_train[-10000:]
+    y_val = y_train[-10000:]
+    (x_val, y_val) = normalize_img(x_val, y_val)
+
+    x_train = x_train[:-10000]
+    y_train = y_train[:-10000]
+    (x_train, y_train) = normalize_img(x_train, y_train)
+
+    # Prepare the training dataset.
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
+
+    # Prepare the validation dataset.
+    val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
+    val_dataset = val_dataset.batch(batch_size)
 
     # Iterate over epochs.
     for epoch in range(epochs):
@@ -140,7 +167,7 @@ def main2():
             with tf.GradientTape() as tape:
                 out = model(batch_train[0])
                 # Compute reconstruction loss
-                loss = mse_loss_fn(batch_train[1], out)
+                loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
 
             grads = tape.gradient(loss, model.trainable_weights)
@@ -151,51 +178,16 @@ def main2():
             if step % 100 == 0:
                 print("step %d: mean loss = %.4f" % (step, loss_metric.result()))
 
-    test = model(test_x)
-    plt.plot(test_x, test.numpy(), '-.')
-    plt.plot(test_x, test_y, '--')
-    plt.show()
+    test = model(x_val)
+    # plt.plot(test_x, test.numpy(), '-.')
+    # plt.plot(test_x, test_y, '--')
+    # plt.show()
     return 0
 
 
-def main():
-    original_dim = 784
-    vae = VariationalAutoEncoder(original_dim, 64, 32)
-
-    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-    mse_loss_fn = tf.keras.losses.MeanSquaredError()
-
-    loss_metric = tf.keras.metrics.Mean()
-
-    (x_train, _), _ = tf.keras.datasets.mnist.load_data()
-    x_train = x_train.reshape(60000, 784).astype("float32") / 255
-
-    train_dataset = tf.data.Dataset.from_tensor_slices(x_train)
-    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(64)
-
-    epochs = 2
-
-    # Iterate over epochs.
-    for epoch in range(epochs):
-        print("Start of epoch %d" % (epoch,))
-
-        # Iterate over the batches of the dataset.
-        for step, x_batch_train in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                reconstructed = vae(x_batch_train)
-                # Compute reconstruction loss
-                loss = mse_loss_fn(x_batch_train, reconstructed)
-                loss += sum(vae.losses)  # Add KLD regularization loss
-
-            grads = tape.gradient(loss, vae.trainable_weights)
-            optimizer.apply_gradients(zip(grads, vae.trainable_weights))
-
-            loss_metric(loss)
-
-            if step % 100 == 0:
-                print("step %d: mean loss = %.4f" % (step, loss_metric.result()))
-
-    return 0
+def normalize_img(image, label):
+    """Normalizes images: `uint8` -> `float32`."""
+    return tf.cast(image, tf.float32) / 255., label
 
 
 if __name__ == '__main__':

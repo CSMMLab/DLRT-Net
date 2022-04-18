@@ -11,11 +11,11 @@ from tensorflow.keras import layers
 
 class PartDLRANet(keras.Model):
 
-    def __init__(self, name="partDLRANet", **kwargs):
+    def __init__(self, input_dim=1, output_dim=1, name="partDLRANet", **kwargs):
         super(PartDLRANet, self).__init__(name=name, **kwargs)
-        self.denseBlock = DenseBlock(units=250, input_dim=1)
+        self.denseBlock = DenseBlock(units=250, input_dim=input_dim)
         self.dlraBlock = DLRALayer(input_dim=250, units=250, low_rank=100)
-        self.outputBlock = DenseBlockOutput()
+        self.outputBlock = DenseBlockOutput(output_dim=output_dim)
 
     def call(self, inputs, step: int):
         z = self.denseBlock(inputs)
@@ -51,10 +51,10 @@ class DenseBlock(keras.layers.Layer):
 
 
 class DenseBlockOutput(keras.layers.Layer):
-    def __init__(self, name="dense_output_block", **kwargs):
+    def __init__(self, output_dim=1, name="dense_output_block", **kwargs):
         super(DenseBlockOutput, self).__init__(name=name, **kwargs)
         self.layer3 = Linear(units=250)
-        self.layer4 = Linear(units=1)
+        self.layer4 = Linear(units=output_dim)
 
     def call(self, inputs):
         z = tf.keras.activations.relu(inputs)
@@ -172,12 +172,12 @@ class DLRALayer(keras.layers.Layer):
 
 class ReferenceNet(keras.Model):
 
-    def __init__(self, name="referenceNet", **kwargs):
+    def __init__(self, output_dim=1, name="referenceNet", **kwargs):
         super(ReferenceNet, self).__init__(name=name, **kwargs)
         self.layer1 = Linear(units=64)
         self.layer2 = Linear(units=250)
         self.layer3 = Linear(units=250)
-        self.layer4 = Linear(units=1)
+        self.layer4 = Linear(units=output_dim)
 
     def call(self, inputs):
         z = self.layer1(inputs)
