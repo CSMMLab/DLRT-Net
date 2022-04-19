@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 def main3():
     # Create Model
-    model = PartDLRANet()
+    model = PartDLRANet(tol=0.05)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -69,8 +69,8 @@ def main3():
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
             # Postprocessing K and L
-            model.dlraBlock.k_step_postprocessing()
-            model.dlraBlock.l_step_postprocessing()
+            model.dlraBlock.k_step_postprocessing_adapt()
+            model.dlraBlock.l_step_postprocessing_adapt()
 
             # S-Step Preprocessing
             model.dlraBlock.s_step_preprocessing()
@@ -95,12 +95,12 @@ def main3():
 
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
-                print("Current Rank" % (model.dlraBlock.low_rank))
+                print("Current Rank: " + str(int(model.dlraBlock.low_rank)))
 
     test = model(test_x, step=0)
     plt.plot(test_x, test.numpy(), '-.')
     plt.plot(test_x, test_y, '--')
-    plt.show()
+    plt.savefig("res_quad.png")
     return 0
 
 
