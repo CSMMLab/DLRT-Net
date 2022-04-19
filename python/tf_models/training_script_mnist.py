@@ -11,7 +11,7 @@ def main3():
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
-    model = PartDLRANet(input_dim=input_dim, output_dim=output_dim,low_rank=10,tol=0.4)
+    model = PartDLRANet(input_dim=input_dim, output_dim=output_dim,low_rank=10,tol=0.4,rmax_total=100)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
