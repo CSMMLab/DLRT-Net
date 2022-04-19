@@ -35,6 +35,26 @@ class PartDLRANet(keras.Model):
                 grads[i] = tf.zeros(shape=weights[i].shape, dtype=tf.float32)
         return 0
 
+    def toggle_non_s_step_training(self):
+        self.layers[0].trainable = False  # Dense input
+        self.layers[2].trainable = False  # Dense output
+        # self.dlraBlock.b.trainable = False
+        # self.dlraBlock.s.trainable = False
+        # self.dlraBlock.k.trainable = True
+        # self.dlraBlock.l_t.trainable = True
+
+        return 0
+
+    def toggle_s_step_training(self):
+        self.layers[0].trainable = True  # Dense input
+        self.layers[2].trainable = True  # Dense output
+        # self.dlraBlock.b.trainable = True
+        # self.dlraBlock.s.trainable = True
+        # self.dlraBlock.k.trainable = False
+        # self.dlraBlock.l_t.trainable = False
+
+        return 0
+
 
 class DenseBlock(keras.layers.Layer):
     # self.layer1 = Linear(units=units)
@@ -93,6 +113,7 @@ class DLRALayer(keras.layers.Layer):
                                      trainable=False, name="_aux_N")
         self.aux_M = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                      trainable=False, name="_aux_M")
+        # Todo: initializer with low rank
 
     def call(self, inputs, step):
         """
@@ -103,9 +124,9 @@ class DLRALayer(keras.layers.Layer):
         if step == 0:  # k-step
             z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
         elif step == 1:  # l-step
-            z = tf.matmul(inputs, tf.matmul(self.aux_U, self.l_t))  # inefficient
+            z = tf.matmul(tf.matmul(inputs, self.aux_U), self.l_t)
         else:  # s-step
-            z = tf.matmul(inputs, tf.matmul(self.aux_Unp1, tf.matmul(self.s, self.aux_Vtnp1)))
+            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1)
         return tf.keras.activations.relu(z + self.b)
 
     def k_step_preprocessing(self, ):
@@ -131,13 +152,10 @@ class DLRALayer(keras.layers.Layer):
         return 0
 
     def s_step_preprocessing(self):
-        s = tf.matmul(tf.matmul(self.aux_N, self.s), tf.transpose(self.aux_M))
-        self.s = tf.Variable(initial_value=s, trainable=True, name="_s")
-        return 0
-
-    def s_step_postprocessing(self):
         self.aux_U = self.aux_Unp1
         self.aux_Vt = self.aux_Vtnp1
+        s = tf.matmul(tf.matmul(self.aux_N, self.s), tf.transpose(self.aux_M))
+        self.s = tf.Variable(initial_value=s, trainable=True, name="_s")
         return 0
 
     def rank_adaption(self):
