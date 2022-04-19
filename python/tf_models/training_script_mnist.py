@@ -11,7 +11,7 @@ def main3():
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
-    model = PartDLRANet(input_dim=input_dim, output_dim=output_dim)
+    model = PartDLRANet(input_dim=input_dim, output_dim=output_dim,low_rank=10,tol=0.4)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -82,8 +82,8 @@ def main3():
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
             # Postprocessing K and L
-            model.dlraBlock.k_step_postprocessing()
-            model.dlraBlock.l_step_postprocessing()
+            model.dlraBlock.k_step_postprocessing_adapt()
+            model.dlraBlock.l_step_postprocessing_adapt()
 
             # S-Step Preprocessing
             model.dlraBlock.s_step_preprocessing()
@@ -108,7 +108,7 @@ def main3():
 
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
-                print("Current Rank" % (model.dlraBlock.low_rank))
+                print("Current Rank: " + str(int(model.dlraBlock.low_rank)))
 
     test = model(val_dataset[0], step=0)
     # plt.plot(test_x, test.numpy(), '-.')
