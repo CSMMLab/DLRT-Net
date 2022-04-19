@@ -20,7 +20,7 @@ def main3():
     loss_metric = tf.keras.metrics.Mean()
 
     # specify training
-    epochs = 10
+    epochs = 100
     batch_size = 64
     # Build dataset
     # Prepare the training dataset.
