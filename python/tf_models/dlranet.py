@@ -120,7 +120,7 @@ class DLRALayer(keras.layers.Layer):
         return 0
 
     def k_step_postprocessing_adapt(self):
-        aux_Unp1, _ = tf.linalg.qr( tf.concatenate((self.k, self.aux_U), axis=1) )
+        aux_Unp1, _ = tf.linalg.qr( tf.concat((self.k, self.aux_U), axis=1) )
         self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1, trainable=False, name="_aux_Unp1")
         self.aux_N = tf.matmul(tf.transpose(self.aux_Unp1), self.aux_U)
         return 0
@@ -131,7 +131,7 @@ class DLRALayer(keras.layers.Layer):
         return 0
 
     def l_step_postprocessing_adapt(self):
-        aux_Vtnp1, _ = tf.linalg.qr( tf.concatenate((tf.transpose(self.l_t), tf.transpose(self.aux_Vt)), axis=1) )
+        aux_Vtnp1, _ = tf.linalg.qr( tf.concat((tf.transpose(self.l_t), tf.transpose(self.aux_Vt)), axis=1) )
         self.aux_Vtnp1 = tf.transpose(aux_Vtnp1)
         self.aux_M = tf.matmul(self.aux_Vtnp1, tf.transpose(self.aux_Vt))
         return 0
@@ -155,7 +155,6 @@ class DLRALayer(keras.layers.Layer):
     def rank_adaption(self):
         # 1) compute SVD of S
         d, u2, v2 = tf.linalg.svd(self.s)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
-        s = tf.zeros(shape=self.s.shape)
 
         tmp = 0.0
         tol = self.epsAdapt * tf.linalg.norm(d)
@@ -170,12 +169,12 @@ class DLRALayer(keras.layers.Layer):
         rmax = tf.maximum(rmax, 2)
 
         # update s
-        for i in range(0, rmax - 1):
-            s[i, i] = d[i]
+        s = tf.linalg.tensor_diag(d[:rmax-1])
+        self.s = s
 
-        # update u
+        # update u and v
         self.aux_U = tf.matmul(self.aux_U,u2[:,:(rmax - 1)])
-        self.aux_Vt = tf.transpose(tf.matmul(v2[:,:(rmax - 1)],self.aux_Vt))
+        self.aux_Vt = tf.transpose(tf.matmul(v2[:(rmax - 1),:],self.aux_Vt))
         self.low_rank = rmax
         
         return 0
