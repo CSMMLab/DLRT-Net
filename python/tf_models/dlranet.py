@@ -161,7 +161,6 @@ class DLRALayer(keras.layers.Layer):
     def rank_adaption(self):
         # 1) compute SVD of S
         d, u2, v2 = tf.linalg.svd(self.s)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
-        s = tf.zeros(shape=self.s.shape)
 
         tmp = 0.0
         tol = self.epsAdapt * tf.linalg.norm(d)
@@ -176,10 +175,13 @@ class DLRALayer(keras.layers.Layer):
         rmax = tf.maximum(rmax, 2)
 
         # update s
-        for i in range(0, rmax - 1):
-            s[i, i] = d[i]
+        s = tf.linalg.tensor_diag(d[:rmax - 1])
+        self.s = s
 
-        # TODO
+        # update u and v
+        self.aux_U = tf.matmul(self.aux_U, u2[:, :(rmax - 1)])
+        self.aux_Vt = tf.matmul(v2[:(rmax - 1), :], self.aux_Vt)
+        self.low_rank = rmax
         return 0
 
     def get_config(self):

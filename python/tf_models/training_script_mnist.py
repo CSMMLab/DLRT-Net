@@ -101,12 +101,14 @@ def main3():
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
 
             # Rank Adaptivity
+            model.dlraBlock.rank_adaption()
 
             # Network monotoring and verbosity
             loss_metric(loss)
 
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
+                print("Current Rank" % (model.dlraBlock.low_rank))
 
     test = model(val_dataset[0], step=0)
     # plt.plot(test_x, test.numpy(), '-.')
