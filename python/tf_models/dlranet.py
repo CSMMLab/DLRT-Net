@@ -266,12 +266,13 @@ class DLRALayer(keras.layers.Layer):
         rmax = tf.maximum(rmax, 2)
 
         # update s
-        s = tf.linalg.tensor_diag(d[:rmax - 1])
+        s = tf.linalg.tensor_diag(d[:rmax])
+        # print(d[:rmax - 1])
         self.s = s
 
         # update u and v
-        self.aux_U = tf.matmul(self.aux_U, u2[:, :(rmax - 1)])
-        self.aux_Vt = tf.matmul(v2[:(rmax - 1), :], self.aux_Vt)
+        self.aux_U = tf.matmul(self.aux_U, u2[:, :rmax])
+        self.aux_Vt = tf.matmul(v2[:rmax, :], self.aux_Vt)
         self.low_rank = rmax
         return 0
 

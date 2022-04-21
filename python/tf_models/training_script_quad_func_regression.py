@@ -97,6 +97,7 @@ def main3():
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
                 print("Current Rank: " + str(int(model.dlraBlock.low_rank)))
+                print("S:" + str(model.dlraBlock.s.numpy()))
 
     test = model(test_x, step=0)
     plt.plot(test_x, test.numpy(), '-.')
