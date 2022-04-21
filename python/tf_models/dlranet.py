@@ -11,10 +11,10 @@ from tensorflow.keras import layers
 
 class PartDLRANet(keras.Model):
 
-    def __init__(self, input_dim=1, output_dim=1, name="partDLRANet", tol=0.4, low_rank=20,rmax_total=100, **kwargs):
+    def __init__(self, input_dim=1, output_dim=1, name="partDLRANet", tol=0.4, low_rank=1000,rmax_total=3000, **kwargs):
         super(PartDLRANet, self).__init__(name=name, **kwargs)
-        self.denseBlock = DenseBlock(units=250, input_dim=input_dim)
-        self.dlraBlock = DLRALayer(input_dim=250, units=250, low_rank=low_rank,epsAdapt=tol, rmax_total=rmax_total,)
+        self.denseBlock = DenseBlock(units=3000, input_dim=input_dim)
+        self.dlraBlock = DLRALayer(input_dim=3000, units=3000, low_rank=low_rank,epsAdapt=tol, rmax_total=rmax_total)
         self.outputBlock = DenseBlockOutput(output_dim=output_dim)
 
     def call(self, inputs, step: int):
