@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 
 def main3():
     # Create Model
-    model = PartDLRANet(tol=0.05, low_rank=40, rmax_total=100)
+    model = FullDLRANet(tol=0.05, low_rank=40, rmax_total=100)
+    # model = PartDLRANet(tol=0.05, low_rank=40, rmax_total=100)
 
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
@@ -32,7 +33,7 @@ def main3():
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
     # setup training
-    epochs = 200
+    epochs = 10
 
     # Iterate over epochs.
     for epoch in range(epochs):
