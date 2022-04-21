@@ -53,7 +53,7 @@ def main3():
                 loss += sum(model.losses)  # Add KLD regularization loss
             grads_k_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
-            grads_k_step[1] = grads_k_step[1] * 0  # Set bias grads to 0
+            model.set_dlra_bias_grads_to_zero(grads_k_step)
 
             # 1.b) Tape Gradients for L-Step
             with tf.GradientTape() as tape:
@@ -63,7 +63,7 @@ def main3():
                 loss += sum(model.losses)  # Add KLD regularization loss
             grads_l_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_l_step, model.trainable_weights)
-            grads_l_step[1] = grads_l_step[1] * 0  # Set bias grads to 0
+            model.set_dlra_bias_grads_to_zero(grads_l_step)
 
             # Gradient update for K and L
             optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))

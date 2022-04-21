@@ -44,6 +44,17 @@ class FullDLRANet(keras.Model):
                 grads[i] = tf.zeros(shape=weights[i].shape, dtype=tf.float32)
         return 0
 
+    @staticmethod
+    def set_dlra_bias_grads_to_zero(grads):
+        """
+        :param grads: gradients of current tape
+        :return: sets the nonexistent gradients to zero (i K step, the grads of S and L step are None, which throws annoying warnings)
+        """
+        for i in range(len(grads)):
+            if len(grads[i].shape) == 1:
+                grads[i] = tf.math.scalar_mul(0.0, grads[i])
+        return 0
+
     def toggle_non_s_step_training(self):
         self.layers[0].trainable = False  # Dense input
         self.layers[-1].trainable = False  # Dense output
@@ -80,6 +91,17 @@ class PartDLRANet(keras.Model):
         for i in range(len(grads)):
             if grads[i] is None:
                 grads[i] = tf.zeros(shape=weights[i].shape, dtype=tf.float32)
+        return 0
+
+    @staticmethod
+    def set_dlra_bias_grads_to_zero(grads):
+        """
+        :param grads: gradients of current tape
+        :return: sets the nonexistent gradients to zero (i K step, the grads of S and L step are None, which throws annoying warnings)
+        """
+        for i in range(len(grads)):
+            if len(grads[i].shape) == 1:
+                grads[i] = tf.math.scalar_mul(0.0, grads[i])
         return 0
 
     def toggle_non_s_step_training(self):
@@ -198,7 +220,7 @@ class DLRALayer(keras.layers.Layer):
         return 0
 
     def k_step_postprocessing_adapt(self):
-        aux_Unp1, _ = tf.linalg.qr( tf.concat((self.k, self.aux_U), axis=1) )
+        aux_Unp1, _ = tf.linalg.qr(tf.concat((self.k, self.aux_U), axis=1))
         self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1, trainable=False, name="_aux_Unp1")
         self.aux_N = tf.matmul(tf.transpose(self.aux_Unp1), self.aux_U)
         return 0
@@ -208,7 +230,6 @@ class DLRALayer(keras.layers.Layer):
         self.l_t = tf.Variable(initial_value=l_t, trainable=True, name="_lt")
         return 0
 
-
     def l_step_postprocessing(self):
         aux_Vtnp1, _ = tf.linalg.qr(tf.transpose(self.l_t))
         self.aux_Vtnp1 = tf.transpose(aux_Vtnp1)
@@ -216,7 +237,7 @@ class DLRALayer(keras.layers.Layer):
         return 0
 
     def l_step_postprocessing_adapt(self):
-        aux_Vtnp1, _ = tf.linalg.qr( tf.concat((tf.transpose(self.l_t), tf.transpose(self.aux_Vt)), axis=1) )
+        aux_Vtnp1, _ = tf.linalg.qr(tf.concat((tf.transpose(self.l_t), tf.transpose(self.aux_Vt)), axis=1))
         self.aux_Vtnp1 = tf.transpose(aux_Vtnp1)
         self.aux_M = tf.matmul(self.aux_Vtnp1, tf.transpose(self.aux_Vt))
         return 0
@@ -231,7 +252,7 @@ class DLRALayer(keras.layers.Layer):
     def rank_adaption(self):
         # 1) compute SVD of S
         d, u2, v2 = tf.linalg.svd(self.s)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
-        #print(d.shape)
+        # print(d.shape)
         tmp = 0.0
         tol = self.epsAdapt * tf.linalg.norm(d)
         rmax = int(tf.floor(d.shape[0] / 2))
