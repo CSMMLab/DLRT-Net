@@ -59,6 +59,8 @@ def main3():
             grads_k_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
             grads_k_step[1] = grads_k_step[1] * 0  # Set bias grads to 0
+            grads_k_step[5] = grads_k_step[5] * 0  # Set bias grads to 0
+            grads_k_step[9] = grads_k_step[9] * 0  # Set bias grads to 0
 
             # 1.b) Tape Gradients for L-Step
             with tf.GradientTape() as tape:
@@ -69,6 +71,8 @@ def main3():
             grads_l_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_l_step, model.trainable_weights)
             grads_l_step[1] = grads_l_step[1] * 0  # Set bias grads to 0
+            grads_l_step[5] = grads_l_step[5] * 0  # Set bias grads to 0
+            grads_l_step[9] = grads_l_step[9] * 0  # Set bias grads to 0
 
             # Gradient update for K and L
             optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))
@@ -105,13 +109,13 @@ def main3():
             model.dlraBlock2.rank_adaption()
             model.dlraBlock3.rank_adaption()
 
-
             # Network monotoring and verbosity
             loss_metric(loss)
 
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
-                print("Current Rank: " + str(int(model.dlraBlock1.low_rank))+ " | "+ str(int(model.dlraBlock2.low_rank))+" | "+ str(int(model.dlraBlock3.low_rank)))
+                print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
+                    int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
 
     test = model(test_x, step=0)
     plt.plot(test_x, test.numpy(), '-.')
