@@ -43,8 +43,12 @@ def main3():
 
         for step, batch_train in enumerate(train_dataset):
             # 1.a) K and L Step Preproccessing
-            model.dlraBlock.k_step_preprocessing()
-            model.dlraBlock.l_step_preprocessing()
+            model.dlraBlock1.k_step_preprocessing()
+            model.dlraBlock1.l_step_preprocessing()
+            model.dlraBlock2.k_step_preprocessing()
+            model.dlraBlock2.l_step_preprocessing()
+            model.dlraBlock3.k_step_preprocessing()
+            model.dlraBlock3.l_step_preprocessing()
             # 1.b) Tape Gradients for K-Step
             model.toggle_non_s_step_training()
             with tf.GradientTape() as tape:
@@ -71,11 +75,18 @@ def main3():
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
             # Postprocessing K and L
-            model.dlraBlock.k_step_postprocessing_adapt()
-            model.dlraBlock.l_step_postprocessing_adapt()
+            model.dlraBlock1.k_step_postprocessing_adapt()
+            model.dlraBlock1.l_step_postprocessing_adapt()
+            model.dlraBlock2.k_step_postprocessing_adapt()
+            model.dlraBlock2.l_step_postprocessing_adapt()
+            model.dlraBlock3.k_step_postprocessing_adapt()
+            model.dlraBlock3.l_step_postprocessing_adapt()
 
             # S-Step Preprocessing
-            model.dlraBlock.s_step_preprocessing()
+            model.dlraBlock1.s_step_preprocessing()
+            model.dlraBlock2.s_step_preprocessing()
+            model.dlraBlock3.s_step_preprocessing()
+
             model.toggle_s_step_training()
 
             # 3.b) Tape Gradients
@@ -90,14 +101,17 @@ def main3():
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
 
             # Rank Adaptivity
-            model.dlraBlock.rank_adaption()
+            model.dlraBlock1.rank_adaption()
+            model.dlraBlock2.rank_adaption()
+            model.dlraBlock3.rank_adaption()
+
 
             # Network monotoring and verbosity
             loss_metric(loss)
 
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
-                print("Current Rank: " + str(int(model.dlraBlock.low_rank)))
+                print("Current Rank: " + str(int(model.dlraBlock1.low_rank))+ " | "+ str(int(model.dlraBlock2.low_rank))+" | "+ str(int(model.dlraBlock3.low_rank)))
 
     test = model(test_x, step=0)
     plt.plot(test_x, test.numpy(), '-.')
