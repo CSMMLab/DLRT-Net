@@ -33,7 +33,7 @@ def main3():
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
     # setup training
-    epochs = 10
+    epochs = 200
 
     # Iterate over epochs.
     for epoch in range(epochs):
