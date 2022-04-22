@@ -52,12 +52,11 @@ def main3():
     val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
-    log_file = create_csv_logger_cb(folder_name="mnsit_3_layer")
+    log_file,file_name = create_csv_logger_cb(folder_name="mnsit_3_layer")
 
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
-
         # Iterate over the batches of the dataset.
 
         for step, batch_train in enumerate(train_dataset):
@@ -135,9 +134,11 @@ def main3():
             prediction = tf.math.argmax(out, 1)
             loss_metric_acc(prediction, batch_train[1])
 
+            loss_value =loss_metric.result().numpy()
+            acc_value = loss_metric_acc.result().numpy()
             if step % 100 == 0:
-                print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
-                print("Accuracy" + str(loss_metric_acc.result().numpy()))
+                print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
+                print("Accuracy: " + str(acc_value))
                 print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
 
@@ -155,19 +156,20 @@ def main3():
         out = tf.keras.activations.softmax(out)
         loss = loss_fn(y_val, out)
         loss_metric(loss)
-        loss_val += loss_metric.result()
+        loss_val = loss_metric.result()
 
         prediction = tf.math.argmax(out, 1)
         loss_metric_acc(prediction, y_val)
-        acc_val += loss_metric_acc.result()
+        acc_val = loss_metric_acc.result()
 
         # Log Data of current epoch
-        log_string = str(loss_metric.result().numpy()) + ";" + str(loss_metric_acc.result().numpy()) + ";" + str(
+        log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
             loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
             int(model.dlraBlock2.low_rank)) + ";" + str(int(model.dlraBlock1.low_rank)) + ";" + str(
             int(model.dlraBlock3.low_rank)) + "\n"
-        log_file.write(log_string)
-    log_file.close()
+        with open(file_name,"a") as log:
+            log.write(log_string)
+    #log_file.close()
     return 0
 
 

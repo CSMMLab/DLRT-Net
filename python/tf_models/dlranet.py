@@ -339,8 +339,8 @@ def create_csv_logger_cb(folder_name: str):
         logName = folder_name + \
                   '/historyLogs/history_' + str(count).zfill(3) + '_'
 
-    logFile = logName + '.csv'
+    logFileName = logName + '.csv'
     # create logger callback
-    f = open(logFile, "a")
+    f = open(logFileName, "a")
 
-    return f
+    return f,logFileName
