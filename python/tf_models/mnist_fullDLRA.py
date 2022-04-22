@@ -11,18 +11,22 @@ def main3():
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
-    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=10, tol=0.05, rmax_total=200)
+    starting_rank = 100 #starting rank of S matrix
+    tol = 0.05 # eigenvalu treshold
+    max_rank = 200 # maximum rank of S matrix
+
+    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, tol=tol, rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
-    loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
     loss_metric_acc = tf.keras.metrics.Accuracy()
 
     # specify training
-    epochs = 2
-    batch_size = 64
+    epochs = 200
+    batch_size = 1000
     # Build dataset
     # Prepare the training dataset.
     batch_size = 64
@@ -49,12 +53,11 @@ def main3():
     val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
-    log_file = create_csv_logger_cb(folder_name="mnsit_3_layer")
+    log_file,file_name = create_csv_logger_cb(folder_name="mnsit_3_layer")
 
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
-
         # Iterate over the batches of the dataset.
 
         for step, batch_train in enumerate(train_dataset):
@@ -132,44 +135,42 @@ def main3():
             prediction = tf.math.argmax(out, 1)
             loss_metric_acc(prediction, batch_train[1])
 
+            loss_value =loss_metric.result().numpy()
+            acc_value = loss_metric_acc.result().numpy()
             if step % 100 == 0:
-                print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
-                print("Accuracy" + str(loss_metric_acc.result().numpy()))
+                print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
+                print("Accuracy: " + str(acc_value))
                 print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
 
-        # Compute vallidation loss
+
+         # Compute vallidation loss and accuracy
         loss_val = 0
         acc_val = 0
-        steps = 0
-        # 1.a) K  Step Preproccessing
+
+        #  K  Step Preproccessing 
         model.dlraBlock1.k_step_preprocessing()
         model.dlraBlock2.k_step_preprocessing()
         model.dlraBlock3.k_step_preprocessing()
 
-        for step, batch_val in enumerate(val_dataset):
-            out = model(batch_val[0], step=0, training=False)
-            out = tf.keras.activations.softmax(out)
-            # Compute reconstruction loss
-            loss = loss_fn(batch_val[1], out)
-            loss_metric(loss)
-            loss_val += loss_metric.result()
+        out = model(x_val, step=0, training=False)
+        out = tf.keras.activations.softmax(out)
+        loss = loss_fn(y_val, out)
+        loss_metric(loss)
+        loss_val = loss_metric.result()
 
-            prediction = tf.math.argmax(out, 1)
-            loss_metric_acc(prediction, batch_train[1])
-            acc_val += loss_metric_acc.result()
-            steps += 1
-
-        loss_val /= steps  # average error
-        acc_val /= steps
+        prediction = tf.math.argmax(out, 1)
+        loss_metric_acc(prediction, y_val)
+        acc_val = loss_metric_acc.result()
 
         # Log Data of current epoch
-        log_string = str(loss_metric.result().numpy()) + ";" + str(loss_metric_acc.result().numpy()) + ";" + str(
+        log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
             loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
             int(model.dlraBlock2.low_rank)) + ";" + str(int(model.dlraBlock1.low_rank)) + ";" + str(
             int(model.dlraBlock3.low_rank)) + "\n"
-        log_file.write(log_string)
-    log_file.close()
+        with open(file_name,"a") as log:
+            log.write(log_string)
+    #log_file.close()
     return 0
 
 

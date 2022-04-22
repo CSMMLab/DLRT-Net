@@ -266,9 +266,8 @@ class DLRALayer(keras.layers.Layer):
         rmax = tf.maximum(rmax, 2)
 
         # update s
-        s = tf.linalg.tensor_diag(d[:rmax])
-        # print(d[:rmax - 1])
-        self.s = s
+        self.s = tf.linalg.tensor_diag(d[:rmax])
+        #self.s = s
 
         # update u and v
         self.aux_U = tf.matmul(self.aux_U, u2[:, :rmax])
@@ -340,8 +339,8 @@ def create_csv_logger_cb(folder_name: str):
         logName = folder_name + \
                   '/historyLogs/history_' + str(count).zfill(3) + '_'
 
-    logFile = logName + '.csv'
+    logFileName = logName + '.csv'
     # create logger callback
-    f = open(logFile, "a")
+    f = open(logFileName, "a")
 
-    return f
+    return f,logFileName
