@@ -18,6 +18,7 @@ def main3():
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
+    loss_metric_acc = tf.keras.metrics.Accuracy()
 
     # specify training
     epochs = 2
@@ -67,6 +68,8 @@ def main3():
             model.toggle_non_s_step_training()
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=0, training=True)
+                # softmax activation for classification
+                out = tf.keras.activations.softmax(out)
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
@@ -77,6 +80,8 @@ def main3():
             # 1.b) Tape Gradients for L-Step
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=1, training=True)
+                # softmax activation for classification
+                out = tf.keras.activations.softmax(out)
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
@@ -106,6 +111,8 @@ def main3():
             # 3.b) Tape Gradients
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=2, training=True)
+                # softmax activation for classification
+                out = tf.keras.activations.softmax(out)
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
@@ -121,35 +128,45 @@ def main3():
 
             # Network monotoring and verbosity
             loss_metric(loss)
+            prediction = tf.math.argmax(out, 1)
+            loss_metric_acc(prediction, batch_train[1])
 
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_metric.result()))
+                print("Accuracy" + str(loss_metric_acc.result().numpy()))
                 print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
 
         # Compute vallidation loss
         loss_val = 0
+        acc_val = 0
         steps = 0
         # 1.a) K  Step Preproccessing
         model.dlraBlock1.k_step_preprocessing()
         model.dlraBlock2.k_step_preprocessing()
         model.dlraBlock3.k_step_preprocessing()
 
-        for step, batch_val in enumerate(test_dataset):
+        for step, batch_val in enumerate(val_dataset):
             out = model(batch_val[0], step=0, training=False)
+            out = tf.keras.activations.softmax(out)
             # Compute reconstruction loss
             loss = loss_fn(batch_val[1], out)
             loss_metric(loss)
-
             loss_val += loss_metric.result()
+
+            prediction = tf.math.argmax(out, 1)
+            loss_metric_acc(prediction, batch_train[1])
+            acc_val += loss_metric_acc.result()
             steps += 1
 
         loss_val /= steps  # average error
+        acc_val /= steps
 
         # Log Data of current epoch
-        log_string = str(loss_metric.result().numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
-            int(model.dlraBlock2.low_rank)) + ";" + str(
-            int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock3.low_rank)) + "\n"
+        log_string = str(loss_metric.result().numpy()) + ";" + str(loss_metric_acc.result().numpy()) + ";" + str(
+            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
+            int(model.dlraBlock2.low_rank)) + ";" + str(int(model.dlraBlock1.low_rank)) + ";" + str(
+            int(model.dlraBlock3.low_rank)) + "\n"
         log_file.write(log_string)
     log_file.close()
     return 0
