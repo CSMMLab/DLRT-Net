@@ -6,7 +6,7 @@ Date 12.04.2022
 '''
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers
+from os import path, makedirs
 
 
 class FullDLRANet(keras.Model):
@@ -322,72 +322,26 @@ class Linear(keras.layers.Layer):
         return config
 
 
-# ------------------- Basisc example below ---------------------
+# ------ utils below
 
-class Sampling(layers.Layer):
-    """Uses (z_mean, z_log_var) to sample z, the vector encoding a digit."""
+def create_csv_logger_cb(folder_name: str):
+    '''
+    dynamically creates a csvlogger and tensorboard logger
+    '''
+    # check if dir exists
+    if not path.exists(folder_name + '/historyLogs/'):
+        makedirs(folder_name + '/historyLogs/')
 
-    def call(self, inputs):
-        z_mean, z_log_var = inputs
-        batch = tf.shape(z_mean)[0]
-        dim = tf.shape(z_mean)[1]
-        epsilon = tf.keras.backend.random_normal(shape=(batch, dim))
-        return z_mean + tf.exp(0.5 * z_log_var) * epsilon
+    # checkfirst, if history file exists.
+    logName = folder_name + '/historyLogs/history_001_'
+    count = 1
+    while path.isfile(logName + '.csv'):
+        count += 1
+        logName = folder_name + \
+                  '/historyLogs/history_' + str(count).zfill(3) + '_'
 
+    logFile = logName + '.csv'
+    # create logger callback
+    f = open(logFile, "a")
 
-class Encoder(layers.Layer):
-    """Maps MNIST digits to a triplet (z_mean, z_log_var, z)."""
-
-    def __init__(self, latent_dim=32, intermediate_dim=64, name="encoder", **kwargs):
-        super(Encoder, self).__init__(name=name, **kwargs)
-        self.dense_proj = layers.Dense(intermediate_dim, activation="relu")
-        self.dense_mean = layers.Dense(latent_dim)
-        self.dense_log_var = layers.Dense(latent_dim)
-        self.sampling = Sampling()
-
-    def call(self, inputs):
-        x = self.dense_proj(inputs)
-        z_mean = self.dense_mean(x)
-        z_log_var = self.dense_log_var(x)
-        z = self.sampling((z_mean, z_log_var))
-        return z_mean, z_log_var, z
-
-
-class Decoder(layers.Layer):
-    """Converts z, the encoded digit vector, back into a readable digit."""
-
-    def __init__(self, original_dim, intermediate_dim=64, name="decoder", **kwargs):
-        super(Decoder, self).__init__(name=name, **kwargs)
-        self.dense_proj = layers.Dense(intermediate_dim, activation="relu")
-        self.dense_output = layers.Dense(original_dim, activation="sigmoid")
-
-    def call(self, inputs):
-        x = self.dense_proj(inputs)
-        return self.dense_output(x)
-
-
-class VariationalAutoEncoder(keras.Model):
-    """Combines the encoder and decoder into an end-to-end model for training."""
-
-    def __init__(
-            self,
-            original_dim,
-            intermediate_dim=64,
-            latent_dim=32,
-            name="autoencoder",
-            **kwargs
-    ):
-        super(VariationalAutoEncoder, self).__init__(name=name, **kwargs)
-        self.original_dim = original_dim
-        self.encoder = Encoder(latent_dim=latent_dim, intermediate_dim=intermediate_dim)
-        self.decoder = Decoder(original_dim, intermediate_dim=intermediate_dim)
-
-    def call(self, inputs):
-        z_mean, z_log_var, z = self.encoder(inputs)
-        reconstructed = self.decoder(z)
-        # Add KL divergence regularization loss.
-        kl_loss = -0.5 * tf.reduce_mean(
-            z_log_var - tf.square(z_mean) - tf.exp(z_log_var) + 1
-        )
-        self.add_loss(kl_loss)
-        return reconstructed
+    return f

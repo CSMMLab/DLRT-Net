@@ -1,4 +1,4 @@
-from dlranet import VariationalAutoEncoder, ReferenceNet, FullDLRANet
+from dlranet import ReferenceNet, FullDLRANet, create_csv_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras
@@ -20,7 +20,7 @@ def main3():
     loss_metric = tf.keras.metrics.Mean()
 
     # specify training
-    epochs = 100
+    epochs = 2
     batch_size = 64
     # Build dataset
     # Prepare the training dataset.
@@ -45,6 +45,9 @@ def main3():
     # Prepare the validation dataset.
     val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
     val_dataset = val_dataset.batch(batch_size)
+
+    # Create logger
+    log_file = create_csv_logger_cb(folder_name="mnsit_3_layer")
 
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
@@ -124,10 +127,31 @@ def main3():
                 print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
 
-    test = model(val_dataset[0], step=0)
-    # plt.plot(test_x, test.numpy(), '-.')
-    # plt.plot(test_x, test_y, '--')
-    # plt.show()
+        # Compute vallidation loss
+        loss_val = 0
+        steps = 0
+        # 1.a) K  Step Preproccessing
+        model.dlraBlock1.k_step_preprocessing()
+        model.dlraBlock2.k_step_preprocessing()
+        model.dlraBlock3.k_step_preprocessing()
+
+        for step, batch_val in enumerate(test_dataset):
+            out = model(batch_val[0], step=0, training=False)
+            # Compute reconstruction loss
+            loss = loss_fn(batch_val[1], out)
+            loss_metric(loss)
+
+            loss_val += loss_metric.result()
+            steps += 1
+
+        loss_val /= steps  # average error
+
+        # Log Data of current epoch
+        log_string = str(loss_metric.result().numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
+            int(model.dlraBlock2.low_rank)) + ";" + str(
+            int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock3.low_rank)) + "\n"
+        log_file.write(log_string)
+    log_file.close()
     return 0
 
 
