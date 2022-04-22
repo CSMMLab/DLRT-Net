@@ -266,9 +266,8 @@ class DLRALayer(keras.layers.Layer):
         rmax = tf.maximum(rmax, 2)
 
         # update s
-        s = tf.linalg.tensor_diag(d[:rmax])
-        # print(d[:rmax - 1])
-        self.s = s
+        self.s = tf.linalg.tensor_diag(d[:rmax])
+        #self.s = s
 
         # update u and v
         self.aux_U = tf.matmul(self.aux_U, u2[:, :rmax])
