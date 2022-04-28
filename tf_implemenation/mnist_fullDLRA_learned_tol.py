@@ -1,46 +1,22 @@
-from dlranet import ReferenceNet, FullDLRANet, create_csv_logger_cb
+from dlranet import ReferenceNet, FullDLRANet, create_csv_logger_cb, FullDLRANet_learned_tol
 
 import tensorflow as tf
 from tensorflow import keras
 
 import numpy as np
 import matplotlib.pyplot as plt
-from optparse import OptionParser
 
 
 def main3():
-    
-    print("---------- Start Network Training Suite ------------")
-    print("Parsing options")
-    # --- parse options ---
-    parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-
-
-    (options, args) = parser.parse_args()
-    options.start_rank = int(options.objective)
-    options.tolerance = float(options.sampling)
-  
-    
-    # specify training
-    epochs = 200
-    batch_size = 256
-    filename= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance)
-
-    print("save model as: " + filename)
-
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
+    starting_rank = 100  # starting rank of S matrix
+    tol = 0.05  # eigenvalu treshold
+    max_rank = 200  # maximum rank of S matrix
 
-    starting_rank = options.start_rank  #starting rank of S matrix
-    tol = options.tolerance # eigenvalue treshold
-    max_rank = 150 # maximum rank of S matrix
-
-    dlra_layer_dim = 200
-    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
-                        dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    model = FullDLRANet_learned_tol(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, tol=tol,
+                                    rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -49,7 +25,12 @@ def main3():
     loss_metric = tf.keras.metrics.Mean()
     loss_metric_acc = tf.keras.metrics.Accuracy()
 
+    # specify training
+    epochs = 200
+    batch_size = 1000
     # Build dataset
+    # Prepare the training dataset.
+    batch_size = 64
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
@@ -73,7 +54,7 @@ def main3():
     val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
-    log_file, file_name = create_csv_logger_cb(folder_name=filename)
+    log_file, file_name = create_csv_logger_cb(folder_name="mnsit_3_layer")
 
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
@@ -162,6 +143,8 @@ def main3():
                 print("Accuracy: " + str(acc_value))
                 print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
+                print("Current tol: " + str(float(model.dlraBlock1.epsAdapt)) + " | " + str(
+                    float(model.dlraBlock2.epsAdapt)) + " | " + str(float(model.dlraBlock3.epsAdapt)))
 
         # Compute vallidation loss and accuracy
         loss_val = 0
@@ -184,11 +167,14 @@ def main3():
 
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
-            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
+            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(
             int(model.dlraBlock2.low_rank)) + ";" + str(int(model.dlraBlock1.low_rank)) + ";" + str(
-            int(model.dlraBlock3.low_rank)) + "\n"
+            int(model.dlraBlock3.low_rank)) + ";" + str(float(model.dlraBlock1.epsAdapt)) + " ; " + str(
+            float(model.dlraBlock2.epsAdapt)) + " ; " + str(float(model.dlraBlock3.epsAdapt))
+        "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
+    # log_file.close()
     return 0
 
 
