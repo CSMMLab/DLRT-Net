@@ -19,8 +19,8 @@ def main3():
 
 
     (options, args) = parser.parse_args()
-    options.start_rank = int(options.objective)
-    options.tolerance = float(options.sampling)
+    options.start_rank = int(options.start_rank)
+    options.tolerance = float(options.tolerance)
   
     
     # specify training
