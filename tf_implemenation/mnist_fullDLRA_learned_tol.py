@@ -1,4 +1,4 @@
-from dlranet import ReferenceNet, FullDLRANet, create_csv_logger_cb
+from dlranet import ReferenceNet, FullDLRANet, create_csv_logger_cb, FullDLRANet_learned_tol
 
 import tensorflow as tf
 from tensorflow import keras
@@ -15,8 +15,8 @@ def main3():
     tol = 0.05  # eigenvalu treshold
     max_rank = 200  # maximum rank of S matrix
 
-    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, tol=tol,
-                        rmax_total=max_rank)
+    model = FullDLRANet_learned_tol(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, tol=tol,
+                                    rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -143,6 +143,8 @@ def main3():
                 print("Accuracy: " + str(acc_value))
                 print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
+                print("Current tol: " + str(float(model.dlraBlock1.epsAdapt)) + " | " + str(
+                    float(model.dlraBlock2.epsAdapt)) + " | " + str(float(model.dlraBlock3.epsAdapt)))
 
         # Compute vallidation loss and accuracy
         loss_val = 0
@@ -167,7 +169,9 @@ def main3():
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
             loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(
             int(model.dlraBlock2.low_rank)) + ";" + str(int(model.dlraBlock1.low_rank)) + ";" + str(
-            int(model.dlraBlock3.low_rank)) + "\n"
+            int(model.dlraBlock3.low_rank)) + ";" + str(float(model.dlraBlock1.epsAdapt)) + " ; " + str(
+            float(model.dlraBlock2.epsAdapt)) + " ; " + str(float(model.dlraBlock3.epsAdapt))
+        "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
     # log_file.close()
