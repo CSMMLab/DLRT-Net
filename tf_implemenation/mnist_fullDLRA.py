@@ -9,16 +9,18 @@ import matplotlib.pyplot as plt
 
 def main3():
     # specify training
-    epochs = 100
+    epochs = 200
     batch_size = 256
-    filename= "MNIST_3_layer_tol002"
+    filename= "200x3_sr10_v05"
+    print("save model as: " + filename)
+
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
-    starting_rank = 100 #starting rank of S matrix
-    tol = 0.02 # eigenvalue treshold
-    max_rank = 100 # maximum rank of S matrix
-    dlra_layer_dim = 100
+    starting_rank = 10  #starting rank of S matrix
+    tol = 0.05 # eigenvalue treshold
+    max_rank = 150 # maximum rank of S matrix
+    dlra_layer_dim = 200
     model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, dlra_layer_dim=dlra_layer_dim,tol=tol, rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
@@ -30,8 +32,6 @@ def main3():
 
  
     # Build dataset
-    # Prepare the training dataset.
-    batch_size = 64
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
