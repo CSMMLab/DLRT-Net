@@ -26,6 +26,7 @@ def main3():
     # specify training
     epochs = 200
     batch_size = 256
+
     filename= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance)
 
     print("save model as: " + filename)
