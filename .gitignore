@@ -1,7 +1,7 @@
 *.csv
 *.txt
 *.pdf
-
+*.idea
 # python
 python/mat/
 python/data/

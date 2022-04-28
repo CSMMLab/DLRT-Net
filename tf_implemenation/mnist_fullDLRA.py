@@ -37,12 +37,13 @@ def main3():
     x_test = np.reshape(x_test, (-1, input_dim))
 
     # Reserve 10,000 samples for validation.
-    x_val = x_train[-10000:]
-    y_val = y_train[-10000:]
+    val_size = 1000
+    x_val = x_train[-val_size:]
+    y_val = y_train[-val_size:]
     (x_val, y_val) = normalize_img(x_val, y_val)
 
-    x_train = x_train[:-10000]
-    y_train = y_train[:-10000]
+    x_train = x_train[:-val_size]
+    y_train = y_train[:-val_size]
     (x_train, y_train) = normalize_img(x_train, y_train)
 
     # Prepare the training dataset.
