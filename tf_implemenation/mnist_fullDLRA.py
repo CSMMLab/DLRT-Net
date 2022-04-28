@@ -8,15 +8,21 @@ import matplotlib.pyplot as plt
 
 
 def main3():
+    # specify training
+    epochs = 200
+    batch_size = 256
+    filename = "200x3_sr10_v05"
+    print("save model as: " + filename)
+
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
-    starting_rank = 100  # starting rank of S matrix
-    tol = 0.05  # eigenvalu treshold
-    max_rank = 200  # maximum rank of S matrix
-
-    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, tol=tol,
-                        rmax_total=max_rank)
+    starting_rank = 10  # starting rank of S matrix
+    tol = 0.05  # eigenvalue treshold
+    max_rank = 150  # maximum rank of S matrix
+    dlra_layer_dim = 200
+    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+                        dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -25,12 +31,7 @@ def main3():
     loss_metric = tf.keras.metrics.Mean()
     loss_metric_acc = tf.keras.metrics.Accuracy()
 
-    # specify training
-    epochs = 200
-    batch_size = 1000
     # Build dataset
-    # Prepare the training dataset.
-    batch_size = 64
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
     x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
@@ -54,7 +55,7 @@ def main3():
     val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
-    log_file, file_name = create_csv_logger_cb(folder_name="mnsit_3_layer")
+    log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
@@ -165,12 +166,11 @@ def main3():
 
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
-            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(
+            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
             int(model.dlraBlock2.low_rank)) + ";" + str(int(model.dlraBlock1.low_rank)) + ";" + str(
             int(model.dlraBlock3.low_rank)) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
-    # log_file.close()
     return 0
 
 
