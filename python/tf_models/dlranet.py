@@ -11,24 +11,30 @@ from os import path, makedirs
 
 class FullDLRANet(keras.Model):
 
-    def __init__(self, input_dim=1, output_dim=1, name="partDLRANet", tol=0.4, low_rank=20, rmax_total=100, **kwargs):
+    def __init__(self, input_dim=1, output_dim=1, name="partDLRANet", tol=0.4, low_rank=20,dlra_layer_dim = 200, rmax_total=100, **kwargs):
         super(FullDLRANet, self).__init__(name=name, **kwargs)
-        dlra_layer_dim = 250
-        self.denseBlock = DenseBlock(units=250, input_dim=input_dim)
+        #dlra_layer_dim = 250
+        self.denseBlock = DenseBlock(units=dlra_layer_dim, input_dim=input_dim)
         self.dlraBlock1 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
                                     rmax_total=rmax_total, )
         self.dlraBlock2 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
                                     rmax_total=rmax_total, )
         self.dlraBlock3 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
                                     rmax_total=rmax_total, )
+        #self.dlraBlock4 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
+        #                            rmax_total=rmax_total, )
+
 
         self.outputBlock = DenseBlockOutputSmall(output_dim=output_dim)
 
     def call(self, inputs, step: int):
         z = self.denseBlock(inputs)
+
         z = self.dlraBlock1(z, step=step)
         z = self.dlraBlock2(z, step=step)
         z = self.dlraBlock3(z, step=step)
+        #z = self.dlraBlock4(z, step=step)
+
         z = self.outputBlock(z)
         return z
 

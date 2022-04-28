@@ -8,14 +8,18 @@ import matplotlib.pyplot as plt
 
 
 def main3():
+    # specify training
+    epochs = 100
+    batch_size = 1000
+
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
     starting_rank = 100 #starting rank of S matrix
-    tol = 0.05 # eigenvalu treshold
-    max_rank = 200 # maximum rank of S matrix
-
-    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, tol=tol, rmax_total=max_rank)
+    tol = 0.005 # eigenvalu treshold
+    max_rank = 1000 # maximum rank of S matrix
+    dlra_layer_dim = 1000
+    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, dlra_layer_dim=dlra_layer_dim,tol=tol, rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -24,9 +28,7 @@ def main3():
     loss_metric = tf.keras.metrics.Mean()
     loss_metric_acc = tf.keras.metrics.Accuracy()
 
-    # specify training
-    epochs = 200
-    batch_size = 1000
+ 
     # Build dataset
     # Prepare the training dataset.
     batch_size = 64
