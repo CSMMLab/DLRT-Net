@@ -10,15 +10,15 @@ import matplotlib.pyplot as plt
 def main3():
     # specify training
     epochs = 100
-    batch_size = 1000
-
+    batch_size = 256
+    filename= "MNIST_3_layer_tol002"
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
     starting_rank = 100 #starting rank of S matrix
-    tol = 0.005 # eigenvalu treshold
-    max_rank = 1000 # maximum rank of S matrix
-    dlra_layer_dim = 1000
+    tol = 0.02 # eigenvalue treshold
+    max_rank = 100 # maximum rank of S matrix
+    dlra_layer_dim = 100
     model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, dlra_layer_dim=dlra_layer_dim,tol=tol, rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
@@ -55,7 +55,7 @@ def main3():
     val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
-    log_file,file_name = create_csv_logger_cb(folder_name="mnsit_3_layer")
+    log_file,file_name = create_csv_logger_cb(folder_name=filename)
 
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
