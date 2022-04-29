@@ -1,2 +1,1 @@
-python mnist_fullDLRA.py -s 10 -t 0.01
-python mnist_fullDLRA.py -s 10 -t 0.07
+python mnist_fullDLRA.py -s 100 -t 0.07

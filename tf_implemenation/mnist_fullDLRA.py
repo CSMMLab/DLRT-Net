@@ -24,7 +24,7 @@ def main3():
   
     
     # specify training
-    epochs = 200
+    epochs = 2000
     batch_size = 256
 
     filename= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance)
@@ -56,21 +56,23 @@ def main3():
     x_test = np.reshape(x_test, (-1, input_dim))
 
     # Reserve 10,000 samples for validation.
-    val_size = 1000
-    x_val = x_train[-val_size:]
-    y_val = y_train[-val_size:]
-    (x_val, y_val) = normalize_img(x_val, y_val)
+    #val_size = 1000
+    #x_val = x_train[-val_size:]
+    #y_val = y_train[-val_size:]
+    #(x_val, y_val) = normalize_img(x_val, y_val)
 
-    x_train = x_train[:-val_size]
-    y_train = y_train[:-val_size]
+    x_train = x_train#[:-val_size]
+    y_train = y_train#[:-val_size]
     (x_train, y_train) = normalize_img(x_train, y_train)
+
+    (x_val, y_val) = normalize_img(x_test, y_test)
 
     # Prepare the training dataset.
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
     # Prepare the validation dataset.
-    val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
+    val_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
     val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
@@ -190,9 +192,13 @@ def main3():
             int(model.dlraBlock3.low_rank)) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
+
+        # save current model
+        model.save(folder_name=file_name + '/last_model')
+
     return 0
 
-
+"""
 def main2():
     # Create Model
     input_dim = 784  # 28x28  pixel per image
@@ -257,7 +263,7 @@ def main2():
     # plt.plot(test_x, test_y, '--')
     # plt.show()
     return 0
-
+"""
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
