@@ -6,6 +6,7 @@ from tensorflow import keras
 import numpy as np
 import matplotlib.pyplot as plt
 from optparse import OptionParser
+from os import path, makedirs
 
 
 def main3():
@@ -28,7 +29,11 @@ def main3():
     batch_size = 256
 
     filename= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance)
-
+    folder_name= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance) +   '/latest_model/'
+    # check if dir exists
+    if not path.exists(folder_name):
+        makedirs(folder_name )
+        
     print("save model as: " + filename)
 
     # Create Model
@@ -194,7 +199,7 @@ def main3():
             log.write(log_string)
 
         # save current model
-        model.save(folder_name=file_name + '/last_model')
+        model.save(folder_name=folder_name)
 
     return 0
 
