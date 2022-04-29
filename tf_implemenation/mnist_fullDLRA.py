@@ -188,7 +188,7 @@ def main3():
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
             loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
-            int(model.dlraBlock2.low_rank)) + ";" + str(int(model.dlraBlock1.low_rank)) + ";" + str(
+            int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
             int(model.dlraBlock3.low_rank)) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
