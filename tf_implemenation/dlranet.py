@@ -9,6 +9,7 @@ from tensorflow import keras
 from os import path, makedirs
 import numpy as np
 
+
 class FullDLRANet_learned_tol(keras.Model):
 
     def __init__(self, input_dim=1, output_dim=1, name="partDLRANet", tol=0.4, low_rank=20, rmax_total=100, **kwargs):
@@ -130,19 +131,19 @@ class FullDLRANet(keras.Model):
         self.layers[-1].trainable = True  # Dense output
         return 0
 
-    def save(self,folder_name):
+    def save(self, folder_name):
         self.denseBlock.save(folder_name=folder_name)
-        self.dlraBlock1.save(folder_name=folder_name,layer_id=1)
-        self.dlraBlock2.save(folder_name=folder_name,layer_id=2)
-        self.dlraBlock3.save(folder_name=folder_name,layer_id=3)
+        self.dlraBlock1.save(folder_name=folder_name, layer_id=1)
+        self.dlraBlock2.save(folder_name=folder_name, layer_id=2)
+        self.dlraBlock3.save(folder_name=folder_name, layer_id=3)
         self.outputBlock.save(folder_name=folder_name)
         return 0
-    
-    def load(self,folder_name):
+
+    def load(self, folder_name):
         self.denseBlock.load(folder_name=folder_name)
-        self.dlraBlock1.load(folder_name=folder_name,layer_id=1)
-        self.dlraBlock2.load(folder_name=folder_name,layer_id=2)
-        self.dlraBlock3.load(folder_name=folder_name,layer_id=3)
+        self.dlraBlock1.load(folder_name=folder_name, layer_id=1)
+        self.dlraBlock2.load(folder_name=folder_name, layer_id=2)
+        self.dlraBlock3.load(folder_name=folder_name, layer_id=3)
         self.outputBlock.load(folder_name=folder_name)
         return 0
 
@@ -224,24 +225,23 @@ class DenseBlock(keras.layers.Layer):
         b_np = self.b.numpy()
         np.save(folder_name + "/b_in.npy", b_np)
         return 0
-    
+
     def load(self, folder_name):
         a_np = np.load(folder_name + "/w_in.npy")
         self.w = tf.Variable(initial_value=a_np,
-                              trainable=True, name="w_", dtype=tf.float32)
+                             trainable=True, name="w_", dtype=tf.float32)
         b_np = np.load(folder_name + "/b_in.npy")
         self.b1 = tf.Variable(initial_value=b_np,
                               trainable=True, name="b_", dtype=tf.float32)
 
 
 class Linear(keras.layers.Layer):
-    def __init__(self, units=32, input_dim=32, name="linear",**kwargs):
+    def __init__(self, units=32, input_dim=32, name="linear", **kwargs):
         super(Linear, self).__init__(**kwargs)
         self.units = units
         self.w = self.add_weight(shape=(input_dim, units), initializer="random_normal",
                                  trainable=True, )
         self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True)
-        
 
     def call(self, inputs):
         return tf.matmul(inputs, self.w) + self.b
@@ -250,21 +250,22 @@ class Linear(keras.layers.Layer):
         config = super(Linear, self).get_config()
         config.update({"units": self.units})
         return config
-    
+
     def save(self, folder_name):
         w_np = self.w.numpy()
         np.save(folder_name + "/w_out.npy", w_np)
         b_np = self.b.numpy()
         np.save(folder_name + "/b_out.npy", b_np)
         return 0
-    
+
     def load(self, folder_name):
         a_np = np.load(folder_name + "/w_out.npy")
         self.w = tf.Variable(initial_value=a_np,
-                              trainable=True, name="w_", dtype=tf.float32)
+                             trainable=True, name="w_", dtype=tf.float32)
         b_np = np.load(folder_name + "/b_out.npy")
         self.b1 = tf.Variable(initial_value=b_np,
                               trainable=True, name="b_", dtype=tf.float32)
+
 
 class DenseBlockOutput(keras.layers.Layer):
     def __init__(self, output_dim=1, name="dense_output_block", **kwargs):
@@ -288,9 +289,6 @@ class DenseBlockOutputSmall(keras.layers.Layer):
     def call(self, inputs):
         z = self.layer4(inputs)
         return z
-
-
-
 
 
 def eig_cutoff_tol_regularized(x):  # for regularization of eigenvaluue cuttoff tolerance
@@ -450,7 +448,7 @@ class DLRALayer(keras.layers.Layer):
         # Todo: initializer with low rank
 
     # @tf.function
-    def call(self, inputs, step:int = 0):
+    def call(self, inputs, step: int = 0):
         """
         :param inputs: layer input
         :param step: step conter: k:= 0, l:=1, s:=2
@@ -510,7 +508,7 @@ class DLRALayer(keras.layers.Layer):
         d, u2, v2 = tf.linalg.svd(self.s)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
         # print(d.shape)
         tmp = 0.0
-        tol = self.epsAdapt * tf.linalg.norm(d)
+        tol = self.epsAdapt * tf.linalg.norm(d)  # absolute value treshold (try also relative one)
         rmax = int(tf.floor(d.shape[0] / 2))
         for j in range(0, 2 * rmax - 1):
             tmp = tf.sqrt(tf.linalg.norm(d[j:2 * rmax - 1]))
@@ -537,62 +535,61 @@ class DLRALayer(keras.layers.Layer):
         config.update({"low_rank": self.low_rank})
         return config
 
-
-    def save(self, folder_name,layer_id):
-        #main_variables
+    def save(self, folder_name, layer_id):
+        # main_variables
         k_np = self.k.numpy()
-        np.save(folder_name + "/k"+str(layer_id)+".npy", k_np)
+        np.save(folder_name + "/k" + str(layer_id) + ".npy", k_np)
         l_t_np = self.l_t.numpy()
-        np.save(folder_name + "/l_t"+str(layer_id)+".npy", l_t_np)
+        np.save(folder_name + "/l_t" + str(layer_id) + ".npy", l_t_np)
         s_np = self.s.numpy()
-        np.save(folder_name + "/s"+str(layer_id)+".npy", s_np)
+        np.save(folder_name + "/s" + str(layer_id) + ".npy", s_np)
         b_np = self.b.numpy()
-        np.save(folder_name + "/b"+str(layer_id)+".npy", b_np)
+        np.save(folder_name + "/b" + str(layer_id) + ".npy", b_np)
         # aux_variables
         aux_U_np = self.aux_U.numpy()
-        np.save(folder_name + "/aux_U"+str(layer_id)+".npy", aux_U_np)
+        np.save(folder_name + "/aux_U" + str(layer_id) + ".npy", aux_U_np)
         aux_Unp1_np = self.aux_Unp1.numpy()
-        np.save(folder_name + "/aux_Unp1"+str(layer_id)+".npy", aux_Unp1_np)
+        np.save(folder_name + "/aux_Unp1" + str(layer_id) + ".npy", aux_Unp1_np)
         aux_Vt_np = self.aux_Vt.numpy()
-        np.save(folder_name + "/aux_Vt"+str(layer_id)+".npy", aux_Vt_np)
+        np.save(folder_name + "/aux_Vt" + str(layer_id) + ".npy", aux_Vt_np)
         aux_Vtnp1_np = self.aux_Vtnp1.numpy()
-        np.save(folder_name + "/aux_Vtnp1"+str(layer_id)+".npy", aux_Vtnp1_np)
+        np.save(folder_name + "/aux_Vtnp1" + str(layer_id) + ".npy", aux_Vtnp1_np)
         aux_N_np = self.aux_N.numpy()
-        np.save(folder_name + "/aux_N"+str(layer_id)+".npy", aux_N_np)
+        np.save(folder_name + "/aux_N" + str(layer_id) + ".npy", aux_N_np)
         aux_M_np = self.aux_M.numpy()
-        np.save(folder_name + "/aux_M"+str(layer_id)+".npy", aux_M_np)
+        np.save(folder_name + "/aux_M" + str(layer_id) + ".npy", aux_M_np)
         return 0
-    
-    def load(self, folder_name,layer_id):
-        #main variables
-        k_np = np.load(folder_name + "/k"+str(layer_id)+".npy")
+
+    def load(self, folder_name, layer_id):
+        # main variables
+        k_np = np.load(folder_name + "/k" + str(layer_id) + ".npy")
         self.k = tf.Variable(initial_value=k_np,
-                              trainable=True, name="k_", dtype=tf.float32)
-        l_t_np = np.load(folder_name + "/l_t"+str(layer_id)+".npy")
+                             trainable=True, name="k_", dtype=tf.float32)
+        l_t_np = np.load(folder_name + "/l_t" + str(layer_id) + ".npy")
         self.l_t = tf.Variable(initial_value=l_t_np,
-                              trainable=True, name="lt_", dtype=tf.float32)        
-        s_np = np.load(folder_name + "/s"+str(layer_id)+".npy")
+                               trainable=True, name="lt_", dtype=tf.float32)
+        s_np = np.load(folder_name + "/s" + str(layer_id) + ".npy")
         self.s = tf.Variable(initial_value=s_np,
-                              trainable=True, name="s_", dtype=tf.float32)
-        #aux variables
-        aux_U_np = np.load(folder_name + "/aux_U"+str(layer_id)+".npy")
+                             trainable=True, name="s_", dtype=tf.float32)
+        # aux variables
+        aux_U_np = np.load(folder_name + "/aux_U" + str(layer_id) + ".npy")
         self.aux_U = tf.Variable(initial_value=aux_U_np,
-                              trainable=True, name="aux_U", dtype=tf.float32)
-        aux_Unp1_np = np.load(folder_name + "/aux_Unp1"+str(layer_id)+".npy")
+                                 trainable=True, name="aux_U", dtype=tf.float32)
+        aux_Unp1_np = np.load(folder_name + "/aux_Unp1" + str(layer_id) + ".npy")
         self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1_np,
-                              trainable=True, name="aux_Unp1", dtype=tf.float32)
-        Vt_np = np.load(folder_name + "/Vt"+str(layer_id)+".npy")
+                                    trainable=True, name="aux_Unp1", dtype=tf.float32)
+        Vt_np = np.load(folder_name + "/Vt" + str(layer_id) + ".npy")
         self.Vt = tf.Variable(initial_value=Vt_np,
                               trainable=True, name="Vt", dtype=tf.float32)
-        vtnp1_np = np.load(folder_name + "/vtnp1"+str(layer_id)+".npy")
+        vtnp1_np = np.load(folder_name + "/vtnp1" + str(layer_id) + ".npy")
         self.vtnp1 = tf.Variable(initial_value=vtnp1_np,
-                              trainable=True, name="vtnp1", dtype=tf.float32)
-        aux_N_np = np.load(folder_name + "/aux_N"+str(layer_id)+".npy")
+                                 trainable=True, name="vtnp1", dtype=tf.float32)
+        aux_N_np = np.load(folder_name + "/aux_N" + str(layer_id) + ".npy")
         self.aux_N = tf.Variable(initial_value=aux_N_np,
-                              trainable=True, name="aux_N", dtype=tf.float32)
-        aux_M_np = np.load(folder_name + "/aux_M"+str(layer_id)+".npy")
+                                 trainable=True, name="aux_N", dtype=tf.float32)
+        aux_M_np = np.load(folder_name + "/aux_M" + str(layer_id) + ".npy")
         self.aux_M = tf.Variable(initial_value=aux_M_np,
-                              trainable=True, name="aux_M", dtype=tf.float32)
+                                 trainable=True, name="aux_M", dtype=tf.float32)
         return 0
 
 

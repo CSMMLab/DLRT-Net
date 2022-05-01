@@ -10,7 +10,6 @@ from os import path, makedirs
 
 
 def main3():
-    
     print("---------- Start Network Training Suite ------------")
     print("Parsing options")
     # --- parse options ---
@@ -18,31 +17,29 @@ def main3():
     parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
 
-
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
     options.tolerance = float(options.tolerance)
-  
-    
+
     # specify training
     epochs = 2000
     batch_size = 256
 
-    filename= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance)
-    folder_name= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance) +   '/latest_model/'
+    filename = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance)
+    folder_name = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance) + '/latest_model/'
     # check if dir exists
     if not path.exists(folder_name):
-        makedirs(folder_name )
-        
+        makedirs(folder_name)
+
     print("save model as: " + filename)
 
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
 
-    starting_rank = options.start_rank  #starting rank of S matrix
-    tol = options.tolerance # eigenvalue treshold
-    max_rank = 150 # maximum rank of S matrix
+    starting_rank = options.start_rank  # starting rank of S matrix
+    tol = options.tolerance  # eigenvalue treshold
+    max_rank = 150  # maximum rank of S matrix
 
     dlra_layer_dim = 200
     model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
@@ -61,16 +58,16 @@ def main3():
     x_test = np.reshape(x_test, (-1, input_dim))
 
     # Reserve 10,000 samples for validation.
-    #val_size = 1000
-    #x_val = x_train[-val_size:]
-    #y_val = y_train[-val_size:]
-    #(x_val, y_val) = normalize_img(x_val, y_val)
+    val_size = 10000
+    x_val = x_train[-val_size:]
+    y_val = y_train[-val_size:]
+    (x_val, y_val) = normalize_img(x_val, y_val)
 
-    x_train = x_train#[:-val_size]
-    y_train = y_train#[:-val_size]
+    x_train = x_train[:-val_size]
+    y_train = y_train[:-val_size]
     (x_train, y_train) = normalize_img(x_train, y_train)
 
-    (x_val, y_val) = normalize_img(x_test, y_test)
+    # (x_val, y_val) = normalize_img(x_test, y_test)
 
     # Prepare the training dataset.
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
@@ -203,6 +200,7 @@ def main3():
 
     return 0
 
+
 """
 def main2():
     # Create Model
@@ -269,6 +267,7 @@ def main2():
     # plt.show()
     return 0
 """
+
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
