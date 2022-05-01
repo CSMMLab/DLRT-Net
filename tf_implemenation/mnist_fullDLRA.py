@@ -53,7 +53,9 @@ def main3():
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
-    loss_metric_acc = tf.keras.metrics.Accuracy()
+    loss_metric_acc = tf.keras.metrics.Accuracy()    
+    loss_metric_acc_val = tf.keras.metrics.Accuracy()
+
 
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -61,22 +63,24 @@ def main3():
     x_test = np.reshape(x_test, (-1, input_dim))
 
     # Reserve 10,000 samples for validation.
-    #val_size = 1000
-    #x_val = x_train[-val_size:]
-    #y_val = y_train[-val_size:]
-    #(x_val, y_val) = normalize_img(x_val, y_val)
+    val_size = 10000
+    x_val = x_train[-val_size:]
+    y_val = y_train[-val_size:]
+    (x_val, y_val) = normalize_img(x_val, y_val)
 
-    x_train = x_train#[:-val_size]
-    y_train = y_train#[:-val_size]
-    (x_train, y_train) = normalize_img(x_train, y_train)
+    x_train = x_train[:-val_size]
+    y_train = y_train[:-val_size]
+    (x_train, y_train) = normalize_img(x_train, y_train) 
 
-    (x_val, y_val) = normalize_img(x_test, y_test)
-
+    #(x_val, y_val) =  normalize_img(x_test, y_test)
+    #y_val = np.zeros(shape=(10000,))
+    print(y_val)
     # Prepare the training dataset.
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
     # Prepare the validation dataset.
+    
     val_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
     val_dataset = val_dataset.batch(batch_size)
 
@@ -187,12 +191,12 @@ def main3():
         loss_val = loss_metric.result()
 
         prediction = tf.math.argmax(out, 1)
-        loss_metric_acc(prediction, y_val)
-        acc_val = loss_metric_acc.result()
-
+        loss_metric_acc_val(prediction, y_val)
+        acc_val = loss_metric_acc_val.result()
+        print("Val Accuracy: " + str(acc_val))
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
-            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
+            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";"  + str(
             int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
             int(model.dlraBlock3.low_rank)) + "\n"
         with open(file_name, "a") as log:
