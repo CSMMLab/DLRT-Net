@@ -144,16 +144,9 @@ def train():
     (x_train, y_train) = normalize_img(x_train, y_train)
 
     (x_test, y_test) = normalize_img(x_test, y_test)
-    # y_val = np.zeros(shape=(10000,))
-    # print(y_val)
     # Prepare the training dataset.
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
-
-    # Prepare the validation dataset.
-
-    val_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
-    val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
@@ -275,7 +268,7 @@ def train():
             int(model.dlraBlock3.low_rank)) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
-        print("Validation :" + log_string)
+        print("Epoch Data :" + log_string)
         # save current model if it's the best
         if acc_val.numpy() > best_acc:
             best_acc = acc_val.numpy()
