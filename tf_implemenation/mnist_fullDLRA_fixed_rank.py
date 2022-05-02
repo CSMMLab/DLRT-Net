@@ -11,8 +11,6 @@ from os import path, makedirs
 
 
 def test(start_rank, tolerance):
-   
-
     # specify training
     folder_name = "200x3_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
     # check if dir exists
@@ -40,22 +38,16 @@ def test(start_rank, tolerance):
     acc_metric = tf.keras.metrics.Accuracy()
 
     # Load model
-    #if options.load_model:
+    # if options.load_model:
     model.load(folder_name=folder_name)
 
     # Load dataset
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-    #x_train = np.reshape(x_train, (-1, input_dim))
+    # x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
 
     (x_test, y_test) = normalize_img(x_test, y_test)
-
-    # Test model
-    #  K  Step Preproccessing 
-    #model.dlraBlock1.k_step_preprocessing()
-    #model.dlraBlock2.k_step_preprocessing()
-    #model.dlraBlock3.k_step_preprocessing()
 
     out = model(x_test, step=0, training=False)
     out = tf.keras.activations.softmax(out)
@@ -65,32 +57,30 @@ def test(start_rank, tolerance):
 
     prediction = tf.math.argmax(out, 1)
     acc_metric.update_state(prediction, y_test)
-    for pred,test in zip(prediction.numpy(),y_test):
-        print("("+str(pred) + "|" + str(test) +")")
+    for pred, test in zip(prediction.numpy(), y_test):
+        print("(" + str(pred) + "|" + str(test) + ")")
 
     acc_test = acc_metric.result().numpy()
     print("test Accuracy: " + str(acc_test))
     print("test loss: " + str(loss_test))
-    print("Ranks")
+    print("Ranks: ")
     print(model.dlraBlock1.s.shape)
     print(model.dlraBlock2.s.shape)
     print(model.dlraBlock3.s.shape)
     acc_metric.reset_state()
 
-    acc_metric.update_state([[1], [2]], [[0], [2]])
-    print(acc_metric.result())
+    # acc_metric.update_state([[1], [2]], [[0], [2]])
+    # print(acc_metric.result())
     return 0
 
 
-def train(start_rank,tolerance, load_model):
-    
-
+def train(start_rank, tolerance, load_model):
     # specify training
     epochs = 2000
     batch_size = 256
 
     filename = "200x3_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "200x3_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model/'
+    folder_name = "200x3_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
     # check if dir exists
     if not path.exists(folder_name):
         makedirs(folder_name)
@@ -115,7 +105,6 @@ def train(start_rank,tolerance, load_model):
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
     acc_metric = tf.keras.metrics.Accuracy()
-    loss_metric_acc_val = tf.keras.metrics.Accuracy()
 
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -140,13 +129,13 @@ def train(start_rank,tolerance, load_model):
     # Create logger
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
-    # print headline
-    log_string =  "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3\n"
+    # print headline of output file
+    log_string = "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3\n"
     with open(file_name, "a") as log:
         log.write(log_string)
 
     # load weights
-    if options.load_model ==1:
+    if options.load_model == 1:
         model.load(folder_name=folder_name)
 
     best_acc = 0
@@ -222,9 +211,9 @@ def train(start_rank,tolerance, load_model):
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
 
             # Rank Adaptivity
-            model.dlraBlock1.rank_adaption()
-            model.dlraBlock2.rank_adaption()
-            model.dlraBlock3.rank_adaption()
+            # model.dlraBlock1.rank_adaption()
+            # model.dlraBlock2.rank_adaption()
+            # model.dlraBlock3.rank_adaption()
 
             # Network monotoring and verbosity
             loss_metric.update_state(loss)
@@ -247,7 +236,7 @@ def train(start_rank,tolerance, load_model):
         loss_val = 0
         acc_val = 0
 
-        #  K  Step Preproccessing 
+        #  K  Step Preproccessing
         model.dlraBlock1.k_step_preprocessing()
         model.dlraBlock2.k_step_preprocessing()
         model.dlraBlock3.k_step_preprocessing()
@@ -263,19 +252,18 @@ def train(start_rank,tolerance, load_model):
         acc_metric.update_state(prediction, y_val)
         acc_val = acc_metric.result().numpy()
         print("Val Accuracy: " + str(acc_val))
-        
+
         # save current model if it's the best
         if acc_val >= best_acc and loss_val <= best_loss:
             best_acc = acc_val
             best_loss = loss_val
-            print("new best model with accuracy: " + str(best_acc) + " and loss " +str(best_loss))
+            print("new best model with accuracy: " + str(best_acc) + " and loss " + str(best_loss))
 
             model.save(folder_name=folder_name)
 
         # Reset metrics
         loss_metric.reset_state()
         acc_metric.reset_state()
-        
 
         # Test model
         out = model(x_test, step=0, training=False)
@@ -327,8 +315,7 @@ if __name__ == '__main__':
     options.load_model = int(options.load_model)
     options.train = int(options.train)
 
-    
     if options.train == 1:
-        train(start_rank = options.start_rank, tolerance=options.tolerance,load_model=options.load_model)
+        train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model)
     else:
-        test(start_rank = options.start_rank, tolerance=options.tolerance)
+        test(start_rank=options.start_rank, tolerance=options.tolerance)
