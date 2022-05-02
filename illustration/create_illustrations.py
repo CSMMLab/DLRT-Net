@@ -79,23 +79,8 @@ def main():
     plt.clf()
 
     # 3) Long time runs
-    folder = "paper_data/long_time_run/200x3_sr100_v0.07"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
 
-    plt.plot(dlra_3layer[["vall_loss", "vall_acc"]])
-    plt.plot(dlra_3layer[["train_loss"]], '-.')
-    plt.plot(dlra_3layer[["train_acc"]], '-.')
-    plt.legend(["vall_loss", "vall_acc", "train_loss", "train_acc"])
-    plt.savefig("figures/long_time.png")
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/long_time_ranks.png")
-    plt.clf()
-
-    folder = "paper_data/long_time_results/200x3_sr100_v0.07"
+    folder = "paper_data/long_time_results/200x3_sr100_v0.07/historyLogs"
     dlra_3layer = pd.read_csv(folder + "/history_004_.csv", delimiter=";", header=None,
                               names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
                                      "rank2", "rank3"])
@@ -105,10 +90,34 @@ def main():
     plt.plot(dlra_3layer[["train_acc"]], '-.')
     plt.legend(["vall_loss", "vall_acc", "train_loss", "train_acc"])
     plt.savefig("figures/long_time2000.png")
+    plt.yscale('log')
+    plt.savefig("figures/long_time2000_log.png")
     plt.clf()
     plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
     plt.legend(["layer1", "layer2", "layer3"])
     plt.savefig("figures/long_time2000_ranks.png")
+    plt.yscale('log')
+    plt.savefig("figures/long_time2000_ranks_log.png")
+    plt.clf()
+
+    folder = "paper_data/long_time_results/small_validation_set/200x3_sr100_v0.07/historyLogs"
+    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";", header=None,
+                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
+                                     "rank2", "rank3"])
+
+    plt.plot(dlra_3layer[["vall_loss", "vall_acc"]])
+    plt.plot(dlra_3layer[["train_loss"]], '-.')
+    plt.plot(dlra_3layer[["train_acc"]], '-.')
+    plt.legend(["vall_loss", "vall_acc", "train_loss", "train_acc"])
+    plt.savefig("figures/long_time2000_small_val.png")
+    plt.yscale("log")
+    plt.savefig("figures/long_time2000_small_val_log.png")
+    plt.clf()
+    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
+    plt.legend(["layer1", "layer2", "layer3"])
+    plt.savefig("figures/long_time2000_small_val_ranks.png")
+    plt.yscale("log")
+    plt.savefig("figures/long_time2000_small_val_ranks_log.png")
     plt.clf()
 
     return 0

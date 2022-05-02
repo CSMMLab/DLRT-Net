@@ -10,6 +10,7 @@ from os import path, makedirs
 
 
 def main3():
+    
     print("---------- Start Network Training Suite ------------")
     print("Parsing options")
     # --- parse options ---
@@ -17,29 +18,31 @@ def main3():
     parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
 
+
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
     options.tolerance = float(options.tolerance)
-
+  
+    
     # specify training
     epochs = 2000
     batch_size = 256
 
-    filename = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance)
-    folder_name = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance) + '/latest_model/'
+    filename= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance)
+    folder_name= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance) +   '/latest_model/'
     # check if dir exists
     if not path.exists(folder_name):
-        makedirs(folder_name)
-
+        makedirs(folder_name )
+        
     print("save model as: " + filename)
 
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
 
-    starting_rank = options.start_rank  # starting rank of S matrix
-    tol = options.tolerance  # eigenvalue treshold
-    max_rank = 150  # maximum rank of S matrix
+    starting_rank = options.start_rank  #starting rank of S matrix
+    tol = options.tolerance # eigenvalue treshold
+    max_rank = 150 # maximum rank of S matrix
 
     dlra_layer_dim = 200
     model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
@@ -50,7 +53,9 @@ def main3():
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
-    loss_metric_acc = tf.keras.metrics.Accuracy()
+    loss_metric_acc = tf.keras.metrics.Accuracy()    
+    loss_metric_acc_val = tf.keras.metrics.Accuracy()
+
 
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -65,15 +70,17 @@ def main3():
 
     x_train = x_train[:-val_size]
     y_train = y_train[:-val_size]
-    (x_train, y_train) = normalize_img(x_train, y_train)
+    (x_train, y_train) = normalize_img(x_train, y_train) 
 
-    # (x_val, y_val) = normalize_img(x_test, y_test)
-
+    #(x_val, y_val) =  normalize_img(x_test, y_test)
+    #y_val = np.zeros(shape=(10000,))
+    print(y_val)
     # Prepare the training dataset.
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
     # Prepare the validation dataset.
+    
     val_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
     val_dataset = val_dataset.batch(batch_size)
 
@@ -184,12 +191,12 @@ def main3():
         loss_val = loss_metric.result()
 
         prediction = tf.math.argmax(out, 1)
-        loss_metric_acc(prediction, y_val)
-        acc_val = loss_metric_acc.result()
-
+        loss_metric_acc_val(prediction, y_val)
+        acc_val = loss_metric_acc_val.result()
+        print("Val Accuracy: " + str(acc_val))
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
-            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(loss_val.numpy()) + ";" + str(
+            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";"  + str(
             int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
             int(model.dlraBlock3.low_rank)) + "\n"
         with open(file_name, "a") as log:
@@ -199,7 +206,6 @@ def main3():
         model.save(folder_name=folder_name)
 
     return 0
-
 
 """
 def main2():
@@ -267,7 +273,6 @@ def main2():
     # plt.show()
     return 0
 """
-
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
