@@ -183,12 +183,12 @@ def train(start_rank, tolerance, load_model):
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
             # Postprocessing K and L
-            model.dlraBlock1.k_step_postprocessing_adapt()
-            model.dlraBlock1.l_step_postprocessing_adapt()
-            model.dlraBlock2.k_step_postprocessing_adapt()
-            model.dlraBlock2.l_step_postprocessing_adapt()
-            model.dlraBlock3.k_step_postprocessing_adapt()
-            model.dlraBlock3.l_step_postprocessing_adapt()
+            model.dlraBlock1.k_step_postprocessing()
+            model.dlraBlock1.l_step_postprocessing()
+            model.dlraBlock2.k_step_postprocessing()
+            model.dlraBlock2.l_step_postprocessing()
+            model.dlraBlock3.k_step_postprocessing()
+            model.dlraBlock3.l_step_postprocessing()
 
             # S-Step Preprocessing
             model.dlraBlock1.s_step_preprocessing()
