@@ -9,8 +9,82 @@ from optparse import OptionParser
 from os import path, makedirs
 
 
-def main3():
-    
+def test():
+    print("---------- Start Network Testing Suite ------------")
+    print("Parsing options")
+    # --- parse options ---
+    parser = OptionParser()
+    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
+    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
+
+    (options, args) = parser.parse_args()
+    options.start_rank = int(options.start_rank)
+    options.tolerance = float(options.tolerance)
+
+    # specify training
+    epochs = 2000
+    batch_size = 256
+
+    filename = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance)
+    folder_name = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance) + '/latest_model'
+    # check if dir exists
+    if not path.exists(folder_name):
+        print("error, file not found")
+        exit(1)
+    print("Load model from: " + filename)
+
+    # Create Model
+    input_dim = 784  # 28x28  pixel per image
+    output_dim = 10  # one-hot vector of digits 0-9
+
+    starting_rank = options.start_rank  # starting rank of S matrix
+    tol = options.tolerance  # eigenvalue treshold
+    max_rank = 150  # maximum rank of S matrix
+
+    dlra_layer_dim = 200
+    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+                        dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    # Build optimizer
+    # Choose loss
+    loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+    # Choose metrics (to monitor training, but not to optimize on)
+    loss_metric = tf.keras.metrics.Mean()
+    loss_metric_acc = tf.keras.metrics.Accuracy()
+
+    # Load model
+    model.load(folder_name=folder_name)
+
+    # Load dataset
+    # Build dataset
+    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+    x_train = np.reshape(x_train, (-1, input_dim))
+    x_test = np.reshape(x_test, (-1, input_dim))
+
+    (x_test, y_test) = normalize_img(x_test, y_test)
+
+    # Test model
+    #  K  Step Preproccessing 
+    # model.dlraBlock1.k_step_preprocessing()
+    # model.dlraBlock2.k_step_preprocessing()
+    # model.dlraBlock3.k_step_preprocessing()
+
+    out = model(x_test, step=0, training=False)
+    out = tf.keras.activations.softmax(out)
+    loss = loss_fn(y_test, out)
+    loss_metric(loss)
+    loss_test = loss_metric.result()
+
+    prediction = tf.math.argmax(out, 1)
+    loss_metric_acc(prediction, y_test)
+    acc_test = loss_metric_acc.result()
+    print("test Accuracy: " + str(acc_test))
+    print("test loss: " + str(loss_test))
+
+    # Log Data of current epoch
+    return 0
+
+
+def train():
     print("---------- Start Network Training Suite ------------")
     print("Parsing options")
     # --- parse options ---
@@ -18,31 +92,29 @@ def main3():
     parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
 
-
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
     options.tolerance = float(options.tolerance)
-  
-    
+
     # specify training
     epochs = 2000
     batch_size = 256
 
-    filename= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance)
-    folder_name= "200x3_sr"+str(options.start_rank) + "_v"+ str(options.tolerance) +   '/latest_model/'
+    filename = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance)
+    folder_name = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance) + '/latest_model/'
     # check if dir exists
     if not path.exists(folder_name):
-        makedirs(folder_name )
-        
+        makedirs(folder_name)
+
     print("save model as: " + filename)
 
     # Create Model
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
 
-    starting_rank = options.start_rank  #starting rank of S matrix
-    tol = options.tolerance # eigenvalue treshold
-    max_rank = 150 # maximum rank of S matrix
+    starting_rank = options.start_rank  # starting rank of S matrix
+    tol = options.tolerance  # eigenvalue treshold
+    max_rank = 150  # maximum rank of S matrix
 
     dlra_layer_dim = 200
     model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
@@ -53,9 +125,8 @@ def main3():
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
-    loss_metric_acc = tf.keras.metrics.Accuracy()    
+    loss_metric_acc = tf.keras.metrics.Accuracy()
     loss_metric_acc_val = tf.keras.metrics.Accuracy()
-
 
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -70,23 +141,26 @@ def main3():
 
     x_train = x_train[:-val_size]
     y_train = y_train[:-val_size]
-    (x_train, y_train) = normalize_img(x_train, y_train) 
+    (x_train, y_train) = normalize_img(x_train, y_train)
 
-    #(x_val, y_val) =  normalize_img(x_test, y_test)
-    #y_val = np.zeros(shape=(10000,))
-    print(y_val)
+    (x_test, y_test) = normalize_img(x_test, y_test)
+    # y_val = np.zeros(shape=(10000,))
+    # print(y_val)
     # Prepare the training dataset.
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
 
     # Prepare the validation dataset.
-    
+
     val_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
     val_dataset = val_dataset.batch(batch_size)
 
     # Create logger
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
+    # load weights
+    model.load(folder_name=folder_name)
+    best_acc = 0
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
@@ -196,83 +270,34 @@ def main3():
         print("Val Accuracy: " + str(acc_val))
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
-            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";"  + str(
+            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(
             int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
             int(model.dlraBlock3.low_rank)) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
+        print("Validation :" + log_string)
+        # save current model if it's the best
+        if acc_val.numpy() > best_acc:
+            best_acc = acc_val.numpy()
+            print("new best model with accuracy: " + str(best_acc))
 
-        # save current model
-        model.save(folder_name=folder_name)
+            model.save(folder_name=folder_name)
+
+        # Test model
+        out = model(x_test, step=0, training=False)
+        out = tf.keras.activations.softmax(out)
+        loss = loss_fn(y_test, out)
+        loss_metric(loss)
+        loss_test = loss_metric.result()
+
+        prediction = tf.math.argmax(out, 1)
+        loss_metric_acc_val(prediction, y_val)
+        acc_test = loss_metric_acc_val.result()
+        log_string = "Loss: " + str(loss_test.numpy()) + "| Accuracy" + str(acc_test.numpy()) + "\n"
+        print("Test :" + log_string)
 
     return 0
 
-"""
-def main2():
-    # Create Model
-    input_dim = 784  # 28x28  pixel per image
-    output_dim = 10  # one-hot vector of digits 0-9
-    model = ReferenceNet(output_dim=output_dim)  # input_dim gets automatically assigned
-    # Build optimizer
-    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
-    # Choose loss
-    loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    # Choose metrics (to monitor training, but not to optimize on)
-    loss_metric = tf.keras.metrics.Mean()
-
-    # specify training
-    epochs = 10
-    batch_size = 64
-    # Build dataset
-    # Prepare the training dataset.
-    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-    x_train = np.reshape(x_train, (-1, input_dim))
-    x_test = np.reshape(x_test, (-1, input_dim))
-
-    # Reserve 10,000 samples for validation.
-    x_val = x_train[-10000:]
-    y_val = y_train[-10000:]
-    (x_val, y_val) = normalize_img(x_val, y_val)
-
-    t = x_val[0]
-    x_train = x_train[:-10000]
-    y_train = y_train[:-10000]
-    (x_train, y_train) = normalize_img(x_train, y_train)
-
-    # Prepare the training dataset.
-    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
-
-    # Prepare the validation dataset.
-    val_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
-    val_dataset = val_dataset.batch(batch_size)
-
-    # Iterate over epochs.
-    for epoch in range(epochs):
-        print("Start of epoch %d" % (epoch,))
-
-        # Iterate over the batches of the dataset.
-        for step, batch_train in enumerate(train_dataset):
-            with tf.GradientTape() as tape:
-                out = model(batch_train[0])
-                # Compute reconstruction loss
-                loss = loss_fn(batch_train[1], out)
-                loss += sum(model.losses)  # Add KLD regularization loss
-
-            grads = tape.gradient(loss, model.trainable_weights)
-            optimizer.apply_gradients(zip(grads, model.trainable_weights))
-
-            loss_metric(loss)
-
-            if step % 100 == 0:
-                print("step %d: mean loss = %.4f" % (step, loss_metric.result()))
-
-    test = model(x_val)
-    # plt.plot(test_x, test.numpy(), '-.')
-    # plt.plot(test_x, test_y, '--')
-    # plt.show()
-    return 0
-"""
 
 def normalize_img(image, label):
     """Normalizes images: `uint8` -> `float32`."""
@@ -280,5 +305,5 @@ def normalize_img(image, label):
 
 
 if __name__ == '__main__':
-    # main()
-    main3()
+    train()
+    # test()

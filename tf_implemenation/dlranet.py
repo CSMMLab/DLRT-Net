@@ -578,12 +578,12 @@ class DLRALayer(keras.layers.Layer):
         aux_Unp1_np = np.load(folder_name + "/aux_Unp1" + str(layer_id) + ".npy")
         self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1_np,
                                     trainable=True, name="aux_Unp1", dtype=tf.float32)
-        Vt_np = np.load(folder_name + "/Vt" + str(layer_id) + ".npy")
-        self.Vt = tf.Variable(initial_value=Vt_np,
-                              trainable=True, name="Vt", dtype=tf.float32)
-        vtnp1_np = np.load(folder_name + "/vtnp1" + str(layer_id) + ".npy")
-        self.vtnp1 = tf.Variable(initial_value=vtnp1_np,
-                                 trainable=True, name="vtnp1", dtype=tf.float32)
+        Vt_np = np.load(folder_name + "/aux_Vt" + str(layer_id) + ".npy")
+        self.aux_Vt = tf.Variable(initial_value=Vt_np,
+                                  trainable=True, name="Vt", dtype=tf.float32)
+        vtnp1_np = np.load(folder_name + "/aux_Vtnp1" + str(layer_id) + ".npy")
+        self.aux_Vtnp1 = tf.Variable(initial_value=vtnp1_np,
+                                     trainable=True, name="vtnp1", dtype=tf.float32)
         aux_N_np = np.load(folder_name + "/aux_N" + str(layer_id) + ".npy")
         self.aux_N = tf.Variable(initial_value=aux_N_np,
                                  trainable=True, name="aux_N", dtype=tf.float32)
