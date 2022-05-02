@@ -81,23 +81,30 @@ def main():
     # 3) Long time runs
 
     folder = "paper_data/long_time_results/200x3_sr100_v0.07/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_004_.csv", delimiter=";", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
+    dlra_3layer = pd.read_csv(folder + "/history_004_.csv", delimiter=";")
 
-    plt.plot(dlra_3layer[["vall_loss", "vall_acc"]])
-    plt.plot(dlra_3layer[["train_loss"]], '-.')
-    plt.plot(dlra_3layer[["train_acc"]], '-.')
-    plt.legend(["vall_loss", "vall_acc", "train_loss", "train_acc"])
-    plt.savefig("figures/long_time2000.png")
+    plt.plot(dlra_3layer[["acc_val"]], '-')
+    plt.plot(dlra_3layer[["acc_train"]], '-.')
+    plt.plot(dlra_3layer[["acc_test"]], '--')
+    plt.legend(["acc_val", "acc_train", "acc_test"])
+    plt.ylim([0.8, 1.05])
+    plt.savefig("figures/long_time2000_acc.png", dpi=600)
+    plt.clf()
+
+    plt.plot(dlra_3layer[["loss_val"]], '-')
+    plt.plot(dlra_3layer[["loss_train"]], '-.')
+    plt.plot(dlra_3layer[["loss_test"]], '--')
+    plt.legend(["loss_val", "loss_train", "loss_test"])
+    plt.ylim([1e-7, 1.01])
+    plt.savefig("figures/long_time2000_loss.png", dpi=600)
     plt.yscale('log')
-    plt.savefig("figures/long_time2000_log.png")
+    plt.savefig("figures/long_time2000_loss_log.png", dpi=600)
     plt.clf()
     plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
     plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/long_time2000_ranks.png")
+    plt.savefig("figures/long_time2000_ranks.png", dpi=600)
     plt.yscale('log')
-    plt.savefig("figures/long_time2000_ranks_log.png")
+    plt.savefig("figures/long_time2000_ranks_log.png", dpi=600)
     plt.clf()
 
     folder = "paper_data/long_time_results/small_validation_set/200x3_sr100_v0.07/historyLogs"
