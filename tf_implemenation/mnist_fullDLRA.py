@@ -1,3 +1,4 @@
+from xmlrpc.client import boolean
 from dlranet import ReferenceNet, FullDLRANet, create_csv_logger_cb
 
 import tensorflow as tf
@@ -9,29 +10,16 @@ from optparse import OptionParser
 from os import path, makedirs
 
 
-def test():
-    print("---------- Start Network Testing Suite ------------")
-    print("Parsing options")
-    # --- parse options ---
-    parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-
-    (options, args) = parser.parse_args()
-    options.start_rank = int(options.start_rank)
-    options.tolerance = float(options.tolerance)
+def test(start_rank, tolerance):
+   
 
     # specify training
-    epochs = 2000
-    batch_size = 256
-
-    filename = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance)
-    folder_name = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance) + '/latest_model'
+    folder_name = "200x3_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
     # check if dir exists
     if not path.exists(folder_name):
         print("error, file not found")
         exit(1)
-    print("Load model from: " + filename)
+    print("Load model from: " + folder_name)
 
     # Create Model
     input_dim = 784  # 28x28  pixel per image
@@ -49,59 +37,60 @@ def test():
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
-    loss_metric_acc = tf.keras.metrics.Accuracy()
+    acc_metric = tf.keras.metrics.Accuracy()
 
     # Load model
+    #if options.load_model:
     model.load(folder_name=folder_name)
 
     # Load dataset
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-    x_train = np.reshape(x_train, (-1, input_dim))
+    #x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
 
     (x_test, y_test) = normalize_img(x_test, y_test)
 
     # Test model
     #  K  Step Preproccessing 
-    # model.dlraBlock1.k_step_preprocessing()
-    # model.dlraBlock2.k_step_preprocessing()
-    # model.dlraBlock3.k_step_preprocessing()
+    #model.dlraBlock1.k_step_preprocessing()
+    #model.dlraBlock2.k_step_preprocessing()
+    #model.dlraBlock3.k_step_preprocessing()
 
     out = model(x_test, step=0, training=False)
     out = tf.keras.activations.softmax(out)
     loss = loss_fn(y_test, out)
     loss_metric(loss)
-    loss_test = loss_metric.result()
+    loss_test = loss_metric.result().numpy()
 
     prediction = tf.math.argmax(out, 1)
-    loss_metric_acc(prediction, y_test)
-    acc_test = loss_metric_acc.result()
+    acc_metric.update_state(prediction, y_test)
+    for pred,test in zip(prediction.numpy(),y_test):
+        print("("+str(pred) + "|" + str(test) +")")
+
+    acc_test = acc_metric.result().numpy()
     print("test Accuracy: " + str(acc_test))
     print("test loss: " + str(loss_test))
+    print("Ranks")
+    print(model.dlraBlock1.s.shape)
+    print(model.dlraBlock2.s.shape)
+    print(model.dlraBlock3.s.shape)
+    acc_metric.reset_state()
 
-    # Log Data of current epoch
+    acc_metric.update_state([[1], [2]], [[0], [2]])
+    print(acc_metric.result())
     return 0
 
 
-def train():
-    print("---------- Start Network Training Suite ------------")
-    print("Parsing options")
-    # --- parse options ---
-    parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-
-    (options, args) = parser.parse_args()
-    options.start_rank = int(options.start_rank)
-    options.tolerance = float(options.tolerance)
+def train(start_rank,tolerance, load_model):
+    
 
     # specify training
     epochs = 2000
     batch_size = 256
 
-    filename = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance)
-    folder_name = "200x3_sr" + str(options.start_rank) + "_v" + str(options.tolerance) + '/latest_model/'
+    filename = "200x3_sr" + str(start_rank) + "_v" + str(tolerance)
+    folder_name = "200x3_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model/'
     # check if dir exists
     if not path.exists(folder_name):
         makedirs(folder_name)
@@ -112,9 +101,9 @@ def train():
     input_dim = 784  # 28x28  pixel per image
     output_dim = 10  # one-hot vector of digits 0-9
 
-    starting_rank = options.start_rank  # starting rank of S matrix
-    tol = options.tolerance  # eigenvalue treshold
-    max_rank = 150  # maximum rank of S matrix
+    starting_rank = start_rank  # starting rank of S matrix
+    tol = tolerance  # eigenvalue treshold
+    max_rank = 200  # maximum rank of S matrix
 
     dlra_layer_dim = 200
     model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
@@ -125,7 +114,7 @@ def train():
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)
     loss_metric = tf.keras.metrics.Mean()
-    loss_metric_acc = tf.keras.metrics.Accuracy()
+    acc_metric = tf.keras.metrics.Accuracy()
     loss_metric_acc_val = tf.keras.metrics.Accuracy()
 
     # Build dataset
@@ -151,9 +140,17 @@ def train():
     # Create logger
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
+    # print headline
+    log_string =  "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3\n"
+    with open(file_name, "a") as log:
+        log.write(log_string)
+
     # load weights
-    model.load(folder_name=folder_name)
+    if options.load_model ==1:
+        model.load(folder_name=folder_name)
+
     best_acc = 0
+    best_loss = 10
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
@@ -230,17 +227,21 @@ def train():
             model.dlraBlock3.rank_adaption()
 
             # Network monotoring and verbosity
-            loss_metric(loss)
+            loss_metric.update_state(loss)
             prediction = tf.math.argmax(out, 1)
-            loss_metric_acc(prediction, batch_train[1])
+            acc_metric.update_state(prediction, batch_train[1])
 
             loss_value = loss_metric.result().numpy()
-            acc_value = loss_metric_acc.result().numpy()
+            acc_value = acc_metric.result().numpy()
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
                 print("Accuracy: " + str(acc_value))
                 print("Current Rank: " + str(int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)))
+
+            # Reset metrics
+            loss_metric.reset_state()
+            acc_metric.reset_state()
 
         # Compute vallidation loss and accuracy
         loss_val = 0
@@ -251,43 +252,56 @@ def train():
         model.dlraBlock2.k_step_preprocessing()
         model.dlraBlock3.k_step_preprocessing()
 
+        # Validate model
         out = model(x_val, step=0, training=False)
         out = tf.keras.activations.softmax(out)
         loss = loss_fn(y_val, out)
-        loss_metric(loss)
-        loss_val = loss_metric.result()
+        loss_metric.update_state(loss)
+        loss_val = loss_metric.result().numpy()
 
         prediction = tf.math.argmax(out, 1)
-        loss_metric_acc_val(prediction, y_val)
-        acc_val = loss_metric_acc_val.result()
+        acc_metric.update_state(prediction, y_val)
+        acc_val = acc_metric.result().numpy()
         print("Val Accuracy: " + str(acc_val))
-        # Log Data of current epoch
-        log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
-            loss_val.numpy()) + ";" + str(acc_val.numpy()) + ";" + str(
-            int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
-            int(model.dlraBlock3.low_rank)) + "\n"
-        with open(file_name, "a") as log:
-            log.write(log_string)
-        print("Epoch Data :" + log_string)
+        
         # save current model if it's the best
-        if acc_val.numpy() > best_acc:
-            best_acc = acc_val.numpy()
-            print("new best model with accuracy: " + str(best_acc))
+        if acc_val >= best_acc and loss_val <= best_loss:
+            best_acc = acc_val
+            best_loss = loss_val
+            print("new best model with accuracy: " + str(best_acc) + " and loss " +str(best_loss))
 
             model.save(folder_name=folder_name)
+
+        # Reset metrics
+        loss_metric.reset_state()
+        acc_metric.reset_state()
+        
 
         # Test model
         out = model(x_test, step=0, training=False)
         out = tf.keras.activations.softmax(out)
         loss = loss_fn(y_test, out)
-        loss_metric(loss)
-        loss_test = loss_metric.result()
+        loss_metric.update_state(loss)
+        loss_test = loss_metric.result().numpy()
 
         prediction = tf.math.argmax(out, 1)
-        loss_metric_acc_val(prediction, y_val)
-        acc_test = loss_metric_acc_val.result()
-        log_string = "Loss: " + str(loss_test.numpy()) + "| Accuracy" + str(acc_test.numpy()) + "\n"
+        acc_metric.update_state(prediction, y_test)
+        acc_test = acc_metric.result().numpy()
+        log_string = "Loss: " + str(loss_test) + "| Accuracy" + str(acc_test) + "\n"
         print("Test :" + log_string)
+        # Reset metrics
+        loss_metric.reset_state()
+        acc_metric.reset_state()
+
+        # Log Data of current epoch
+        log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
+            loss_val) + ";" + str(acc_val) + ";" + str(
+            loss_test) + ";" + str(acc_test) + ";" + str(
+            int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
+            int(model.dlraBlock3.low_rank)) + "\n"
+        with open(file_name, "a") as log:
+            log.write(log_string)
+        print("Epoch Data :" + log_string)
 
     return 0
 
@@ -298,5 +312,23 @@ def normalize_img(image, label):
 
 
 if __name__ == '__main__':
-    train()
-    # test()
+    print("---------- Start Network Training Suite ------------")
+    print("Parsing options")
+    # --- parse options ---
+    parser = OptionParser()
+    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
+    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
+    parser.add_option("-l", "--load_model", dest="load_model", default=1)
+    parser.add_option("-a", "--train", dest="train", default=0)
+
+    (options, args) = parser.parse_args()
+    options.start_rank = int(options.start_rank)
+    options.tolerance = float(options.tolerance)
+    options.load_model = int(options.load_model)
+    options.train = int(options.train)
+
+    
+    if options.train == 1:
+        train(start_rank = options.start_rank, tolerance=options.tolerance,load_model=options.load_model)
+    else:
+        test(start_rank = options.start_rank, tolerance=options.tolerance)
