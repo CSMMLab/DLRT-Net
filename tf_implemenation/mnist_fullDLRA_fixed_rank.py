@@ -81,10 +81,13 @@ def train(start_rank, tolerance, load_model):
 
     filename = "200x3_sr" + str(start_rank) + "_v" + str(tolerance)
     folder_name = "200x3_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name_best = "200x3_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
+
     # check if dir exists
     if not path.exists(folder_name):
         makedirs(folder_name)
-
+    if not path.exists(folder_name_best):
+        makedirs(folder_name_best)
     print("save model as: " + filename)
 
     # Create Model
@@ -259,7 +262,8 @@ def train(start_rank, tolerance, load_model):
             best_loss = loss_val
             print("new best model with accuracy: " + str(best_acc) + " and loss " + str(best_loss))
 
-            model.save(folder_name=folder_name)
+            model.save(folder_name=folder_name_best)
+        model.save(folder_name=folder_name)
 
         # Reset metrics
         loss_metric.reset_state()
