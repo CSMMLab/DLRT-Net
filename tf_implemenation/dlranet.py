@@ -483,7 +483,7 @@ class DLRALayer(keras.layers.Layer):
         tol = self.epsAdapt * tf.linalg.norm(d)  # absolute value treshold (try also relative one)
         rmax = int(tf.floor(d.shape[0] / 2))
         for j in range(0, 2 * rmax - 1):
-            tmp = tf.sqrt(tf.linalg.norm(d[j:2 * rmax - 1]))
+            tmp = tf.linalg.norm(d[j:2 * rmax - 1])
             if tmp < tol:
                 rmax = j
                 break
