@@ -86,7 +86,7 @@ def train(start_rank,tolerance, load_model):
     
 
     # specify training
-    epochs = 2000
+    epochs = 1250
     batch_size = 256
 
     filename = "200x3_sr" + str(start_rank) + "_v" + str(tolerance)
