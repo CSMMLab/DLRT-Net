@@ -42,7 +42,12 @@ def test(start_rank, tolerance):
     # Load model
     # if options.load_model:
     model.load(folder_name=folder_name)
+    log_file_timing, file_name_timing = create_csv_timing_logger_cb(
+        folder_name="e2edense_sr" + str(start_rank) + "_v" + str(tolerance))
 
+    log_string_timing = "batch_time;rank1;rank2;rank3;rank4\n"
+    with open(file_name_timing, "a") as log:
+        log.write(log_string_timing)
     # Load dataset
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
@@ -56,13 +61,19 @@ def test(start_rank, tolerance):
     # model.dlraBlock1.k_step_preprocessing()
     # model.dlraBlock2.k_step_preprocessing()
     # model.dlraBlock3.k_step_preprocessing()
+    print(model.dlraBlock1.low_rank)
+    start = timer()
+    for i in range(0, 100):
+        out = model(x_test, step=0, training=False)
+        out = tf.keras.activations.softmax(out)
+        loss = loss_fn(y_test, out)
+        loss_metric(loss)
+        loss_test = loss_metric.result().numpy()
+    end = timer()
+    with open(file_name_timing, "a") as log:
+        log.write(str((end - start) / 100.0))
 
-    out = model(x_test, step=0, training=False)
-    out = tf.keras.activations.softmax(out)
-    loss = loss_fn(y_test, out)
-    loss_metric(loss)
-    loss_test = loss_metric.result().numpy()
-
+    """
     prediction = tf.math.argmax(out, 1)
     acc_metric.update_state(prediction, y_test)
     for pred, test in zip(prediction.numpy(), y_test):
@@ -79,6 +90,7 @@ def test(start_rank, tolerance):
 
     acc_metric.update_state([[1], [2]], [[0], [2]])
     print(acc_metric.result())
+    """
     return 0
 
 
@@ -105,7 +117,7 @@ def train(start_rank, tolerance, load_model):
 
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
-    max_rank = 200  # maximum rank of S matrix
+    max_rank = 5120  # maximum rank of S matrix
 
     dlra_layer_dim = 200
     model = DLRANetDenseOut(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,

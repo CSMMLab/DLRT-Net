@@ -418,7 +418,7 @@ class DLRALayer(keras.layers.Layer):
                                      trainable=False, name="aux_M")
         # Todo: initializer with low rank
 
-    # @tf.function
+    @tf.function
     def call(self, inputs, step: int = 0):
         """
         :param inputs: layer input
