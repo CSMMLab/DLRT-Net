@@ -141,7 +141,7 @@ def train(start_rank, tolerance, load_model):
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
     # print headline
-    log_string = "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3\n"
+    log_string = "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3;rank4\n"
     with open(file_name, "a") as log:
         log.write(log_string)
 
