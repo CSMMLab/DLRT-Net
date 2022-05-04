@@ -61,7 +61,11 @@ def test(start_rank, tolerance):
     # model.dlraBlock1.k_step_preprocessing()
     # model.dlraBlock2.k_step_preprocessing()
     # model.dlraBlock3.k_step_preprocessing()
-    print(model.dlraBlock1.low_rank)
+    print(model.dlraBlock1.k.shape)
+    print(model.dlraBlock2.k.shape)
+    print(model.dlraBlock3.k.shape)
+    print(model.dlraBlockInput.k.shape)
+
     start = timer()
     for i in range(0, 100):
         out = model(x_test, step=0, training=False)
