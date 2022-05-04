@@ -12,7 +12,7 @@ from os import path, makedirs
 
 def test(start_rank, tolerance):
     # specify training
-    folder_name = "e2e_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
     # check if dir exists
     if not path.exists(folder_name):
         print("error, file not found")
@@ -82,12 +82,12 @@ def test(start_rank, tolerance):
 
 def train(start_rank, tolerance, load_model):
     # specify training
-    epochs = 2000
+    epochs = 250
     batch_size = 256
 
-    filename = "e2e_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "e2e_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "e2e_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
+    filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
+    folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name_best = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
 
     # check if dir exists
     if not path.exists(folder_name):
@@ -260,7 +260,6 @@ def train(start_rank, tolerance, load_model):
         model.dlraBlock1.k_step_preprocessing()
         model.dlraBlock2.k_step_preprocessing()
         model.dlraBlock3.k_step_preprocessing()
-        model.dlraBlockOutput.k_step_preprocessing()
 
         # Validate model
         out = model(x_val, step=0, training=False)
