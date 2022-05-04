@@ -1,8 +1,10 @@
 from xmlrpc.client import boolean
-from dlranet import DLRANetDenseOut, create_csv_logger_cb
+from dlranet import DLRANetDenseOut, create_csv_logger_cb, create_csv_timing_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras
+
+from timeit import default_timer as timer
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -82,8 +84,8 @@ def test(start_rank, tolerance):
 
 def train(start_rank, tolerance, load_model):
     # specify training
-    epochs = 250
-    batch_size = 256
+    epochs = 5
+    batch_size = 500
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
     folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
@@ -145,18 +147,29 @@ def train(start_rank, tolerance, load_model):
     with open(file_name, "a") as log:
         log.write(log_string)
 
+    log_file_timing, file_name_timing = create_csv_timing_logger_cb(folder_name=filename)
+
+    log_string_timing = "batch_time;rank1;rank2;rank3;rank4\n"
+    with open(file_name_timing, "a") as log:
+        log.write(log_string_timing)
+
     # load weights
     if options.load_model == 1:
         model.load(folder_name=folder_name)
 
     best_acc = 0
     best_loss = 10
+    timing_sum = 0
+    timing_count = 0
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
         # Iterate over the batches of the dataset.
 
         for step, batch_train in enumerate(train_dataset):
+            # start timing measurement
+            start = timer()
+
             # 1.a) K and L Step Preproccessing
             model.dlraBlockInput.k_step_preprocessing()
             model.dlraBlockInput.l_step_preprocessing()
@@ -240,6 +253,18 @@ def train(start_rank, tolerance, load_model):
 
             loss_value = loss_metric.result().numpy()
             acc_value = acc_metric.result().numpy()
+
+            # finish timing measurement
+            end = timer()
+            log_string_timing = str(end - start) + ";" + str(int(model.dlraBlockInput.low_rank)) + ";" + str(
+                int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
+                int(model.dlraBlock3.low_rank)) + "\n"
+
+            with open(file_name_timing, "a") as log:
+                log.write(log_string_timing)
+            timing_sum += end - start
+            timing_count += 1
+
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
                 print("Accuracy: " + str(acc_value))
@@ -313,6 +338,9 @@ def train(start_rank, tolerance, load_model):
             log.write(log_string)
         print("Epoch Data :" + log_string)
 
+    timing_avg = timing_sum / timing_count
+    with open(file_name_timing, "a") as log:
+        log.write("Average_time;" + str(timing_avg))
     return 0
 
 

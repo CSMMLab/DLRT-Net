@@ -16,9 +16,8 @@ class DLRANetDenseOut(keras.Model):
                  rmax_total=100, **kwargs):
         super(DLRANetDenseOut, self).__init__(name=name, **kwargs)
         # dlra_layer_dim = 250
-        self.dlraBlockInput = DLRALayer(input_dim=input_dim, units=dlra_layer_dim, low_rank=dlra_layer_dim,
-                                        epsAdapt=tol,
-                                        rmax_total=rmax_total, )
+        self.dlraBlockInput = DLRALayer(input_dim=input_dim, units=dlra_layer_dim, low_rank=low_rank,
+                                        epsAdapt=tol, rmax_total=rmax_total, )
         self.dlraBlock1 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
                                     rmax_total=rmax_total, )
         self.dlraBlock2 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
@@ -629,6 +628,29 @@ def create_csv_logger_cb(folder_name: str):
         count += 1
         logName = folder_name + \
                   '/historyLogs/history_' + str(count).zfill(3) + '_'
+
+    logFileName = logName + '.csv'
+    # create logger callback
+    f = open(logFileName, "a")
+
+    return f, logFileName
+
+
+def create_csv_timing_logger_cb(folder_name: str):
+    '''
+    dynamically creates a csvlogger and tensorboard logger
+    '''
+    # check if dir exists
+    if not path.exists(folder_name + '/timingLogs/'):
+        makedirs(folder_name + '/timingLogs/')
+
+    # checkfirst, if history file exists.
+    logName = folder_name + '/timingLogs/timing_001_'
+    count = 1
+    while path.isfile(logName + '.csv'):
+        count += 1
+        logName = folder_name + \
+                  '/timingLogs/timing_' + str(count).zfill(3) + '_'
 
     logFileName = logName + '.csv'
     # create logger callback
