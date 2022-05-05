@@ -82,7 +82,7 @@ class DLRANetDenseOut(keras.Model):
         self.dlraBlock1.load(folder_name=folder_name, layer_id=1)
         self.dlraBlock2.load(folder_name=folder_name, layer_id=2)
         self.dlraBlock3.load(folder_name=folder_name, layer_id=3)
-        self.dlraBlockOutput.load(folder_name=folder_name, layer_id=4)
+        self.dlraBlockOutput.load(folder_name=folder_name)
         return 0
 
 
@@ -533,8 +533,10 @@ class DLRALayer(keras.layers.Layer):
         return 0
 
     def load(self, folder_name, layer_id):
+
         # main variables
         k_np = np.load(folder_name + "/k" + str(layer_id) + ".npy")
+        self.low_rank = k_np.shape[1]
         self.k = tf.Variable(initial_value=k_np,
                              trainable=True, name="k_", dtype=tf.float32)
         l_t_np = np.load(folder_name + "/l_t" + str(layer_id) + ".npy")
