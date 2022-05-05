@@ -16,7 +16,7 @@ class DLRANetDenseOut(keras.Model):
                  rmax_total=100, **kwargs):
         super(DLRANetDenseOut, self).__init__(name=name, **kwargs)
         # dlra_layer_dim = 250
-        self.dlraBlockInput = DLRALayer(input_dim=input_dim, units=dlra_layer_dim, low_rank=dlra_layer_dim,
+        self.dlraBlockInput = DLRALayer(input_dim=input_dim, units=dlra_layer_dim, low_rank=low_rank,
                                         epsAdapt=tol,
                                         rmax_total=rmax_total, )
         self.dlraBlock1 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
