@@ -10,6 +10,21 @@ import seaborn as sns
 
 
 def main():
+    name = "e2edense_sr200_v0.03"
+    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+    name = "e2edense_sr200_v0.05"
+    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+    name = "e2edense_sr200_v0.07"
+    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+    name = "e2edense_sr200_v0.09"
+    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+    name = "e2edense_sr200_v0.11"
+    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+    name = "e2edense_sr200_v0.13"
+    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+    name = "e2edense_sr200_v0.15"
+    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+
     name = "200x3_sr199_v0.07"
     plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
     name = "200x3_sr199_v0.05"
@@ -318,8 +333,8 @@ def plot_run(load_folder, save_name):
     plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
     plt.clf()
     plt.plot(dlra_3layer[["rank1"]], '-k')
-    plt.plot(dlra_3layer[["rank1"]], '--r')
-    plt.plot(dlra_3layer[["rank1"]], '-.g')
+    plt.plot(dlra_3layer[["rank2"]], '--r')
+    plt.plot(dlra_3layer[["rank3"]], '-.g')
     plt.xlim([0, 1200])
     plt.legend(["rank layer 1", "rank layer 2", "rank layer 3"])
     plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
@@ -358,10 +373,12 @@ def plot_run4layer(load_folder, save_name):
     plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
     plt.clf()
     plt.plot(dlra_3layer[["rank1"]], '-k')
-    plt.plot(dlra_3layer[["rank1"]], '--r')
-    plt.plot(dlra_3layer[["rank1"]], '-.g')
-    plt.xlim([0, 1200])
-    plt.legend(["rank layer 1", "rank layer 2", "rank layer 3"])
+    plt.plot(dlra_3layer[["rank2"]], '--r')
+    plt.plot(dlra_3layer[["rank3"]], '-.g')
+    plt.plot(dlra_3layer[["rank4"]], '-.b')
+
+    plt.xlim([0, 250])
+    plt.legend(["rank layer 1", "rank layer 2", "rank layer 3", "rank layer 4"])
     plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
     plt.yscale('log')
     plt.savefig("figures/" + save_name + "_ranks_log.png", dpi=500)
