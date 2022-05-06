@@ -82,7 +82,7 @@ def test(start_rank, tolerance):
 
 def train(start_rank, tolerance, load_model):
     # specify training
-    epochs = 250
+    epochs = 100
     batch_size = 256
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
@@ -103,9 +103,9 @@ def train(start_rank, tolerance, load_model):
 
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
-    max_rank = 200  # maximum rank of S matrix
+    max_rank = 350  # maximum rank of S matrix
 
-    dlra_layer_dim = 200
+    dlra_layer_dim = 500
     model = DLRANetDenseOut(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer

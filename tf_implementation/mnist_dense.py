@@ -28,7 +28,7 @@ def test(start_rank, tolerance):
     max_rank = 150  # maximum rank of S matrix
 
     dlra_layer_dim = 200
-    model = FullDLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+    model = ReferenceNet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                         dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
     # Choose loss
