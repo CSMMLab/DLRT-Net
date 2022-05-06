@@ -399,7 +399,7 @@ class DLRALayer(keras.layers.Layer):
 
         self.k = self.add_weight(shape=(input_dim, self.low_rank), initializer="random_normal",
                                  trainable=True, name="k_")
-        self.l_t = self.add_weight(shape=(self.units, self.low_rank), initializer="random_normal",
+        self.l_t = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
                                    trainable=True, name="lt_")
         self.s = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                  trainable=True, name="s_")
@@ -420,7 +420,6 @@ class DLRALayer(keras.layers.Layer):
         # Todo: initializer with low rank
 
     # @tf.function
-    @tf.function
     def call(self, inputs, step: int = 0):
         """
         :param inputs: layer input
@@ -435,13 +434,28 @@ class DLRALayer(keras.layers.Layer):
             z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1)
         return tf.keras.activations.relu(z + self.b)
 
-    @tf.function
+    #@tf.function
+    def call(self, inputs, step: int = 0):
+        """
+        :param inputs: layer input
+        :param step: step conter: k:= 0, l:=1, s:=2
+        :return:
+        """
+        if step == 0:  # k-step
+            z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
+        elif step == 1:  # l-step
+            z = tf.matmul(tf.matmul(inputs, self.aux_U), self.l_t)
+        else:  # s-step
+            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1)
+        return tf.keras.activations.relu(z + self.b)
+
+    #@tf.function
     def k_step_preprocessing(self, ):
         k = tf.matmul(self.aux_U, self.s)
         self.k.assign(k)# = tf.Variable(initial_value=k, trainable=True, name="k_")
         return 0
 
-    @tf.function
+    #@tf.function
     def k_step_postprocessing(self):
         aux_Unp1, _ = tf.linalg.qr(self.k)
         self.aux_Unp1.assign(aux_Unp1)# = tf.Variable(initial_value=aux_Unp1, trainable=False, name="aux_Unp1")
@@ -455,13 +469,13 @@ class DLRALayer(keras.layers.Layer):
         self.aux_N = tf.matmul(tf.transpose(self.aux_Unp1), self.aux_U)
         return 0
 
-    @tf.function
+    #@tf.function
     def l_step_preprocessing(self, ):
         l_t = tf.matmul(self.s, self.aux_Vt)
         self.l_t.assign(l_t)# = tf.Variable(initial_value=l_t, trainable=True, name="lt_")
         return 0
 
-    @tf.function
+    #@tf.function
     def l_step_postprocessing(self):
         aux_Vtnp1, _ = tf.linalg.qr(tf.transpose(self.l_t))
         self.aux_Vtnp1.assign( tf.transpose(aux_Vtnp1))
@@ -475,7 +489,7 @@ class DLRALayer(keras.layers.Layer):
         self.aux_M = tf.matmul(self.aux_Vtnp1, tf.transpose(self.aux_Vt))
         return 0
 
-    @tf.function
+    #@tf.function
     def s_step_preprocessing(self):
         self.aux_U.assign( self.aux_Unp1)
         self.aux_Vt.assign( self.aux_Vtnp1)
