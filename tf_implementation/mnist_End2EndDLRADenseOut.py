@@ -28,6 +28,7 @@ def test(start_rank, tolerance):
     max_rank = 300  # maximum rank of S matrix
 
     dlra_layer_dim = 500
+
     model = DLRANetDenseOut(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
@@ -103,9 +104,11 @@ def train(start_rank, tolerance, load_model):
 
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
+
     max_rank = 350  # maximum rank of S matrix
 
     dlra_layer_dim = 500
+
     model = DLRANetDenseOut(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
@@ -141,7 +144,7 @@ def train(start_rank, tolerance, load_model):
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
     # print headline
-    log_string = "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3\n"
+    log_string = "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3;rank4\n"
     with open(file_name, "a") as log:
         log.write(log_string)
 

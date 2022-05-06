@@ -22,20 +22,25 @@ def main():
     print(params)
     print(params_train)
     """
+
+    # print_param_cout()
     name = "e2edense_sr200_v0.15"
-    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.13"
-    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.11"
-    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.09"
-    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.07"
-    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.05"
-    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.03"
-    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+
+    # plot_timings
+    plot_timing(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings.png")
 
     """
     name = "e2edense_sr200_v0.03"
@@ -388,6 +393,8 @@ def plot_run4layer(load_folder, save_name):
     plt.plot(dlra_3layer[["acc_test"]], '--g')
     plt.legend(["acc_val", "acc_train", "acc_test"])
     plt.ylim([0.8, 1.05])
+    plt.ylabel("acc")
+    plt.xlabel("epoch")
     plt.savefig("figures/" + save_name + "_acc.png", dpi=500)
     plt.clf()
 
@@ -396,6 +403,7 @@ def plot_run4layer(load_folder, save_name):
     plt.plot(dlra_3layer[["loss_test"]], '--g')
     plt.legend(["loss_val", "loss_train", "loss_test"])
     plt.ylim([1e-3, 2.5])
+    plt.ylabel("loss")
     plt.savefig("figures/" + save_name + "_loss.png", dpi=500)
     plt.yscale('log')
     plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
@@ -406,11 +414,43 @@ def plot_run4layer(load_folder, save_name):
     plt.plot(dlra_3layer[["rank4"]], '-.b')
     plt.ylim([10, 120])
     plt.xlim([0, 250])
+    plt.xlabel("epoch")
+    plt.ylabel("rank")
     plt.legend(["rank layer 1", "rank layer 2", "rank layer 3", "rank layer 4"])
     plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
     plt.yscale('log')
     plt.savefig("figures/" + save_name + "_ranks_log.png", dpi=500)
     plt.clf()
+    return 0
+
+
+def plot_timing(load_folder, save_name):
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("white")
+    colors = ['k', 'r', 'g', 'b']
+    symbol_size = 0.7
+    markersize = 2.5
+    markerwidth = 0.5
+    folder = "paper_data/" + load_folder
+    df = pd.read_csv(folder, delimiter=",")
+
+    plt.plot(df[["rank"]].to_numpy()[1:], df[["avg_timing"]].to_numpy()[1:], '-ok')
+    plt.plot(df[["rank"]].to_numpy()[0], df[["avg_timing"]].to_numpy()[0], 'or')
+    plt.xlabel("rank")
+    plt.ylabel("time [s]")
+
+    plt.legend(["low-rank", "dense reference"])
+    plt.savefig("figures/" + save_name, dpi=500)
+    plt.clf()
+
+    return 0
+
+
+def print_param_cout(input_dim, neurons, layer_ranks, output_dim):
+    # exec params
+    e_params = neurons * layer_ranks[:-1] + neurons * layer_ranks[1:]
+
     return 0
 
 

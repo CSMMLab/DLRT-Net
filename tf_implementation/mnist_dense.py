@@ -76,7 +76,7 @@ def test(start_rank, tolerance):
 
 def train(start_rank=200, tolerance=0, load_model=1):
     # specify training
-    epochs = 2000
+    epochs = 250
     batch_size = 256
 
     filename = "dense_200x3_sr" + str(start_rank) + "_v" + str(tolerance)

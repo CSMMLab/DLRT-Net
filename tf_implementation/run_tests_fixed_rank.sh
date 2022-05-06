@@ -1,3 +1,4 @@
+
 python mnist_E2EDLRA_fixed_rank.py -s 350 -t 0.17 -l 1 -a 1
 python mnist_E2EDLRA_fixed_rank.py -s 350 -t 0.15 -l 1 -a 1
 python mnist_E2EDLRA_fixed_rank.py -s 350 -t 0.13 -l 1 -a 1
