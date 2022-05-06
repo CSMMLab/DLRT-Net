@@ -7,9 +7,37 @@ Date: 22.04.2022
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 
 
 def main():
+    """
+    n_in = 200
+    # np.asarray([106, 64, 42, 28, 21, 17, 15])
+    # np.asarray([105, 71, 46, 28, 21, 17, 15])
+    r = np.asarray([104, 74, 49, 28, 23, 15, 16])
+    n_out = 200
+    params = n_in * r + r * n_out
+    params_train = 3 * (n_in * r + r * r + r * n_out)
+    print(params)
+    print(params_train)
+    """
+    name = "e2edense_sr200_v0.15"
+    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    name = "e2edense_sr200_v0.13"
+    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    name = "e2edense_sr200_v0.11"
+    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    name = "e2edense_sr200_v0.09"
+    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    name = "e2edense_sr200_v0.07"
+    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    name = "e2edense_sr200_v0.05"
+    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+    name = "e2edense_sr200_v0.03"
+    plot_run4layer(load_folder="thursday_full/" + name, save_name="thursday_full/" + name)
+
+    """
     name = "e2edense_sr200_v0.03"
     plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
     name = "e2edense_sr200_v0.05"
@@ -45,7 +73,7 @@ def main():
     plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
     name = "200x3_sr200_v0.005"
     plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-
+    """
     """
     # 1) Illustrate training performance of 3 way low rank, 1 way low rank, and full rank
     folder = "paper_data/"
@@ -353,7 +381,7 @@ def plot_run4layer(load_folder, save_name):
     markersize = 2.5
     markerwidth = 0.5
     folder = "paper_data/" + load_folder + "/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";")
+    dlra_3layer = pd.read_csv(folder + "/history_final.csv", delimiter=";")
 
     plt.plot(dlra_3layer[["acc_val"]], '-k')
     plt.plot(dlra_3layer[["acc_train"]], '-.r')
@@ -376,7 +404,7 @@ def plot_run4layer(load_folder, save_name):
     plt.plot(dlra_3layer[["rank2"]], '--r')
     plt.plot(dlra_3layer[["rank3"]], '-.g')
     plt.plot(dlra_3layer[["rank4"]], '-.b')
-
+    plt.ylim([10, 120])
     plt.xlim([0, 250])
     plt.legend(["rank layer 1", "rank layer 2", "rank layer 3", "rank layer 4"])
     plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
