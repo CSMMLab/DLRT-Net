@@ -26,6 +26,7 @@ class DLRANetDenseOut(keras.Model):
                                     rmax_total=rmax_total, )
         self.dlraBlockOutput = Linear(input_dim=dlra_layer_dim, units=output_dim)
 
+    @tf.function
     def call(self, inputs, step: int = 0):
         z = self.dlraBlockInput(inputs, step=step)
         z = self.dlraBlock1(z, step=step)
@@ -334,6 +335,7 @@ class Linear(keras.layers.Layer):
                                  trainable=True, )
         self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True)
 
+    @tf.function
     def call(self, inputs):
         return tf.matmul(inputs, self.w) + self.b
 

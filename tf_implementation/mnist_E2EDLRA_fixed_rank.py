@@ -17,8 +17,9 @@ def test(start_rank, tolerance):
     folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
     # check if dir exists
     if not path.exists(folder_name):
-        print("error, file not found")
-        exit(1)
+        # print("error, file not found")
+        # exit(1)
+        makedirs(folder_name)
     print("Load model from: " + folder_name)
 
     # Create Model
@@ -29,7 +30,7 @@ def test(start_rank, tolerance):
     tol = options.tolerance  # eigenvalue treshold
     max_rank = 150  # maximum rank of S matrix
 
-    dlra_layer_dim = 200
+    dlra_layer_dim = 5120
     model = DLRANetDenseOut(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
@@ -41,11 +42,12 @@ def test(start_rank, tolerance):
 
     # Load model
     # if options.load_model:
-    model.load(folder_name=folder_name)
+    # model.load(folder_name=folder_name)
     log_file_timing, file_name_timing = create_csv_timing_logger_cb(
         folder_name="e2edense_sr" + str(start_rank) + "_v" + str(tolerance))
 
     log_string_timing = "batch_time;rank1;rank2;rank3;rank4\n"
+
     with open(file_name_timing, "a") as log:
         log.write(log_string_timing)
     # Load dataset
