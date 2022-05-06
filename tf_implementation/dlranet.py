@@ -399,7 +399,7 @@ class DLRALayer(keras.layers.Layer):
 
         self.k = self.add_weight(shape=(input_dim, self.low_rank), initializer="random_normal",
                                  trainable=True, name="k_")
-        self.l_t = self.add_weight(shape=(self.units, self.low_rank), initializer="random_normal",
+        self.l_t = self.add_weight(shape=(self.low_rank,self.units ), initializer="random_normal",
                                    trainable=True, name="lt_")
         self.s = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                  trainable=True, name="s_")
