@@ -25,22 +25,23 @@ def main():
 
     # print_param_cout()
     name = "e2edense_sr200_v0.15"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.13"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.11"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.09"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.07"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.05"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
     name = "e2edense_sr200_v0.03"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
 
     # plot_timings
-    plot_timing(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings.png")
+    plot_timing(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
+    plot_timing(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
 
     """
     name = "e2edense_sr200_v0.03"
@@ -441,7 +442,35 @@ def plot_timing(load_folder, save_name):
     plt.ylabel("time [s]")
 
     plt.legend(["low-rank", "dense reference"])
-    plt.savefig("figures/" + save_name, dpi=500)
+    plt.savefig("figures/" + save_name + ".png", dpi=500)
+    plt.yscale("log")
+    plt.savefig("figures/" + save_name + "log.png", dpi=500)
+    plt.clf()
+
+    return 0
+
+
+def plot_timing(load_folder, save_name):
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("white")
+    colors = ['k', 'r', 'g', 'b']
+    symbol_size = 0.7
+    markersize = 2.5
+    markerwidth = 0.5
+    folder = "paper_data/" + load_folder
+    df = pd.read_csv(folder, delimiter=",")
+
+    plt.plot(df[["rank"]].to_numpy()[1:], df[["avg_timing"]].to_numpy()[1:], '-ok')
+    plt.axhline(y=df[["avg_timing"]].to_numpy()[0], color='r')
+    # plt.plot(df[["rank"]].to_numpy()[0], df[["avg_timing"]].to_numpy()[0], 'or')
+    plt.xlabel("rank")
+    plt.ylabel("time [s]")
+
+    plt.legend(["low-rank", "dense reference"])
+    plt.savefig("figures/" + save_name + ".png", dpi=500)
+    plt.yscale("log")
+    plt.savefig("figures/" + save_name + "log.png", dpi=500)
     plt.clf()
 
     return 0

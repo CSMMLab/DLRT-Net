@@ -1,5 +1,5 @@
 from xmlrpc.client import boolean
-from dlranet import DLRANetDenseOut, create_csv_logger_cb
+from dlranet import DLRANetAdaptive, create_csv_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras
@@ -25,10 +25,11 @@ def test(start_rank, tolerance):
 
     starting_rank = options.start_rank  # starting rank of S matrix
     tol = options.tolerance  # eigenvalue treshold
-    max_rank = 150  # maximum rank of S matrix
+    max_rank = 300  # maximum rank of S matrix
 
-    dlra_layer_dim = 200
-    model = DLRANetDenseOut(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+    dlra_layer_dim = 784
+
+    model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
     # Choose loss
@@ -82,7 +83,7 @@ def test(start_rank, tolerance):
 
 def train(start_rank, tolerance, load_model):
     # specify training
-    epochs = 100
+    epochs = 250
     batch_size = 256
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
@@ -103,10 +104,12 @@ def train(start_rank, tolerance, load_model):
 
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
+
     max_rank = 350  # maximum rank of S matrix
 
     dlra_layer_dim = 500
-    model = DLRANetDenseOut(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+
+    model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
@@ -197,14 +200,14 @@ def train(start_rank, tolerance, load_model):
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
             # Postprocessing K and L
-            model.dlraBlockInput.k_step_postprocessing()
-            model.dlraBlockInput.l_step_postprocessing()
-            model.dlraBlock1.k_step_postprocessing()
-            model.dlraBlock1.l_step_postprocessing()
-            model.dlraBlock2.k_step_postprocessing()
-            model.dlraBlock2.l_step_postprocessing()
-            model.dlraBlock3.k_step_postprocessing()
-            model.dlraBlock3.l_step_postprocessing()
+            model.dlraBlockInput.k_step_postprocessing_adapt()
+            model.dlraBlockInput.l_step_postprocessing_adapt()
+            model.dlraBlock1.k_step_postprocessing_adapt()
+            model.dlraBlock1.l_step_postprocessing_adapt()
+            model.dlraBlock2.k_step_postprocessing_adapt()
+            model.dlraBlock2.l_step_postprocessing_adapt()
+            model.dlraBlock3.k_step_postprocessing_adapt()
+            model.dlraBlock3.l_step_postprocessing_adapt()
 
             # S-Step Preprocessing
             model.dlraBlockInput.s_step_preprocessing()
@@ -228,10 +231,10 @@ def train(start_rank, tolerance, load_model):
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
 
             # Rank Adaptivity
-            # model.dlraBlockInput.rank_adaption()
-            # model.dlraBlock1.rank_adaption()
-            # model.dlraBlock2.rank_adaption()
-            # model.dlraBlock3.rank_adaption()
+            model.dlraBlockInput.rank_adaption()
+            model.dlraBlock1.rank_adaption()
+            model.dlraBlock2.rank_adaption()
+            model.dlraBlock3.rank_adaption()
 
             # Network monotoring and verbosity
             loss_metric.update_state(loss)
