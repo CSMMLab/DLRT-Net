@@ -27,7 +27,7 @@ def test(start_rank, tolerance):
     tol = options.tolerance  # eigenvalue treshold
     max_rank = 300  # maximum rank of S matrix
 
-    dlra_layer_dim = 784
+    dlra_layer_dim = 500
 
     model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
@@ -107,7 +107,7 @@ def train(start_rank, tolerance, load_model):
 
     max_rank = 350  # maximum rank of S matrix
 
-    dlra_layer_dim = 500
+    dlra_layer_dim = 784
 
     model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)

@@ -1,5 +1,5 @@
 from xmlrpc.client import boolean
-from dlranet import DLRANet, create_csv_logger_cb
+from dlranet import DLRANet, create_csv_logger_cb,DLRANetAdaptive
 
 import tensorflow as tf
 from tensorflow import keras
@@ -105,7 +105,7 @@ def train(start_rank, tolerance, load_model):
     tol = tolerance  # eigenvalue treshold
     max_rank = 350  # maximum rank of S matrix
 
-    dlra_layer_dim = 500
+    dlra_layer_dim = 784
     model = DLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                     dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
@@ -148,6 +148,7 @@ def train(start_rank, tolerance, load_model):
     # load weights
     if load_model == 1:
         model.load(folder_name=folder_name)
+    model.build_model()
 
     best_acc = 0
     best_loss = 10
