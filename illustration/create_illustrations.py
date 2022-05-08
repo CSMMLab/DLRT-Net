@@ -14,20 +14,22 @@ def main():
     print_param_counts()
 
     # print_param_cout()
-    name = "e2edense_sr200_v0.15"
-    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr200_v0.13"
-    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr200_v0.11"
-    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr200_v0.09"
-    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr200_v0.07"
-    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr200_v0.05"
-    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr200_v0.03"
-    plot_run4layer(load_folder="200Neurons/old_run/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.17"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.15"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.13"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.11"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.09"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.07"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.05"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.03"
+    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
 
     # plot_timings
     plot_timing(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
@@ -49,6 +51,7 @@ def main():
     name = "e2edense_sr200_v0.15"
     plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
 
+
     name = "200x3_sr199_v0.07"
     plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
     name = "200x3_sr199_v0.05"
@@ -69,8 +72,7 @@ def main():
     plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
     name = "200x3_sr200_v0.005"
     plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    """
-    """
+
     # 1) Illustrate training performance of 3 way low rank, 1 way low rank, and full rank
     folder = "paper_data/"
     dlra_3layer = pd.read_csv(folder + "3LayerDLRA_MNIST.csv", delimiter=";", header=None,
@@ -377,7 +379,7 @@ def plot_run4layer(load_folder, save_name):
     markersize = 2.5
     markerwidth = 0.5
     folder = "paper_data/" + load_folder + "/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_final.csv", delimiter=";")
+    dlra_3layer = pd.read_csv(folder + "/history_final.csv", delimiter=";", index_col=None)
 
     plt.plot(dlra_3layer[["acc_val"]], '-k')
     plt.plot(dlra_3layer[["acc_train"]], '-.r')
@@ -560,7 +562,7 @@ def print_param_counts():
     params_500 = np.asarray(
         [resdense, res003[0], res005[0], res007[0], res009[0], res011[0], res013[0], res015[0], res017[0]])
     accs_500 = np.asarray(
-        [100, 98.47, 98.56, 98.47, 98.31, 98.23, 97.88, 97.70, 97.08])
+        [98.45, 98.47, 98.56, 98.47, 98.31, 98.23, 97.88, 97.70, 97.08])
     tols = np.asarray(
         [0, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17])
 
@@ -616,7 +618,7 @@ def print_param_counts():
     params_784 = np.asarray(
         [resdense, res003[0], res005[0], res007[0], res009[0], res011[0], res013[0], res015[0], res017[0]])
     accs_784 = np.asarray(
-        [100, 98.69, 98.61, 98.58, 98.54, 98.27, 98.14, 97.92, 97.36])
+        [98.63, 98.69, 98.61, 98.58, 98.54, 98.27, 98.14, 97.92, 97.36])
     tols = np.asarray(
         [0, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17])
     # plot_acc_over_params(accs_784, params_784, name="accuracy_over_parameter")
@@ -662,9 +664,9 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     plt.plot(params2[0], accs2[0], 'or')
     plt.plot(params3[0], accs3[0], 'or')
 
-    plt.xlabel("parameter")
+    plt.xlabel("network weights")
     plt.ylabel("test accuracy")
-    # plt.xscale("log")
+    plt.xscale("log")
     plt.legend(["200 neurons", "500 neurons", "784 neurons"])
     plt.savefig("figures/" + name + ".png", dpi=500)
     plt.clf()
@@ -687,7 +689,7 @@ def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
     plt.plot(tols[0], accs1[0], 'or')
     plt.plot(tols[0], accs2[0], 'or')
     plt.plot(tols[0], accs3[0], 'or')
-    plt.xlabel("tolerance")
+    plt.xlabel(r"tolerance $\tau$")
     plt.ylabel("test accuracy")
     plt.legend(["200 neurons", "500 neurons", "784 neurons"])
     plt.savefig("figures/" + name + ".png", dpi=500)

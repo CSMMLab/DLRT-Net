@@ -1,0 +1,2 @@
+loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3;rank4
+0.8551714;0.8;0.78612494;0.7569;0.82567483;0.7468;17;23;22;23
