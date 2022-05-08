@@ -11,17 +11,7 @@ import numpy as np
 
 
 def main():
-    """
-    n_in = 200
-    # np.asarray([106, 64, 42, 28, 21, 17, 15])
-    # np.asarray([105, 71, 46, 28, 21, 17, 15])
-    r = np.asarray([104, 74, 49, 28, 23, 15, 16])
-    n_out = 200
-    params = n_in * r + r * n_out
-    params_train = 3 * (n_in * r + r * r + r * n_out)
-    print(params)
-    print(params_train)
-    """
+    print_param_counts()
 
     # print_param_cout()
     name = "e2edense_sr200_v0.15"
@@ -476,11 +466,244 @@ def plot_timing(load_folder, save_name):
     return 0
 
 
-def print_param_cout(input_dim, neurons, layer_ranks, output_dim):
-    # exec params
-    e_params = neurons * layer_ranks[:-1] + neurons * layer_ranks[1:]
+def print_param_counts():
+    # 1) compute parameter counts for low rank layers
 
+    # a) 200 neurons run
+    e003_ranks = np.asarray([71, 113, 114, 115])
+    e005_ranks = np.asarray([47, 69, 74, 81])
+    e007_ranks = np.asarray([37, 40, 45, 48])
+    e009_ranks = np.asarray([28, 30, 32, 30])
+    e011_ranks = np.asarray([24, 23, 25, 24])
+    e013_ranks = np.asarray([17, 16, 22, 19])
+    e015_ranks = np.asarray([16, 17, 18, 17])
+    e017_ranks = np.asarray([11, 15, 15, 16])
+
+    input_dims = np.asarray([784, 200, 200, 200])
+    output_dims = np.asarray([200, 200, 200, 200])
+
+    resdense = 784 * 200 + 3 * 200 * 200 + 200 * 10
+    res003 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e003_ranks)
+    res005 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e005_ranks)
+    res007 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e007_ranks)
+    res009 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e009_ranks)
+    res011 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e011_ranks)
+    res013 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e013_ranks)
+    res015 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e015_ranks)
+    res017 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e017_ranks)
+    print(res003)
+    print(res005)
+    print(res007)
+    print(res009)
+    print(res011)
+    print(res013)
+    print(res015)
+    print(res017)
+    params_200 = np.asarray(
+        [resdense, res003[0], res005[0], res007[0], res009[0], res011[0], res013[0], res015[0], res017[0]])
+    accs_200 = np.asarray(
+        [98.43, 97.42, 97.17, 97.15, 96.81, 96.76, 96.32, 96.30, 95.59])
+    tols = np.asarray(
+        [0, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17])
+    # plot_acc_over_params(accs_200, params_200, name="accuracy_over_parameter")
+    # plot_acc_over_tolerance(accs_200, tols, name="accuracy_over_tolerance")
+
+    # compute ratios
+    ratio003 = (float(res003[0]) / float(resdense), float(res003[1]) / float(resdense))
+    ratio005 = (float(res005[0]) / float(resdense), float(res005[1]) / float(resdense))
+    ratio007 = (float(res007[0]) / float(resdense), float(res007[1]) / float(resdense))
+    ratio009 = (float(res009[0]) / float(resdense), float(res009[1]) / float(resdense))
+    ratio011 = (float(res011[0]) / float(resdense), float(res011[1]) / float(resdense))
+    ratio013 = (float(res013[0]) / float(resdense), float(res013[1]) / float(resdense))
+    ratio015 = (float(res015[0]) / float(resdense), float(res015[1]) / float(resdense))
+    ratio017 = (float(res017[0]) / float(resdense), float(res017[1]) / float(resdense))
+    print(ratio003)
+    print(ratio005)
+    print(ratio007)
+    print(ratio009)
+    print(ratio011)
+    print(ratio013)
+    print(ratio015)
+    print(ratio017)
+
+    # b) 500 neurons run
+    e003_ranks = np.asarray([176, 170, 171, 174])
+    e005_ranks = np.asarray([81, 104, 111, 117])
+    e007_ranks = np.asarray([52, 67, 73, 72])
+    e009_ranks = np.asarray([35, 53, 51, 46])
+    e011_ranks = np.asarray([27, 40, 37, 38])
+    e013_ranks = np.asarray([20, 31, 32, 30])
+    e015_ranks = np.asarray([17, 25, 26, 24])
+    e017_ranks = np.asarray([13, 21, 24, 20])
+
+    input_dims = np.asarray([784, 500, 500, 500])
+    output_dims = np.asarray([500, 500, 500, 500])
+
+    resdense = 784 * 500 + 3 * 500 * 500 + 500 * 10
+
+    res003 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e003_ranks)
+    res005 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e005_ranks)
+    res007 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e007_ranks)
+    res009 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e009_ranks)
+    res011 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e011_ranks)
+    res013 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e013_ranks)
+    res015 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e015_ranks)
+    res017 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e017_ranks)
+    print(res003)
+    print(res005)
+    print(res007)
+    print(res009)
+    print(res011)
+    print(res013)
+    print(res015)
+    print(res017)
+    params_500 = np.asarray(
+        [resdense, res003[0], res005[0], res007[0], res009[0], res011[0], res013[0], res015[0], res017[0]])
+    accs_500 = np.asarray(
+        [100, 98.47, 98.56, 98.47, 98.31, 98.23, 97.88, 97.70, 97.08])
+    tols = np.asarray(
+        [0, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17])
+
+    # compute ratios
+    ratio003 = (float(res003[0]) / float(resdense), float(res003[1]) / float(resdense))
+    ratio005 = (float(res005[0]) / float(resdense), float(res005[1]) / float(resdense))
+    ratio007 = (float(res007[0]) / float(resdense), float(res007[1]) / float(resdense))
+    ratio009 = (float(res009[0]) / float(resdense), float(res009[1]) / float(resdense))
+    ratio011 = (float(res011[0]) / float(resdense), float(res011[1]) / float(resdense))
+    ratio013 = (float(res013[0]) / float(resdense), float(res013[1]) / float(resdense))
+    ratio015 = (float(res015[0]) / float(resdense), float(res015[1]) / float(resdense))
+    ratio017 = (float(res017[0]) / float(resdense), float(res017[1]) / float(resdense))
+    print(ratio003)
+    print(ratio005)
+    print(ratio007)
+    print(ratio009)
+    print(ratio011)
+    print(ratio013)
+    print(ratio015)
+    print(ratio017)
+
+    # b) 784 neurons run
+    e003_ranks = np.asarray([190, 190, 190, 190])
+    e005_ranks = np.asarray([124, 120, 125, 126])
+    e007_ranks = np.asarray([76, 86, 85, 83])
+    e009_ranks = np.asarray([56, 67, 63, 59])
+    e011_ranks = np.asarray([35, 49, 47, 43])
+    e013_ranks = np.asarray([29, 35, 38, 34])
+    e015_ranks = np.asarray([22, 29, 27, 27])
+    e017_ranks = np.asarray([17, 23, 22, 23])
+
+    input_dims = np.asarray([784, 784, 784, 784])
+    output_dims = np.asarray([784, 784, 784, 784])
+
+    resdense = 784 * 784 + 3 * 784 * 784 + 784 * 10
+
+    res003 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e003_ranks)
+    res005 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e005_ranks)
+    res007 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e007_ranks)
+    res009 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e009_ranks)
+    res011 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e011_ranks)
+    res013 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e013_ranks)
+    res015 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e015_ranks)
+    res017 = compute_param_count(input_dims=input_dims, output_dims=output_dims, layer_ranks=e017_ranks)
+    print(res003)
+    print(res005)
+    print(res007)
+    print(res009)
+    print(res011)
+    print(res013)
+    print(res015)
+    print(res017)
+    params_784 = np.asarray(
+        [resdense, res003[0], res005[0], res007[0], res009[0], res011[0], res013[0], res015[0], res017[0]])
+    accs_784 = np.asarray(
+        [100, 98.69, 98.61, 98.58, 98.54, 98.27, 98.14, 97.92, 97.36])
+    tols = np.asarray(
+        [0, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17])
+    # plot_acc_over_params(accs_784, params_784, name="accuracy_over_parameter")
+    # plot_acc_over_tolerance(accs_784, tols, name="accuracy_over_tolerance")
+
+    # compute ratios
+    ratio003 = (float(res003[0]) / float(resdense), float(res003[1]) / float(resdense))
+    ratio005 = (float(res005[0]) / float(resdense), float(res005[1]) / float(resdense))
+    ratio007 = (float(res007[0]) / float(resdense), float(res007[1]) / float(resdense))
+    ratio009 = (float(res009[0]) / float(resdense), float(res009[1]) / float(resdense))
+    ratio011 = (float(res011[0]) / float(resdense), float(res011[1]) / float(resdense))
+    ratio013 = (float(res013[0]) / float(resdense), float(res013[1]) / float(resdense))
+    ratio015 = (float(res015[0]) / float(resdense), float(res015[1]) / float(resdense))
+    ratio017 = (float(res017[0]) / float(resdense), float(res017[1]) / float(resdense))
+    print(ratio003)
+    print(ratio005)
+    print(ratio007)
+    print(ratio009)
+    print(ratio011)
+    print(ratio013)
+    print(ratio015)
+    print(ratio017)
+
+    plot_acc_over_params(accs_200, accs_500, accs_784, params_200, params_500, params_784,
+                         name="accuracy_over_parameter")
+    plot_acc_over_tolerance(tols, accs_200, accs_500, accs_784, name="accuracy_over_tolerance")
     return 0
+
+
+def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("white")
+    colors = ['k', 'r', 'g', 'b']
+    symbol_size = 0.7
+    markersize = 2.5
+    markerwidth = 0.5
+
+    plt.plot(params1, accs1, '-ok')
+    plt.plot(params2, accs2, '-og')
+    plt.plot(params3, accs3, '-ob')
+    plt.plot(params1[0], accs1[0], 'or')
+    plt.plot(params2[0], accs2[0], 'or')
+    plt.plot(params3[0], accs3[0], 'or')
+
+    plt.xlabel("parameter")
+    plt.ylabel("test accuracy")
+    # plt.xscale("log")
+    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    plt.savefig("figures/" + name + ".png", dpi=500)
+    plt.clf()
+    return 0
+
+
+def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("white")
+    colors = ['k', 'r', 'g', 'b']
+    symbol_size = 0.7
+    markersize = 2.5
+    markerwidth = 0.5
+
+    plt.plot(tols, accs1, '-ok')
+    plt.plot(tols, accs2, '-og')
+    plt.plot(tols, accs3, '-ob')
+
+    plt.plot(tols[0], accs1[0], 'or')
+    plt.plot(tols[0], accs2[0], 'or')
+    plt.plot(tols[0], accs3[0], 'or')
+    plt.xlabel("tolerance")
+    plt.ylabel("test accuracy")
+    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    plt.savefig("figures/" + name + ".png", dpi=500)
+    plt.clf()
+    return 0
+
+
+def compute_param_count(input_dims, output_dims, layer_ranks):
+    # exec params
+    e_params = input_dims * layer_ranks + layer_ranks * output_dims
+    res_exec = np.sum(e_params) + output_dims[-1] * 10
+
+    # train_params
+    t_params = input_dims * layer_ranks + layer_ranks * layer_ranks + layer_ranks * output_dims
+    res_train = np.sum(t_params) * 3 + output_dims[-1] * 10
+    return res_exec, res_train
 
 
 def plot_1d(xs, ys, labels=None, name='defaultName', log=True, folder_name="figures", linetypes=None, show_fig=False,

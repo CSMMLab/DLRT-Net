@@ -146,7 +146,7 @@ def train(start_rank, tolerance, load_model):
         log.write(log_string)
 
     # load weights
-    if options.load_model == 1:
+    if load_model == 1:
         model.load(folder_name=folder_name)
 
     best_acc = 0
