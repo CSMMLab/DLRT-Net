@@ -16,17 +16,30 @@ class DLRANet(keras.Model):
                  rmax_total=100, **kwargs):
         super(DLRANet, self).__init__(name=name, **kwargs)
         # dlra_layer_dim = 250
-        self.dlraBlockInput = DLRALayer(input_dim=input_dim, units=dlra_layer_dim, low_rank=low_rank,
-                                        epsAdapt=tol,
-                                        rmax_total=rmax_total, )
-        self.dlraBlock1 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
+        self.input_dim = input_dim
+        self.dlra_layer_dim = dlra_layer_dim
+        self.low_rank = low_rank
+        self.output_dim=output_dim
+        self.tol =tol
+        self.rmax_total=rmax_total
+        
+        self.dlraBlockInput = DLRALayer(input_dim=self.input_dim, units=self.dlra_layer_dim, low_rank=self.low_rank,
+                                        epsAdapt=self.tol,                                        rmax_total=self.rmax_total, )
+        self.dlraBlock1 = DLRALayer(input_dim=self.dlra_layer_dim, units=self.dlra_layer_dim, low_rank=self.low_rank, epsAdapt=self.tol,
+                                    rmax_total=self.rmax_total, )
+        self.dlraBlock2 = DLRALayer(input_dim=self.dlra_layer_dim, units=self.dlra_layer_dim, low_rank=self.low_rank, epsAdapt=self.tol,
+                                    rmax_total=self.rmax_total, )
+        self.dlraBlock3 = DLRALayer(input_dim=self.dlra_layer_dim, units=self.dlra_layer_dim, low_rank=self.low_rank, epsAdapt=self.tol,
                                     rmax_total=rmax_total, )
-        self.dlraBlock2 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
-                                    rmax_total=rmax_total, )
-        self.dlraBlock3 = DLRALayer(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank, epsAdapt=tol,
-                                    rmax_total=rmax_total, )
-        self.dlraBlockOutput = Linear(input_dim=dlra_layer_dim, units=output_dim)
-
+        self.dlraBlockOutput = Linear(input_dim=self.dlra_layer_dim, units=self.output_dim)
+    
+    def build_model(self):
+        self.dlraBlockInput.build_model()
+        self.dlraBlock1.build_model()
+        self.dlraBlock2.build_model()
+        self.dlraBlock3.build_model()
+        return 0
+    
     @tf.function
     def call(self, inputs, step: int = 0):
         z = self.dlraBlockInput(inputs, step=step)
@@ -207,8 +220,10 @@ class DLRALayer(keras.layers.Layer):
         self.low_rank = low_rank
         self.rmax_total = rmax_total
         self.input_dim = input_dim
+        
+    def build_model(self):
 
-        self.k = self.add_weight(shape=(input_dim, self.low_rank), initializer="random_normal",
+        self.k = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
                                  trainable=True, name="k_")
         self.l_t = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
                                    trainable=True, name="lt_")
@@ -229,7 +244,8 @@ class DLRALayer(keras.layers.Layer):
         self.aux_M = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                      trainable=False, name="aux_M")
         # Todo: initializer with low rank
-
+        return 0
+    
     @tf.function
     def call(self, inputs, step: int = 0):
         """
