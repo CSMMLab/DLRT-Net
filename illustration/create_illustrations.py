@@ -32,8 +32,8 @@ def main():
     plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
 
     # plot_timings
-    plot_timing(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
-    plot_timing(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
+    plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
+    plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
 
     """
     name = "e2edense_sr200_v0.03"
@@ -402,10 +402,10 @@ def plot_run4layer(load_folder, save_name):
     plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
     plt.clf()
     plt.plot(dlra_3layer[["rank1"]], '-k')
-    plt.plot(dlra_3layer[["rank2"]], '--r')
-    plt.plot(dlra_3layer[["rank3"]], '-.g')
-    plt.plot(dlra_3layer[["rank4"]], '-.b')
-    plt.ylim([10, 120])
+    plt.plot(dlra_3layer[["rank2"]], '-r')
+    plt.plot(dlra_3layer[["rank3"]], '-g')
+    plt.plot(dlra_3layer[["rank4"]], '-b')
+    # plt.ylim([10, 120])
     plt.xlim([0, 250])
     plt.xlabel("epoch")
     plt.ylabel("rank")
@@ -417,7 +417,7 @@ def plot_run4layer(load_folder, save_name):
     return 0
 
 
-def plot_timing(load_folder, save_name):
+def plot_timing_exec(load_folder, save_name):
     plt.clf()
     sns.set_theme()
     sns.set_style("white")
@@ -428,8 +428,10 @@ def plot_timing(load_folder, save_name):
     folder = "paper_data/" + load_folder
     df = pd.read_csv(folder, delimiter=",")
 
-    plt.plot(df[["rank"]].to_numpy()[1:], df[["avg_timing"]].to_numpy()[1:], '-ok')
-    plt.plot(df[["rank"]].to_numpy()[0], df[["avg_timing"]].to_numpy()[0], 'or')
+    plt.plot(df[["rank"]].to_numpy()[1:-1], df[["avg_timing"]].to_numpy()[1:-1], '-ok')
+    plt.axhline(y=df[["avg_timing"]].to_numpy()[0], color='r')
+    plt.xlim((df[["rank"]].to_numpy()[1], df[["rank"]].to_numpy()[-2]))
+    # plt.plot(df[["rank"]].to_numpy()[0], df[["avg_timing"]].to_numpy()[0], 'or')
     plt.xlabel("rank")
     plt.ylabel("time [s]")
 
@@ -442,7 +444,7 @@ def plot_timing(load_folder, save_name):
     return 0
 
 
-def plot_timing(load_folder, save_name):
+def plot_timing_train(load_folder, save_name):
     plt.clf()
     sns.set_theme()
     sns.set_style("white")
@@ -453,11 +455,12 @@ def plot_timing(load_folder, save_name):
     folder = "paper_data/" + load_folder
     df = pd.read_csv(folder, delimiter=",")
 
-    plt.plot(df[["rank"]].to_numpy()[1:], df[["avg_timing"]].to_numpy()[1:], '-ok')
+    plt.plot(df[["rank"]].to_numpy()[1:-3], df[["avg_timing"]].to_numpy()[1:-3], '-ok')
     plt.axhline(y=df[["avg_timing"]].to_numpy()[0], color='r')
     # plt.plot(df[["rank"]].to_numpy()[0], df[["avg_timing"]].to_numpy()[0], 'or')
     plt.xlabel("rank")
     plt.ylabel("time [s]")
+    plt.xlim((df[["rank"]].to_numpy()[1], df[["rank"]].to_numpy()[-4]))
 
     plt.legend(["low-rank", "dense reference"])
     plt.savefig("figures/" + save_name + ".png", dpi=500)
