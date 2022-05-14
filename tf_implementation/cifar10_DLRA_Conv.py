@@ -84,9 +84,9 @@ def train(start_rank, tolerance, load_model):
     epochs = 100
     batch_size = 256
 
-    filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
+    filename = "cifar10_sr" + str(start_rank) + "_v" + str(tolerance)
+    folder_name = "cifar10_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name_best = "cifar10_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
 
     # check if dir exists
     if not path.exists(folder_name):
