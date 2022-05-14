@@ -336,11 +336,11 @@ class DLRANetConvAdapt(keras.Model):
 
         # ---- architecture
         # block 1)
-        self.dlraBlock1a = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock1a = DLRALayerConvAdaptive(low_rank=20, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=64,
                                                  image_dims=image_dims)
         next_image_dims = self.dlraBlock1a.output_shape_conv
-        self.dlraBlock1b = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock1b = DLRALayerConvAdaptive(low_rank=20, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=64,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock1b.output_shape_conv
@@ -351,11 +351,11 @@ class DLRANetConvAdapt(keras.Model):
         next_image_dims = out.shape[1:]
 
         # block 2)
-        self.dlraBlock2a = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock2a = DLRALayerConvAdaptive(low_rank=60, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=128,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock2a.output_shape_conv
-        self.dlraBlock2b = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock2b = DLRALayerConvAdaptive(low_rank=60, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=128,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock2b.output_shape_conv
@@ -366,11 +366,11 @@ class DLRANetConvAdapt(keras.Model):
         next_image_dims = out.shape[1:]
 
         # block 3)
-        self.dlraBlock3a = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock3a = DLRALayerConvAdaptive(low_rank=100, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=256,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock3a.output_shape_conv
-        self.dlraBlock3b = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock3b = DLRALayerConvAdaptive(low_rank=100, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=256,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock3b.output_shape_conv
@@ -381,11 +381,11 @@ class DLRANetConvAdapt(keras.Model):
         next_image_dims = out.shape[1:]
 
         # block 4)
-        self.dlraBlock4a = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock4a = DLRALayerConvAdaptive(low_rank=200, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=512,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock4a.output_shape_conv
-        self.dlraBlock4b = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock4b = DLRALayerConvAdaptive(low_rank=200, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=512,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock4b.output_shape_conv
@@ -396,11 +396,11 @@ class DLRANetConvAdapt(keras.Model):
         next_image_dims = out.shape[1:]
 
         # block 5)
-        self.dlraBlock5a = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock5a = DLRALayerConvAdaptive(low_rank=200, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=512,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock5a.output_shape_conv
-        self.dlraBlock5b = DLRALayerConvAdaptive(low_rank=self.low_rank, epsAdapt=self.tol, rmax_total=self.rmax_total,
+        self.dlraBlock5b = DLRALayerConvAdaptive(low_rank=200, epsAdapt=self.tol, rmax_total=self.rmax_total,
                                                  stride=(1, 1), rate=(1, 1), size=(3, 3), filters=512,
                                                  image_dims=next_image_dims)
         next_image_dims = self.dlraBlock5b.output_shape_conv
@@ -415,9 +415,9 @@ class DLRANetConvAdapt(keras.Model):
         t = tf.ones(shape=(4, next_image_dims[0], next_image_dims[1], next_image_dims[2]))
         out = self.flatten_layer(t)
         next_layer_input = out.shape
-        self.dlraDense1 = DLRALayerAdaptive(input_dim=next_layer_input[1], units=512, low_rank=self.low_rank,
+        self.dlraDense1 = DLRALayerAdaptive(input_dim=next_layer_input[1], units=512, low_rank=150,
                                             epsAdapt=self.tol, rmax_total=200)
-        self.dlraDense2 = DLRALayerAdaptive(input_dim=512, units=512, low_rank=self.low_rank,
+        self.dlraDense2 = DLRALayerAdaptive(input_dim=512, units=512, low_rank=150,
                                             epsAdapt=self.tol, rmax_total=200)
         self.output_layer = Linear(input_dim=512, units=self.output_dim)
 
