@@ -1,11 +1,10 @@
 from xmlrpc.client import boolean
-from dlranet import DLRANetAdaptive, create_csv_logger_cb
+from dlranetConvolution import DLRANetConvAdapt, create_csv_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras
 
 import numpy as np
-import matplotlib.pyplot as plt
 from optparse import OptionParser
 from os import path, makedirs
 
@@ -25,12 +24,11 @@ def test(start_rank, tolerance):
 
     starting_rank = options.start_rank  # starting rank of S matrix
     tol = options.tolerance  # eigenvalue treshold
-    max_rank = 300  # maximum rank of S matrix
+    max_rank = 150  # maximum rank of S matrix
 
-    dlra_layer_dim = 500
-
-    model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
-                            dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    dlra_layer_dim = 200
+    model = DLRANetConv(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+                        dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
     # Choose loss
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
@@ -83,7 +81,7 @@ def test(start_rank, tolerance):
 
 def train(start_rank, tolerance, load_model):
     # specify training
-    epochs = 250
+    epochs = 100
     batch_size = 256
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
@@ -104,13 +102,10 @@ def train(start_rank, tolerance, load_model):
 
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
-
-    max_rank = 350  # maximum rank of S matrix
+    max_rank = 20  # maximum rank of S matrix
 
     dlra_layer_dim = 784
-
-    model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
-                            dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    model = DLRANetConvAdapt(low_rank=10, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3), output_dim=10)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -121,9 +116,11 @@ def train(start_rank, tolerance, load_model):
     loss_metric_acc_val = tf.keras.metrics.Accuracy()
 
     # Build dataset
-    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
-    x_train = np.reshape(x_train, (-1, input_dim))
-    x_test = np.reshape(x_test, (-1, input_dim))
+    (x_train, y_train), (x_test, y_test) = keras.datasets.cifar10.load_data()
+    # x_train = tf.pad(x_train, [[0, 0], [2, 2], [2, 2]])
+    # x_test = tf.pad(x_test, [[0, 0], [2, 2], [2, 2]])
+    # x_train = np.reshape(x_train, (-1, 28, 28, 1))
+    # x_test = np.reshape(x_test, (-1, 28, 28, 1))
 
     # Reserve 10,000 samples for validation.
     val_size = 10000
@@ -149,8 +146,9 @@ def train(start_rank, tolerance, load_model):
         log.write(log_string)
 
     # load weights
-    if options.load_model == 1:
+    if load_model == 1:
         model.load(folder_name=folder_name)
+    model.build_model()
 
     best_acc = 0
     best_loss = 10
@@ -161,14 +159,8 @@ def train(start_rank, tolerance, load_model):
 
         for step, batch_train in enumerate(train_dataset):
             # 1.a) K and L Step Preproccessing
-            model.dlraBlockInput.k_step_preprocessing()
-            model.dlraBlockInput.l_step_preprocessing()
-            model.dlraBlock1.k_step_preprocessing()
-            model.dlraBlock1.l_step_preprocessing()
-            model.dlraBlock2.k_step_preprocessing()
-            model.dlraBlock2.l_step_preprocessing()
-            model.dlraBlock3.k_step_preprocessing()
-            model.dlraBlock3.l_step_preprocessing()
+            model.k_step_preprocessing()
+            model.l_step_preprocessing()
 
             # 1.b) Tape Gradients for K-Step
             model.toggle_non_s_step_training()
@@ -176,6 +168,7 @@ def train(start_rank, tolerance, load_model):
                 out = model(batch_train[0], step=0, training=True)
                 # softmax activation for classification
                 out = tf.keras.activations.softmax(out)
+                out = tf.reshape(out, shape=(batch_train[0].shape[0], 10))
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
@@ -200,21 +193,11 @@ def train(start_rank, tolerance, load_model):
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
             # Postprocessing K and L
-            model.dlraBlockInput.k_step_postprocessing_adapt()
-            model.dlraBlockInput.l_step_postprocessing_adapt()
-            model.dlraBlock1.k_step_postprocessing_adapt()
-            model.dlraBlock1.l_step_postprocessing_adapt()
-            model.dlraBlock2.k_step_postprocessing_adapt()
-            model.dlraBlock2.l_step_postprocessing_adapt()
-            model.dlraBlock3.k_step_postprocessing_adapt()
-            model.dlraBlock3.l_step_postprocessing_adapt()
+            model.k_step_postprocessing_adapt()
+            model.l_step_postprocessing_adapt()
 
             # S-Step Preprocessing
-            model.dlraBlockInput.s_step_preprocessing()
-            model.dlraBlock1.s_step_preprocessing()
-            model.dlraBlock2.s_step_preprocessing()
-            model.dlraBlock3.s_step_preprocessing()
-
+            model.s_step_preprocessing()
             model.toggle_s_step_training()
 
             # 3.b) Tape Gradients
@@ -231,10 +214,7 @@ def train(start_rank, tolerance, load_model):
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
 
             # Rank Adaptivity
-            model.dlraBlockInput.rank_adaption()
-            model.dlraBlock1.rank_adaption()
-            model.dlraBlock2.rank_adaption()
-            model.dlraBlock3.rank_adaption()
+            model.rank_adaption()
 
             # Network monotoring and verbosity
             loss_metric.update_state(loss)
@@ -243,12 +223,11 @@ def train(start_rank, tolerance, load_model):
 
             loss_value = loss_metric.result().numpy()
             acc_value = acc_metric.result().numpy()
-            if step % 100 == 0:
+            if step % 2 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
                 print("Accuracy: " + str(acc_value))
-                print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
-                    int(model.dlraBlock1.low_rank)) + " | " + str(
-                    int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
+                print("Ranks:")
+                print(model.get_low_ranks())
 
             # Reset metrics
             loss_metric.reset_state()
@@ -259,10 +238,7 @@ def train(start_rank, tolerance, load_model):
         acc_val = 0
 
         #  K  Step Preproccessing
-        model.dlraBlockInput.k_step_preprocessing()
-        model.dlraBlock1.k_step_preprocessing()
-        model.dlraBlock2.k_step_preprocessing()
-        model.dlraBlock3.k_step_preprocessing()
+        model.k_step_preprocessing()
 
         # Validate model
         out = model(x_val, step=0, training=False)
@@ -308,10 +284,11 @@ def train(start_rank, tolerance, load_model):
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
             loss_val) + ";" + str(acc_val) + ";" + str(
-            loss_test) + ";" + str(acc_test) + ";" + str(
-            int(model.dlraBlockInput.low_rank)) + ";" + str(
-            int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
-            int(model.dlraBlock3.low_rank)) + "\n"
+            loss_test) + ";" + str(acc_test)
+        ranks = model.get_low_ranks()
+        for rank in ranks:
+            log_string += ";" + str(rank)
+
         with open(file_name, "a") as log:
             log.write(log_string)
         print("Epoch Data :" + log_string)

@@ -353,7 +353,7 @@ class DLRALayer(keras.layers.Layer):
         :param step: step conter: k:= 0, l:=1, s:=2
         :return:
         """
-        
+
         if step == 0:  # k-step
             z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
         elif step == 1:  # l-step
@@ -754,20 +754,6 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_M = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                      trainable=False, name="aux_M")
         # Todo: initializer with low rank
-
-    def call(self, inputs, step: int = 0):
-        """
-        :param inputs: layer input
-        :param step: step conter: k:= 0, l:=1, s:=2
-        :return:
-        """
-        if step == 0:  # k-step
-            z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
-        elif step == 1:  # l-step
-            z = tf.matmul(tf.matmul(inputs, self.aux_U), self.l_t)
-        else:  # s-step
-            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1)
-        return tf.keras.activations.relu(z + self.b)
 
     def call(self, inputs, step: int = 0):
         """
