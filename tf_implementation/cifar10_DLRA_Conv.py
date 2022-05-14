@@ -102,7 +102,7 @@ def train(start_rank, tolerance, load_model):
 
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
-    max_rank = 20  # maximum rank of S matrix
+    max_rank = 300  # maximum rank of S matrix
 
     dlra_layer_dim = 784
     model = DLRANetConvAdapt(low_rank=10, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3), output_dim=10)
