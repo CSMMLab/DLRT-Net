@@ -153,7 +153,62 @@ def train(start_rank, tolerance, load_model):
 
     best_acc = 0
     best_loss = 10
-    # Iterate over epochs. (Training loop)
+
+    # Measure truncated performance
+    # Compute vallidation loss and accuracy
+    loss_val = 0
+    acc_val = 0
+
+    #  K  Step Preproccessing
+    model.dlraBlockInput.k_step_preprocessing()
+    model.dlraBlock1.k_step_preprocessing()
+    model.dlraBlock2.k_step_preprocessing()
+    model.dlraBlock3.k_step_preprocessing()
+
+    # Validate model
+    out = model(x_val, step=0, training=False)
+    out = tf.keras.activations.softmax(out)
+    loss = loss_fn(y_val, out)
+    loss_metric.update_state(loss)
+    loss_val = loss_metric.result().numpy()
+
+    prediction = tf.math.argmax(out, 1)
+    acc_metric.update_state(prediction, y_val)
+    acc_val = acc_metric.result().numpy()
+    print("Val Accuracy: " + str(acc_val))
+
+    # Reset metrics
+    loss_metric.reset_state()
+    acc_metric.reset_state()
+
+    # Test model
+    out = model(x_test, step=0, training=False)
+    out = tf.keras.activations.softmax(out)
+    loss = loss_fn(y_test, out)
+    loss_metric.update_state(loss)
+    loss_test = loss_metric.result().numpy()
+
+    prediction = tf.math.argmax(out, 1)
+    acc_metric.update_state(prediction, y_test)
+    acc_test = acc_metric.result().numpy()
+    log_string = "Loss: " + str(loss_test) + "| Accuracy" + str(acc_test) + "\n"
+    print("Test :" + log_string)
+    # Reset metrics
+    loss_metric.reset_state()
+    acc_metric.reset_state()
+
+    # Log Data of current epoch
+    log_string = "nan" + ";" + "nan" + ";" + str(
+        loss_val) + ";" + str(acc_val) + ";" + str(
+        loss_test) + ";" + str(acc_test) + ";" + str(
+        int(model.dlraBlockInput.low_rank)) + ";" + str(
+        int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
+        int(model.dlraBlock3.low_rank)) + "\n"
+    with open(file_name, "a") as log:
+        log.write(log_string)
+    print("Epoch Data :" + log_string)
+
+    # Start Training
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
         # Iterate over the batches of the dataset.
