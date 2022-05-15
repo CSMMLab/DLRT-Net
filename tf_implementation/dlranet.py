@@ -131,7 +131,7 @@ class DLRANet(keras.Model):
         self.dlraBlock3 = DLRALayer(input_dim=self.dlra_layer_dim, units=self.dlra_layer_dim, low_rank=self.low_rank,
                                     epsAdapt=self.tol,
                                     rmax_total=rmax_total, )
-        self.dlraBlockOutput = Linear(input_dim=self.dlra_layer_dim, units=self.output_dim)
+        self.dlraBlockOutput = Linear2(input_dim=self.dlra_layer_dim, units=self.output_dim)
 
     def build_model(self):
         self.dlraBlockInput.build_model()
@@ -188,7 +188,7 @@ class DLRANet(keras.Model):
         self.dlraBlock1.save(folder_name=folder_name, layer_id=1)
         self.dlraBlock2.save(folder_name=folder_name, layer_id=2)
         self.dlraBlock3.save(folder_name=folder_name, layer_id=3)
-        self.dlraBlockOutput.save(folder_name=folder_name)
+        self.dlraBlockOutput.save(folder_name=folder_name, layer_id=4)
         return 0
 
     def load(self, folder_name):
@@ -197,6 +197,14 @@ class DLRANet(keras.Model):
         self.dlraBlock2.load(folder_name=folder_name, layer_id=2)
         self.dlraBlock3.load(folder_name=folder_name, layer_id=3)
         self.dlraBlockOutput.load(folder_name=folder_name)
+        return 0
+
+    def load_from_fullW(self, folder_name, rank):
+        self.dlraBlockInput.load_from_fullW(folder_name=folder_name, layer_id=0, rank=rank)
+        self.dlraBlock1.load_from_fullW(folder_name=folder_name, layer_id=1, rank=rank)
+        self.dlraBlock2.load_from_fullW(folder_name=folder_name, layer_id=2, rank=rank)
+        self.dlraBlock3.load_from_fullW(folder_name=folder_name, layer_id=3, rank=rank)
+        self.dlraBlockOutput.load(folder_name=folder_name, layer_id=4)
         return 0
 
 
@@ -309,6 +317,38 @@ class Linear(keras.layers.Layer):
         b_np = np.load(folder_name + "/b_out.npy")
         self.b1 = tf.Variable(initial_value=b_np,
                               trainable=True, name="b_", dtype=tf.float32)
+
+
+class Linear2(keras.layers.Layer):
+    def __init__(self, units=32, input_dim=32, name="linear", **kwargs):
+        super(Linear2, self).__init__(**kwargs)
+        self.units = units
+        self.w = self.add_weight(shape=(input_dim, units), initializer="random_normal",
+                                 trainable=True, )
+        self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True)
+
+    def call(self, inputs):
+        return tf.matmul(inputs, self.w) + self.b
+
+    def get_config(self):
+        config = super(Linear2, self).get_config()
+        config.update({"units": self.units})
+        return config
+
+    def save(self, folder_name, layer_id):
+        w_np = self.w.numpy()
+        np.save(folder_name + "/w_" + str(layer_id) + ".npy", w_np)
+        b_np = self.b.numpy()
+        np.save(folder_name + "/b_" + str(layer_id) + ".npy", b_np)
+        return 0
+
+    def load(self, folder_name, layer_id):
+        a_np = np.load(folder_name + "/w_" + str(layer_id) + ".npy")
+        self.w = tf.Variable(initial_value=a_np,
+                             trainable=True, name="w_", dtype=tf.float32)
+        b_np = np.load(folder_name + "/b_" + str(layer_id) + ".npy")
+        self.b = tf.Variable(initial_value=b_np,
+                             trainable=True, name="b_", dtype=tf.float32)
 
 
 class DLRALayer(keras.layers.Layer):
@@ -514,6 +554,23 @@ class DLRALayer(keras.layers.Layer):
         aux_M_np = np.load(folder_name + "/aux_M" + str(layer_id) + ".npy")
         self.aux_M = tf.Variable(initial_value=aux_M_np,
                                  trainable=True, name="aux_M", dtype=tf.float32)
+        return 0
+
+    def load_from_fullW(self, folder_name, layer_id, rank):
+
+        W_mat = np.load(folder_name + "/w_" + str(layer_id) + ".npy")
+        d, u, v = tf.linalg.svd(W_mat)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
+
+        s_init = tf.linalg.tensor_diag(d[:rank])
+        u_init = u[:, :rank]
+        v_init = u[:rank, :]
+        self.s = tf.Variable(initial_value=s_init, trainable=True, name="s_", dtype=tf.float32)
+        self.aux_Vt = tf.Variable(initial_value=v_init, trainable=True, name="Vt", dtype=tf.float32)
+        self.aux_U = tf.Variable(initial_value=u_init, trainable=True, name="aux_U", dtype=tf.float32)
+
+        self.k_step_preprocessing()
+        self.l_step_preprocessing()
+
         return 0
 
 
@@ -909,11 +966,11 @@ class ReferenceNet(keras.Model):
 
     def __init__(self, input_dim=10, output_dim=1, layer_dim=200, name="referenceNet", **kwargs):
         super(ReferenceNet, self).__init__(name=name, **kwargs)
-        self.layer1 = Linear(units=layer_dim, input_dim=input_dim)
-        self.layer2 = Linear(units=layer_dim, input_dim=layer_dim)
-        self.layer3 = Linear(units=layer_dim, input_dim=layer_dim)
-        self.layer4 = Linear(units=layer_dim, input_dim=layer_dim)
-        self.layer5 = Linear(units=output_dim, input_dim=layer_dim)
+        self.layer1 = Linear2(units=layer_dim, input_dim=input_dim)
+        self.layer2 = Linear2(units=layer_dim, input_dim=layer_dim)
+        self.layer3 = Linear2(units=layer_dim, input_dim=layer_dim)
+        self.layer4 = Linear2(units=layer_dim, input_dim=layer_dim)
+        self.layer5 = Linear2(units=output_dim, input_dim=layer_dim)
 
     @tf.function
     def call(self, inputs):
@@ -927,6 +984,14 @@ class ReferenceNet(keras.Model):
         z = tf.keras.activations.relu(z)
         z = self.layer5(z)
         return z
+
+    def save(self, folder_name):
+        self.layer1.save(folder_name, layer_id=0)
+        self.layer2.save(folder_name, layer_id=1)
+        self.layer3.save(folder_name, layer_id=2)
+        self.layer4.save(folder_name, layer_id=3)
+        self.layer5.save(folder_name, layer_id=4)
+        return
 
 
 # ------ utils below

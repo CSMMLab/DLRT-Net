@@ -388,6 +388,13 @@ def plot_run4layer(load_folder, save_name):
     plt.ylim([0.8, 1.05])
     plt.ylabel("acc")
     plt.xlabel("epoch")
+
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + "_acc.png", dpi=500)
     plt.clf()
 
@@ -397,8 +404,20 @@ def plot_run4layer(load_folder, save_name):
     plt.legend(["loss_val", "loss_train", "loss_test"])
     plt.ylim([1e-3, 2.5])
     plt.ylabel("loss")
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + "_loss.png", dpi=500)
     plt.yscale('log')
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
     plt.clf()
     plt.plot(dlra_3layer[["rank1"]], '-k')
@@ -410,8 +429,20 @@ def plot_run4layer(load_folder, save_name):
     plt.xlabel("epoch")
     plt.ylabel("rank")
     plt.legend(["rank layer 1", "rank layer 2", "rank layer 3", "rank layer 4"])
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
     plt.yscale('log')
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + "_ranks_log.png", dpi=500)
     plt.clf()
     return 0
@@ -436,8 +467,20 @@ def plot_timing_exec(load_folder, save_name):
     plt.ylabel("time [s]")
 
     plt.legend(["low-rank", "dense reference"])
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + ".png", dpi=500)
     plt.yscale("log")
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + "log.png", dpi=500)
     plt.clf()
 
@@ -463,8 +506,20 @@ def plot_timing_train(load_folder, save_name):
     plt.xlim((df[["rank"]].to_numpy()[1], df[["rank"]].to_numpy()[-4]))
 
     plt.legend(["low-rank", "dense reference"])
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + ".png", dpi=500)
     plt.yscale("log")
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + save_name + "log.png", dpi=500)
     plt.clf()
 
@@ -530,6 +585,8 @@ def print_param_counts():
     print(ratio013)
     print(ratio015)
     print(ratio017)
+    ratios200 = np.asarray([(1, 1), ratio003, ratio005, ratio007, ratio009, ratio011, ratio013, ratio015, ratio017])
+    ratios200 = (np.ones((9, 2)) - ratios200) * 100
 
     # b) 500 neurons run
     e003_ranks = np.asarray([176, 170, 171, 174])
@@ -586,6 +643,9 @@ def print_param_counts():
     print(ratio013)
     print(ratio015)
     print(ratio017)
+
+    ratios500 = np.asarray([(1, 1), ratio003, ratio005, ratio007, ratio009, ratio011, ratio013, ratio015, ratio017])
+    ratios500 = (np.ones((9, 2)) - ratios500) * 100
 
     # b) 784 neurons run
     e003_ranks = np.asarray([190, 190, 190, 190])
@@ -644,10 +704,15 @@ def print_param_counts():
     print(ratio013)
     print(ratio015)
     print(ratio017)
+    ratios784 = np.asarray([(1, 1), ratio003, ratio005, ratio007, ratio009, ratio011, ratio013, ratio015, ratio017])
+    ratios784 = (np.ones((9, 2)) - ratios784) * 100
 
     plot_acc_over_params(accs_200, accs_500, accs_784, params_200, params_500, params_784,
                          name="accuracy_over_parameter")
     plot_acc_over_tolerance(tols, accs_200, accs_500, accs_784, name="accuracy_over_tolerance")
+    plot_acc_over_compression(ratios200, ratios500, ratios784, accs_200, accs_500, accs_784,
+                              name="accuracy_over_compression")
+
     return 0
 
 
@@ -671,6 +736,12 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     plt.ylabel("test accuracy")
     plt.xscale("log")
     plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs(np.log(x_right - x_left) / (y_high - y_low)) * 0.7 * 1e-1)
+
     plt.savefig("figures/" + name + ".png", dpi=500)
     plt.clf()
     return 0
@@ -695,6 +766,42 @@ def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
     plt.xlabel(r"tolerance $\tau$")
     plt.ylabel("test accuracy")
     plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
+    plt.savefig("figures/" + name + ".png", dpi=500)
+    plt.clf()
+    return 0
+
+
+def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, accs3, name):
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("white")
+    colors = ['k', 'r', 'g', 'b']
+    symbol_size = 0.7
+    markersize = 2.5
+    markerwidth = 0.5
+
+    plt.plot(ratios200[:, 0], accs1, '-ok')
+    plt.plot(ratios500[:, 0], accs2, '-og')
+    plt.plot(ratios784[:, 0], accs3, '-ob')
+
+    plt.plot(ratios200[0, 0], accs1[0], 'or')
+    plt.plot(ratios500[0, 0], accs2[0], 'or')
+    plt.plot(ratios784[0, 0], accs3[0], 'or')
+    plt.xlabel(r"compression [%]")
+    plt.ylabel("test accuracy")
+    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+
     plt.savefig("figures/" + name + ".png", dpi=500)
     plt.clf()
     return 0

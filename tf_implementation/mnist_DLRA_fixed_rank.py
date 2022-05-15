@@ -1,5 +1,5 @@
 from xmlrpc.client import boolean
-from dlranet import DLRANet, create_csv_logger_cb,DLRANetAdaptive
+from dlranet import DLRANet, create_csv_logger_cb, DLRANetAdaptive
 
 import tensorflow as tf
 from tensorflow import keras
@@ -149,6 +149,8 @@ def train(start_rank, tolerance, load_model):
     if load_model == 1:
         model.load(folder_name=folder_name)
     model.build_model()
+    if load_model == 1:
+        model.load(folder_name=folder_name)  # need to be here
 
     best_acc = 0
     best_loss = 10
