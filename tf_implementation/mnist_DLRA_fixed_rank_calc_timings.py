@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from optparse import OptionParser
 from os import path, makedirs
+from timeit import default_timer as timer
 
 
 def test(start_rank, tolerance):
@@ -55,11 +56,31 @@ def test(start_rank, tolerance):
     # model.dlraBlock2.k_step_preprocessing()
     # model.dlraBlock3.k_step_preprocessing()
 
-    out = model(x_test, step=0, training=False)
-    out = tf.keras.activations.softmax(out)
-    loss = loss_fn(y_test, out)
-    loss_metric(loss)
-    loss_test = loss_metric.result().numpy()
+    # Start timing measurements
+    log_file_timing, file_name_timing = create_csv_timing_logger_cb(
+        folder_name="e2edense_sr" + str(start_rank) + "_v" + str(tolerance))
+
+    log_string_timing = "batch_time;rank1;rank2;rank3;rank4\n"
+
+    with open(file_name_timing, "a") as log:
+        log.write(log_string_timing)
+
+    timings_arr = np.zeros(100)
+    for i in range(0, 100):
+        start = timer()
+        out = model(x_test, step=0, training=False)
+        out = tf.keras.activations.softmax(out)
+        loss = loss_fn(y_test, out)
+        loss_metric(loss)
+        loss_test = loss_metric.result().numpy()
+        end = timer()
+        timings_arr[i] = (end - start) / 100.0
+
+    average = np.mean(timings_arr)
+    variance = np.var(timings_arr)
+
+    with open(file_name_timing, "a") as log:
+        log.write(str(average) + "," + str(variance))
 
     prediction = tf.math.argmax(out, 1)
     acc_metric.update_state(prediction, y_test)
@@ -82,7 +103,7 @@ def test(start_rank, tolerance):
 
 def train(start_rank, tolerance, load_model, dim_layer):
     # specify training
-    epochs = 100
+    epochs = 2
     batch_size = 256
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
@@ -152,14 +173,26 @@ def train(start_rank, tolerance, load_model, dim_layer):
     if load_model == 1:
         model.load(folder_name=folder_name)  # need to be here
 
+    log_file_timing, file_name_timing = create_csv_timing_logger_cb(folder_name=filename)
+
+    log_string_timing = "batch_time;rank1;rank2;rank3;rank4\n"
+    with open(file_name_timing, "a") as log:
+        log.write(log_string_timing)
+
     best_acc = 0
     best_loss = 10
+    timing_sum = 0
+    timing_count = 0
+    timing_list = []
+
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
         # Iterate over the batches of the dataset.
 
         for step, batch_train in enumerate(train_dataset):
+            # start timing measurement
+            start = timer()
             # 1.a) K and L Step Preproccessing
             model.dlraBlockInput.k_step_preprocessing()
             model.dlraBlockInput.l_step_preprocessing()
@@ -236,6 +269,18 @@ def train(start_rank, tolerance, load_model, dim_layer):
             # model.dlraBlock2.rank_adaption()
             # model.dlraBlock3.rank_adaption()
 
+            # finish timing measurement
+            end = timer()
+            log_string_timing = str(end - start) + ";" + str(int(model.dlraBlockInput.low_rank)) + ";" + str(
+                int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
+                int(model.dlraBlock3.low_rank)) + "\n"
+
+            with open(file_name_timing, "a") as log:
+                log.write(log_string_timing)
+            timing_list.append(end - start)
+            timing_sum += end - start
+            timing_count += 1
+
             # Network monotoring and verbosity
             loss_metric.update_state(loss)
             prediction = tf.math.argmax(out, 1)
@@ -243,6 +288,7 @@ def train(start_rank, tolerance, load_model, dim_layer):
 
             loss_value = loss_metric.result().numpy()
             acc_value = acc_metric.result().numpy()
+
             if step % 100 == 0:
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
                 print("Accuracy: " + str(acc_value))
@@ -316,6 +362,12 @@ def train(start_rank, tolerance, load_model, dim_layer):
             log.write(log_string)
         print("Epoch Data :" + log_string)
 
+    timing_arr = np.asarray(timing_list)
+    average = np.mean(timing_arr)
+    variance = np.var(timing_arr)
+
+    with open(file_name_timing, "a") as log:
+        log.write("Average_time;" + str(average) + ", Variance, " + str(variance))
     return 0
 
 
