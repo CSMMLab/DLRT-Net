@@ -40,7 +40,7 @@ def test(start_rank, tolerance):
     # check if dir exists
     if not path.exists(folder_name):
         print("error, file not found")
-        exit(1)
+        makedirs(folder_name)
     print("Load model from: " + folder_name)
 
     # Create Model
