@@ -68,16 +68,22 @@ def test(start_rank, tolerance):
     print(model.dlraBlock3.k.shape)
     print(model.dlraBlockInput.k.shape)
 
-    start = timer()
+    timings_arr = np.zeros(100)
     for i in range(0, 100):
+        start = timer()
         out = model(x_test, step=0, training=False)
         out = tf.keras.activations.softmax(out)
         loss = loss_fn(y_test, out)
         loss_metric(loss)
         loss_test = loss_metric.result().numpy()
-    end = timer()
+        end = timer()
+        timings_arr[i] = (end - start) / 100.0
+
+    average = np.mean(timings_arr)
+    variance = np.var(timings_arr)
+
     with open(file_name_timing, "a") as log:
-        log.write(str((end - start) / 100.0))
+        log.write(str(average) + "," + str(variance))
 
     """
     prediction = tf.math.argmax(out, 1)
@@ -179,6 +185,7 @@ def train(start_rank, tolerance, load_model):
     best_loss = 10
     timing_sum = 0
     timing_count = 0
+    timing_list = []
     # Iterate over epochs. (Training loop)
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
@@ -280,6 +287,7 @@ def train(start_rank, tolerance, load_model):
 
             with open(file_name_timing, "a") as log:
                 log.write(log_string_timing)
+            timing_list.append(end - start)
             timing_sum += end - start
             timing_count += 1
 
@@ -357,8 +365,13 @@ def train(start_rank, tolerance, load_model):
         print("Epoch Data :" + log_string)
 
     timing_avg = timing_sum / timing_count
+
+    timing_arr = np.asarray(timing_list)
+    average = np.mean(timing_arr)
+    variance = np.var(timing_arr)
+
     with open(file_name_timing, "a") as log:
-        log.write("Average_time;" + str(timing_avg))
+        log.write("Average_time;" + str(average) + ", Variance, " + str(variance))
     return 0
 
 

@@ -8,4 +8,4 @@ python mnist_E2EDLRA_fixed_rank.py -s 320 -t 0.07 -l 0 --train 0
 python mnist_E2EDLRA_fixed_rank.py -s 640 -t 0.07 -l 0 --train 0
 python mnist_E2EDLRA_fixed_rank.py -s 1280 -t 0.07 -l 0 --train 0
 python mnist_E2EDLRA_fixed_rank.py -s 2560 -t 0.07 -l 0 --train 0
-python mnist_E2EDLRA_fixed_rank.py -s 5120 -t 0.07 -l 0 --train 0
+#python mnist_E2EDLRA_fixed_rank.py -s 5120 -t 0.07 -l 0 --train 0
