@@ -81,7 +81,7 @@ def test(start_rank, tolerance):
     return 0
 
 
-def train(start_rank, tolerance, load_model):
+def train(start_rank, tolerance, load_model, dim_layer):
     # specify training
     epochs = 250
     batch_size = 256
@@ -107,7 +107,7 @@ def train(start_rank, tolerance, load_model):
 
     max_rank = 350  # maximum rank of S matrix
 
-    dlra_layer_dim = 784
+    dlra_layer_dim = dim_layer
 
     model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
@@ -149,7 +149,7 @@ def train(start_rank, tolerance, load_model):
         log.write(log_string)
 
     # load weights
-    if options.load_model == 1:
+    if load_model == 1:
         model.load(folder_name=folder_name)
 
     best_acc = 0
@@ -333,14 +333,17 @@ if __name__ == '__main__':
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
     parser.add_option("-l", "--load_model", dest="load_model", default=1)
     parser.add_option("-a", "--train", dest="train", default=0)
+    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
     options.tolerance = float(options.tolerance)
     options.load_model = int(options.load_model)
     options.train = int(options.train)
+    options.dim_layer = int(options.dim_layer)
 
     if options.train == 1:
-        train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model)
+        train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
+              dim_layer=options.dim_layer)
     else:
         test(start_rank=options.start_rank, tolerance=options.tolerance)
