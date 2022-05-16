@@ -577,14 +577,14 @@ def print_param_counts():
     ratio013 = (float(res013[0]) / float(resdense), float(res013[1]) / float(resdense))
     ratio015 = (float(res015[0]) / float(resdense), float(res015[1]) / float(resdense))
     ratio017 = (float(res017[0]) / float(resdense), float(res017[1]) / float(resdense))
-    print(ratio003)
-    print(ratio005)
-    print(ratio007)
-    print(ratio009)
-    print(ratio011)
-    print(ratio013)
-    print(ratio015)
-    print(ratio017)
+    print(ratio003[1] * 100 - 100)
+    print(ratio005[1] * 100 - 100)
+    print(ratio007[1] * 100 - 100)
+    print(ratio009[1] * 100 - 100)
+    print(ratio011[1] * 100 - 100)
+    print(ratio013[1] * 100 - 100)
+    print(ratio015[1] * 100 - 100)
+    print(ratio017[1] * 100 - 100)
     ratios200 = np.asarray([(1, 1), ratio003, ratio005, ratio007, ratio009, ratio011, ratio013, ratio015, ratio017])
     ratios200 = (np.ones((9, 2)) - ratios200) * 100
 
@@ -635,14 +635,14 @@ def print_param_counts():
     ratio013 = (float(res013[0]) / float(resdense), float(res013[1]) / float(resdense))
     ratio015 = (float(res015[0]) / float(resdense), float(res015[1]) / float(resdense))
     ratio017 = (float(res017[0]) / float(resdense), float(res017[1]) / float(resdense))
-    print(ratio003)
-    print(ratio005)
-    print(ratio007)
-    print(ratio009)
-    print(ratio011)
-    print(ratio013)
-    print(ratio015)
-    print(ratio017)
+    print(ratio003[1] * 100 - 100)
+    print(ratio005[1] * 100 - 100)
+    print(ratio007[1] * 100 - 100)
+    print(ratio009[1] * 100 - 100)
+    print(ratio011[1] * 100 - 100)
+    print(ratio013[1] * 100 - 100)
+    print(ratio015[1] * 100 - 100)
+    print(ratio017[1] * 100 - 100)
 
     ratios500 = np.asarray([(1, 1), ratio003, ratio005, ratio007, ratio009, ratio011, ratio013, ratio015, ratio017])
     ratios500 = (np.ones((9, 2)) - ratios500) * 100
@@ -696,14 +696,14 @@ def print_param_counts():
     ratio013 = (float(res013[0]) / float(resdense), float(res013[1]) / float(resdense))
     ratio015 = (float(res015[0]) / float(resdense), float(res015[1]) / float(resdense))
     ratio017 = (float(res017[0]) / float(resdense), float(res017[1]) / float(resdense))
-    print(ratio003)
-    print(ratio005)
-    print(ratio007)
-    print(ratio009)
-    print(ratio011)
-    print(ratio013)
-    print(ratio015)
-    print(ratio017)
+    print(ratio003[1] * 100 - 100)
+    print(ratio005[1] * 100 - 100)
+    print(ratio007[1] * 100 - 100)
+    print(ratio009[1] * 100 - 100)
+    print(ratio011[1] * 100 - 100)
+    print(ratio013[1] * 100 - 100)
+    print(ratio015[1] * 100 - 100)
+    print(ratio017[1] * 100 - 100)
     ratios784 = np.asarray([(1, 1), ratio003, ratio005, ratio007, ratio009, ratio011, ratio013, ratio015, ratio017])
     ratios784 = (np.ones((9, 2)) - ratios784) * 100
 
@@ -813,8 +813,8 @@ def compute_param_count(input_dims, output_dims, layer_ranks):
     res_exec = np.sum(e_params) + output_dims[-1] * 10
 
     # train_params
-    t_params = input_dims * layer_ranks + layer_ranks * layer_ranks + layer_ranks * output_dims
-    res_train = np.sum(t_params) * 3 + output_dims[-1] * 10
+    t_params = input_dims * layer_ranks * 2 + layer_ranks * layer_ranks * 4 + 2 * layer_ranks * output_dims
+    res_train = np.sum(t_params) + output_dims[-1] * 10
     return res_exec, res_train
 
 
