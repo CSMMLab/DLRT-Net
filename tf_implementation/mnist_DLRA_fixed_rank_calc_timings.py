@@ -133,7 +133,7 @@ def test(start_rank, tolerance):
 def train(start_rank, tolerance, load_model, dim_layer):
     # specify training
     epochs = 2
-    batch_size = 256
+    batch_size = 500
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
     folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
