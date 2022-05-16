@@ -196,7 +196,7 @@ class DLRANet(keras.Model):
         self.dlraBlock1.load(folder_name=folder_name, layer_id=1)
         self.dlraBlock2.load(folder_name=folder_name, layer_id=2)
         self.dlraBlock3.load(folder_name=folder_name, layer_id=3)
-        self.dlraBlockOutput.load(folder_name=folder_name)
+        self.dlraBlockOutput.load(folder_name=folder_name, layer_id=4)
         return 0
 
     def load_from_fullW(self, folder_name, rank):

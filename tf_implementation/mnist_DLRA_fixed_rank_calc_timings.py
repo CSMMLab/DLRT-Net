@@ -62,8 +62,9 @@ def test(start_rank, tolerance):
     acc_metric = tf.keras.metrics.Accuracy()
 
     # Load model
-    # if options.load_model:
-    model.load(folder_name=folder_name)
+    if options.load_model:
+        model.load(folder_name=folder_name)
+    model.build_model()
 
     # Load dataset
     # Build dataset
@@ -88,8 +89,9 @@ def test(start_rank, tolerance):
     with open(file_name_timing, "a") as log:
         log.write(log_string_timing)
 
-    timings_arr = np.zeros(100)
-    for i in range(0, 100):
+    n_runs = 1000
+    timings_arr = np.zeros(n_runs)
+    for i in range(0, n_runs):
         start = timer()
         out = model(x_test, step=0, training=False)
         out = tf.keras.activations.softmax(out)
@@ -101,10 +103,13 @@ def test(start_rank, tolerance):
 
     average = np.mean(timings_arr)
     variance = np.var(timings_arr)
+    print(average)
+    print(variance)
 
     with open(file_name_timing, "a") as log:
         log.write(str(average) + "," + str(variance))
 
+    """
     prediction = tf.math.argmax(out, 1)
     acc_metric.update_state(prediction, y_test)
     for pred, test in zip(prediction.numpy(), y_test):
@@ -121,6 +126,7 @@ def test(start_rank, tolerance):
 
     acc_metric.update_state([[1], [2]], [[0], [2]])
     print(acc_metric.result())
+    """
     return 0
 
 
