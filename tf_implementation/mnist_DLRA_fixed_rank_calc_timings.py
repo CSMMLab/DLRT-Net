@@ -89,7 +89,7 @@ def test(start_rank, tolerance):
     with open(file_name_timing, "a") as log:
         log.write(log_string_timing)
 
-    n_runs = 1000
+    n_runs = 100
     timings_arr = np.zeros(n_runs)
     for i in range(0, n_runs):
         start = timer()
