@@ -11,6 +11,29 @@ from os import path, makedirs
 from timeit import default_timer as timer
 
 
+def create_csv_timing_logger_cb(folder_name: str):
+    '''
+    dynamically creates a csvlogger and tensorboard logger
+    '''
+    # check if dir exists
+    if not path.exists(folder_name + '/timingLogs/'):
+        makedirs(folder_name + '/timingLogs/')
+
+    # checkfirst, if history file exists.
+    logName = folder_name + '/timingLogs/timing_001_'
+    count = 1
+    while path.isfile(logName + '.csv'):
+        count += 1
+        logName = folder_name + \
+                  '/timingLogs/timing_' + str(count).zfill(3) + '_'
+
+    logFileName = logName + '.csv'
+    # create logger callback
+    f = open(logFileName, "a")
+
+    return f, logFileName
+
+
 def test(start_rank, tolerance):
     # specify training
     folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
