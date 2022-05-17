@@ -226,7 +226,7 @@ class DLRANetAdaptive(keras.Model):
         self.dlraBlock3 = DLRALayerAdaptive(input_dim=dlra_layer_dim, units=dlra_layer_dim, low_rank=low_rank,
                                             epsAdapt=tol,
                                             rmax_total=rmax_total, )
-        self.dlraBlockOutput = Linear(input_dim=dlra_layer_dim, units=output_dim)
+        self.dlraBlockOutput = Linear2(input_dim=dlra_layer_dim, units=output_dim)
 
     def call(self, inputs, step: int = 0):
         z = self.dlraBlockInput(inputs, step=step)
@@ -275,7 +275,7 @@ class DLRANetAdaptive(keras.Model):
         self.dlraBlock1.save(folder_name=folder_name, layer_id=1)
         self.dlraBlock2.save(folder_name=folder_name, layer_id=2)
         self.dlraBlock3.save(folder_name=folder_name, layer_id=3)
-        self.dlraBlockOutput.save(folder_name=folder_name)
+        self.dlraBlockOutput.save(folder_name=folder_name, layer_id=4)
         return 0
 
     def load(self, folder_name):
@@ -283,7 +283,7 @@ class DLRANetAdaptive(keras.Model):
         self.dlraBlock1.load(folder_name=folder_name, layer_id=1)
         self.dlraBlock2.load(folder_name=folder_name, layer_id=2)
         self.dlraBlock3.load(folder_name=folder_name, layer_id=3)
-        self.dlraBlockOutput.load(folder_name=folder_name)
+        self.dlraBlockOutput.load(folder_name=folder_name, layer_id=4)
         return 0
 
 
