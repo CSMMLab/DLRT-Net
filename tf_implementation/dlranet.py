@@ -554,6 +554,20 @@ class DLRALayer(keras.layers.Layer):
         aux_M_np = np.load(folder_name + "/aux_M" + str(layer_id) + ".npy")
         self.aux_M = tf.Variable(initial_value=aux_M_np,
                                  trainable=True, name="aux_M", dtype=tf.float32)
+
+        # build model
+
+        # auxiliary variables
+
+        self.aux_Unp1 = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
+                                        trainable=False, name="aux_Unp1")
+
+        self.aux_Vtnp1 = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
+                                         trainable=False, name="vtnp1")
+        self.aux_N = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
+                                     trainable=False, name="aux_N")
+        self.aux_M = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
+                                     trainable=False, name="aux_M")
         return 0
 
     def load_from_fullW(self, folder_name, layer_id, rank):
