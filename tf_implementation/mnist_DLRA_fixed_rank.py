@@ -148,9 +148,11 @@ def train(start_rank, tolerance, load_model, dim_layer):
     # load weights
     if load_model == 1:
         model.load(folder_name=folder_name)
-    model.build_model()
-    if load_model == 1:
-        model.load(folder_name=folder_name)  # need to be here
+    else:
+        model.build_model()
+
+    # if load_model == 1:
+    #    model.load(folder_name=folder_name)  # need to be here
 
     best_acc = 0
     best_loss = 10

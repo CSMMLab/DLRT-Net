@@ -13,6 +13,7 @@ import numpy as np
 def main():
     print_param_counts()
 
+    """
     # print_param_cout()
     name = "e2edense_sr300_v0.17"
     plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
@@ -34,7 +35,7 @@ def main():
     # plot_timings
     plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
     plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
-
+    """
     """
     name = "e2edense_sr200_v0.03"
     plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
@@ -725,23 +726,24 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     markersize = 2.5
     markerwidth = 0.5
 
-    plt.plot(params1, accs1, '-ok')
-    plt.plot(params2, accs2, '-og')
+    # plt.plot(params1, accs1, '-ok')
+    plt.plot(params2, accs2, '-ok')
     plt.plot(params3, accs3, '-ob')
-    plt.plot(params1[0], accs1[0], 'or')
+    # plt.plot(params1[0], accs1[0], 'or')
     plt.plot(params2[0], accs2[0], 'or')
     plt.plot(params3[0], accs3[0], 'or')
 
     plt.xlabel("network weights")
     plt.ylabel("test accuracy")
     plt.xscale("log")
-    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    plt.legend(["500 neurons", "784 neurons"])
+    #    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ratio = 0.5
-    ax.set_aspect(abs(np.log(x_right - x_left) / (y_high - y_low)) * 0.7 * 1e-1)
-
+    ax.set_aspect(abs(np.log(x_right - x_left) / (y_high - y_low)) * 0.5 * 1e-1)
     plt.savefig("figures/" + name + ".png", dpi=500)
     plt.clf()
     return 0
@@ -756,16 +758,18 @@ def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
     markersize = 2.5
     markerwidth = 0.5
 
-    plt.plot(tols, accs1, '-ok')
-    plt.plot(tols, accs2, '-og')
+    # plt.plot(tols, accs1, '-ok')
+    plt.plot(tols, accs2, '-ok')
     plt.plot(tols, accs3, '-ob')
 
-    plt.plot(tols[0], accs1[0], 'or')
+    # plt.plot(tols[0], accs1[0], 'or')
     plt.plot(tols[0], accs2[0], 'or')
     plt.plot(tols[0], accs3[0], 'or')
     plt.xlabel(r"tolerance $\tau$")
     plt.ylabel("test accuracy")
-    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    plt.legend(["500 neurons", "784 neurons"])
+    #    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
@@ -786,16 +790,17 @@ def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, acc
     markersize = 2.5
     markerwidth = 0.5
 
-    plt.plot(ratios200[:, 0], accs1, '-ok')
-    plt.plot(ratios500[:, 0], accs2, '-og')
+    # plt.plot(ratios200[:, 0], accs1, '-ok')
+    plt.plot(ratios500[:, 0], accs2, '-ok')
     plt.plot(ratios784[:, 0], accs3, '-ob')
 
-    plt.plot(ratios200[0, 0], accs1[0], 'or')
+    # plt.plot(ratios200[0, 0], accs1[0], 'or')
     plt.plot(ratios500[0, 0], accs2[0], 'or')
     plt.plot(ratios784[0, 0], accs3[0], 'or')
     plt.xlabel(r"compression [%]")
     plt.ylabel("test accuracy")
-    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
+    plt.legend(["500 neurons", "784 neurons"])
+    #    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()

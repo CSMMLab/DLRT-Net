@@ -376,9 +376,9 @@ class DLRALayer(keras.layers.Layer):
         self.aux_Unp1 = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
                                         trainable=False, name="aux_Unp1")
         self.aux_Vt = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
-                                      trainable=False, name="Vt")
+                                      trainable=False, name="aux_Vt")
         self.aux_Vtnp1 = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
-                                         trainable=False, name="vtnp1")
+                                         trainable=False, name="aux_Vtnp1")
         self.aux_N = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                      trainable=False, name="aux_N")
         self.aux_M = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
@@ -535,39 +535,43 @@ class DLRALayer(keras.layers.Layer):
         s_np = np.load(folder_name + "/s" + str(layer_id) + ".npy")
         self.s = tf.Variable(initial_value=s_np,
                              trainable=True, name="s_", dtype=tf.float32)
+        bias = np.load(folder_name + "/b" + str(layer_id) + ".npy")
+        self.b = tf.Variable(initial_value=bias,
+                             trainable=True, name="b_", dtype=tf.float32)
+
         # aux variables
         aux_U_np = np.load(folder_name + "/aux_U" + str(layer_id) + ".npy")
         self.aux_U = tf.Variable(initial_value=aux_U_np,
-                                 trainable=True, name="aux_U", dtype=tf.float32)
+                                 trainable=False, name="aux_U", dtype=tf.float32)
         aux_Unp1_np = np.load(folder_name + "/aux_Unp1" + str(layer_id) + ".npy")
         self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1_np,
-                                    trainable=True, name="aux_Unp1", dtype=tf.float32)
+                                    trainable=False, name="aux_Unp1", dtype=tf.float32)
         Vt_np = np.load(folder_name + "/aux_Vt" + str(layer_id) + ".npy")
         self.aux_Vt = tf.Variable(initial_value=Vt_np,
-                                  trainable=True, name="Vt", dtype=tf.float32)
+                                  trainable=False, name="aux_Vt", dtype=tf.float32)
         vtnp1_np = np.load(folder_name + "/aux_Vtnp1" + str(layer_id) + ".npy")
         self.aux_Vtnp1 = tf.Variable(initial_value=vtnp1_np,
-                                     trainable=True, name="vtnp1", dtype=tf.float32)
+                                     trainable=False, name="aux_Vtnp1", dtype=tf.float32)
         aux_N_np = np.load(folder_name + "/aux_N" + str(layer_id) + ".npy")
         self.aux_N = tf.Variable(initial_value=aux_N_np,
-                                 trainable=True, name="aux_N", dtype=tf.float32)
+                                 trainable=False, name="aux_N", dtype=tf.float32)
         aux_M_np = np.load(folder_name + "/aux_M" + str(layer_id) + ".npy")
         self.aux_M = tf.Variable(initial_value=aux_M_np,
-                                 trainable=True, name="aux_M", dtype=tf.float32)
+                                 trainable=False, name="aux_M", dtype=tf.float32)
 
-        # build model
-
-        # auxiliary variables
+        # build model, but only
+        # auxiliary variables, since in adaptive rank training, these have different shapes
 
         self.aux_Unp1 = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
                                         trainable=False, name="aux_Unp1")
 
         self.aux_Vtnp1 = self.add_weight(shape=(self.low_rank, self.units), initializer="random_normal",
-                                         trainable=False, name="vtnp1")
+                                         trainable=False, name="aux_Vtnp1")
         self.aux_N = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                      trainable=False, name="aux_N")
         self.aux_M = self.add_weight(shape=(self.low_rank, self.low_rank), initializer="random_normal",
                                      trainable=False, name="aux_M")
+
         return 0
 
     def load_from_fullW(self, folder_name, layer_id, rank):
@@ -626,8 +630,12 @@ class DLRALayerSTrain(keras.layers.Layer):
     @tf.function
     def call(self, inputs, step: int = 0):
         """
-        :param inputs: layer input
-        :param step: step conter: k:= 0, l:=1, s:=2
+        :param
+        inputs: layer
+        input
+        :param
+        step: step
+        conter: k := 0, l := 1, s := 2
         :return:
         """
         if step == 0:  # k-step
@@ -641,8 +649,12 @@ class DLRALayerSTrain(keras.layers.Layer):
     @tf.function
     def call(self, inputs, step: int = 0):
         """
-        :param inputs: layer input
-        :param step: step conter: k:= 0, l:=1, s:=2
+        :param
+        inputs: layer
+        input
+        :param
+        step: step
+        conter: k := 0, l := 1, s := 2
         :return:
         """
         if step == 0:  # k-step
@@ -828,8 +840,12 @@ class DLRALayerAdaptive(keras.layers.Layer):
 
     def call(self, inputs, step: int = 0):
         """
-        :param inputs: layer input
-        :param step: step conter: k:= 0, l:=1, s:=2
+        :param
+        inputs: layer
+        input
+        :param
+        step: step
+        conter: k := 0, l := 1, s := 2
         :return:
         """
         if step == 0:  # k-step
