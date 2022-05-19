@@ -13,7 +13,6 @@ import numpy as np
 def main():
     print_param_counts()
 
-    """
     # print_param_cout()
     name = "e2edense_sr300_v0.17"
     plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
@@ -35,7 +34,7 @@ def main():
     # plot_timings
     plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
     plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
-    """
+
     """
     name = "e2edense_sr200_v0.03"
     plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
@@ -421,10 +420,14 @@ def plot_run4layer(load_folder, save_name):
 
     plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
     plt.clf()
-    plt.plot(dlra_3layer[["rank1"]], '-k')
-    plt.plot(dlra_3layer[["rank2"]], '-r')
-    plt.plot(dlra_3layer[["rank3"]], '-g')
-    plt.plot(dlra_3layer[["rank4"]], '-b')
+    # epochs = np.asarray(range(0, 250))
+    t = dlra_3layer[["rank1"]].to_numpy()
+    epochs = np.asarray(range(0, len(t)))
+
+    plt.plot(epochs, dlra_3layer[["rank1"]].to_numpy(), '-k')
+    plt.plot(epochs, dlra_3layer[["rank2"]].to_numpy(), '-r')
+    plt.plot(epochs, dlra_3layer[["rank3"]].to_numpy(), '-g')
+    plt.plot(epochs, dlra_3layer[["rank4"]].to_numpy(), '-b')
     # plt.ylim([10, 120])
     plt.xlim([0, 250])
     plt.xlabel("epoch")
@@ -434,7 +437,7 @@ def plot_run4layer(load_folder, save_name):
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ratio = 0.5
-    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
     plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
     plt.yscale('log')
@@ -623,7 +626,7 @@ def print_param_counts():
     params_500 = np.asarray(
         [resdense, res003[0], res005[0], res007[0], res009[0], res011[0], res013[0], res015[0], res017[0]])
     accs_500 = np.asarray(
-        [98.45, 98.47, 98.56, 98.47, 98.31, 98.23, 97.88, 97.70, 97.08])
+        [98.54, 98.49, 98.56, 98.52, 98.34, 98.11, 97.50, 97.22, 96.90])
     tols = np.asarray(
         [0, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17])
 
@@ -682,7 +685,7 @@ def print_param_counts():
     params_784 = np.asarray(
         [resdense, res003[0], res005[0], res007[0], res009[0], res011[0], res013[0], res015[0], res017[0]])
     accs_784 = np.asarray(
-        [98.63, 98.69, 98.61, 98.58, 98.54, 98.27, 98.14, 97.92, 97.36])
+        [98.53, 98.61, 98.59, 98.58, 98.49, 98.12, 97.95, 97.81, 97.40])
     tols = np.asarray(
         [0, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17])
     # plot_acc_over_params(accs_784, params_784, name="accuracy_over_parameter")
@@ -743,7 +746,7 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ratio = 0.5
-    ax.set_aspect(abs(np.log(x_right - x_left) / (y_high - y_low)) * 0.5 * 1e-1)
+    ax.set_aspect(abs(np.log(x_right - x_left) / (y_high - y_low)) * 0.54 * 1e-1)
     plt.savefig("figures/" + name + ".png", dpi=500)
     plt.clf()
     return 0
