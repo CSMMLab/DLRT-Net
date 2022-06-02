@@ -1,6 +1,6 @@
-## Code supplement for all dense neural network experiments of our NeurIPS contibution
+## Code supplement for all dense neural network experiments of the arXiv Preprint [Low-rank lottery tickets: finding efficient low-rank neural networks via matrix differential equations](https://arxiv.org/abs/2205.13571)
 
-### Installation
+### Usage
 
 1. create a python virtual environment (pyenv or conda). If you are using no virtual environment, please be aware of
    version incompatibilities of tensorflow
