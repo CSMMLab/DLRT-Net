@@ -1,4 +1,6 @@
-## Code supplement for all dense neural network experiments of the arXiv Preprint [Low-rank lottery tickets: finding efficient low-rank neural networks via matrix differential equations](https://arxiv.org/abs/2205.13571)
+## [Low-rank lottery tickets: finding efficient low-rank neural networks via matrix differential equations](https://arxiv.org/abs/2205.13571)
+
+Code supplement for all dense neural network experiments of the arXiv Preprint
 
 ### Usage
 
