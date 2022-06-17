@@ -134,14 +134,6 @@ class DLRANetAdaptive(keras.Model):
         z = self.dlraBlockOutput(z)
         return z
     
-    @tf.function
-    def validate_during_training(self,inputs):
-        z = self.dlraBlockInput.validate_during_training(inputs)
-        z = self.dlraBlock1.validate_during_training(inputs)
-        z = self.dlraBlock2.validate_during_training(inputs)
-        z = self.dlraBlock3.validate_during_training(inputs)
-        z = self.dlraBlockOutput(z)
-        return z
 
     @staticmethod
     def set_none_grads_to_zero(grads, weights):
@@ -246,6 +238,10 @@ class DLRALayer(keras.layers.Layer):
                                  trainable=True, name="s_")
         self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True, name="b_")
         # auxiliary variables
+        self.aux_b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=False, name="aux_b")
+        self.aux_b.assign(self.b)  # non trainable bias or k and l step
+
+      
         self.aux_U = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
                                      trainable=False, name="aux_U")
         self.aux_Unp1 = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
@@ -270,30 +266,18 @@ class DLRALayer(keras.layers.Layer):
         """
 
         if step == 0:  # k-step
-            z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
+            z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt) + self.aux_b
         elif step == 1:  # l-step
-            z = tf.matmul(tf.matmul(inputs, self.aux_U), self.l_t)
+            z = tf.matmul(tf.matmul(inputs, self.aux_U), self.l_t) + self.aux_b
         else:  # s-step
-            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1)
-        return tf.keras.activations.relu(z + self.b)
-
-    @tf.function
-    def call(self, inputs, step: int = 0):
-        """
-        :param inputs: layer input
-        :param step: step conter: k:= 0, l:=1, s:=2
-        :return:
-        """
-        if step == 0:  # k-step
-            z = tf.matmul(tf.matmul(inputs, self.k), self.aux_Vt)
-        elif step == 1:  # l-step
-            z = tf.matmul(tf.matmul(inputs, self.aux_U), self.l_t)
-        else:  # s-step
-            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1)
+            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1) +self.b
         return tf.keras.activations.relu(z + self.b)
 
     @tf.function
     def k_step_preprocessing(self):
+        # update bias
+        self.aux_b.assign(self.b)
+        
         k = tf.matmul(self.aux_U, self.s)
         self.k.assign(k)  # = tf.Variable(initial_value=k, trainable=True, name="k_")
         return 0
@@ -493,21 +477,14 @@ class DLRALayerAdaptive(keras.layers.Layer):
 
         return tf.keras.activations.relu(z)
 
-    @tf.function
-    def validate_during_training(self,inputs):
-        k = tf.matmul(self.aux_U[:, :self.low_rank], self.s[:self.low_rank, :self.low_rank])
-        
-        z = tf.matmul(tf.matmul(inputs, k), self.aux_Vt[:self.low_rank, :])
-        z = z + self.aux_b
-        return tf.keras.activations.relu(z)
-    
-    @tf.function
+
+    #@tf.function
     def k_step_preprocessing(self):
         k = tf.matmul(self.aux_U[:, :self.low_rank], self.s[:self.low_rank, :self.low_rank])
         self.k[:, :self.low_rank].assign(k)
         return 0
 
-    @tf.function
+    #@tf.function
     def k_step_postprocessing_adapt(self):
         k_extended = tf.concat((self.k[:, :self.low_rank], self.aux_U[:, :self.low_rank]), axis=1)
         aux_Unp1, _ = tf.linalg.qr(k_extended)
@@ -516,8 +493,8 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_N[:2 * self.low_rank, :self.low_rank].assign(aux_N)
         return 0
 
-    @tf.function
-    def l_step_preprocessing(self, ):
+    # @tf.function
+    def l_step_preprocessing(self ):
         l_t = tf.matmul(self.s[:self.low_rank, :self.low_rank], self.aux_Vt[:self.low_rank, :])
         self.l_t[:self.low_rank, :].assign(l_t)  # = tf.Variable(initial_value=l_t, trainable=True, name="lt_")
         return 0
@@ -534,8 +511,8 @@ class DLRALayerAdaptive(keras.layers.Layer):
 
     # @tf.function
     def s_step_preprocessing(self):
-        # self.aux_U[:, :2 * self.low_rank].assign(self.aux_Unp1[:, :2 * self.low_rank])
-        # self.aux_Vt[:2 * self.low_rank, :].assign(self.aux_Vtnp1[:2 * self.low_rank, :])
+        #self.aux_U[:, :2 * self.low_rank].assign(self.aux_Unp1[:, :2 * self.low_rank])
+        #self.aux_Vt[:2 * self.low_rank, :].assign(self.aux_Vtnp1[:2 * self.low_rank, :])
         s = tf.matmul(
             tf.matmul(self.aux_N[:2 * self.low_rank, :self.low_rank], self.s[: self.low_rank, :self.low_rank]),
             tf.transpose(self.aux_M[:2 * self.low_rank, :self.low_rank]))
