@@ -7,9 +7,9 @@ from optparse import OptionParser
 from os import path, makedirs
 
 
-def train(start_rank, tolerance, load_model, dim_layer, rmax):
+def train(start_rank, tolerance, load_model, dim_layer, rmax,epochs):
     # specify training
-    epochs = 10
+    epochs = epochs
     batch_size = 256
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
@@ -173,7 +173,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax):
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
                 print("Accuracy: " + str(acc_value))
                 print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
-                    int(model.dlraBlock1.low_rank)) + " | " + str(
+                   int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
 
             # Reset metrics
@@ -261,6 +261,7 @@ if __name__ == '__main__':
     parser.add_option("-a", "--train", dest="train", default=1)
     parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
     parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
+    parser.add_option("-e", "--epochs", dest="epochs", default=100)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
@@ -269,7 +270,8 @@ if __name__ == '__main__':
     options.train = int(options.train)
     options.dim_layer = int(options.dim_layer)
     options.max_rank = int(options.max_rank)
+    options.epochs = int(options.epochs)
 
     if options.train == 1:
         train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
-              dim_layer=options.dim_layer, rmax=options.max_rank)
+              dim_layer=options.dim_layer, rmax=options.max_rank,epochs=options.epochs)
