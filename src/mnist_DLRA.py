@@ -261,7 +261,7 @@ if __name__ == '__main__':
     parser.add_option("-a", "--train", dest="train", default=1)
     parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
     parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
-    parser.add_option("-e", "--epochs", dest="epochs", default=100)
+    parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
