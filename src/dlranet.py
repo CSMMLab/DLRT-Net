@@ -125,11 +125,21 @@ class DLRANetAdaptive(keras.Model):
                                             rmax_total=rmax_total, )
         self.dlraBlockOutput = Linear2(input_dim=dlra_layer_dim, units=output_dim)
 
+    @tf.function
     def call(self, inputs, step: int = 0):
         z = self.dlraBlockInput(inputs, step=step)
         z = self.dlraBlock1(z, step=step)
         z = self.dlraBlock2(z, step=step)
         z = self.dlraBlock3(z, step=step)
+        z = self.dlraBlockOutput(z)
+        return z
+    
+    @tf.function
+    def validate_during_training(self,inputs):
+        z = self.dlraBlockInput.validate_during_training(inputs)
+        z = self.dlraBlock1.validate_during_training(inputs)
+        z = self.dlraBlock2.validate_during_training(inputs)
+        z = self.dlraBlock3.validate_during_training(inputs)
         z = self.dlraBlockOutput(z)
         return z
 
@@ -464,11 +474,9 @@ class DLRALayerAdaptive(keras.layers.Layer):
     def call(self, inputs, step: int = 0):
         """
         :param
-        inputs: layer
-        input
+        inputs: layer         input
         :param
-        step: step
-        conter: k := 0, l := 1, s := 2
+        step: step         counter: k := 0, l := 1, s := 2
         :return:
         """
         if step == 0:  # k-step
@@ -486,12 +494,20 @@ class DLRALayerAdaptive(keras.layers.Layer):
         return tf.keras.activations.relu(z)
 
     @tf.function
+    def validate_during_training(self,inputs):
+        k = tf.matmul(self.aux_U[:, :self.low_rank], self.s[:self.low_rank, :self.low_rank])
+        
+        z = tf.matmul(tf.matmul(inputs, k), self.aux_Vt[:self.low_rank, :])
+        z = z + self.aux_b
+        return tf.keras.activations.relu(z)
+    
+    @tf.function
     def k_step_preprocessing(self):
         k = tf.matmul(self.aux_U[:, :self.low_rank], self.s[:self.low_rank, :self.low_rank])
         self.k[:, :self.low_rank].assign(k)
         return 0
 
-    # @tf.function
+    @tf.function
     def k_step_postprocessing_adapt(self):
         k_extended = tf.concat((self.k[:, :self.low_rank], self.aux_U[:, :self.low_rank]), axis=1)
         aux_Unp1, _ = tf.linalg.qr(k_extended)
@@ -560,6 +576,9 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_U[:, :rmax].assign(tf.matmul(self.aux_Unp1[:, :2 * self.low_rank], u2[:, :rmax]))
         self.aux_Vt[:rmax, :].assign(tf.matmul(v2[:rmax, :], self.aux_Vtnp1[:2 * self.low_rank, :]))
         self.low_rank = int(rmax)
+        
+        # update bias
+        self.aux_b.assign(self.b)
         return 0
 
     def get_config(self):

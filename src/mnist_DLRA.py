@@ -184,14 +184,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         loss_val = 0
         acc_val = 0
 
-        #  K  Step Preproccessing
-        model.dlraBlockInput.k_step_preprocessing()
-        model.dlraBlock1.k_step_preprocessing()
-        model.dlraBlock2.k_step_preprocessing()
-        model.dlraBlock3.k_step_preprocessing()
 
         # Validate model
-        out = model(x_val, step=0, training=False)
+        out = model.validate_during_training(x_val)
         out = tf.keras.activations.softmax(out)
         loss = loss_fn(y_val, out)
         loss_metric.update_state(loss)
@@ -216,7 +211,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         acc_metric.reset_state()
 
         # Test model
-        out = model(x_test, step=0, training=False)
+        out = model.validate_during_training(x_val)
         out = tf.keras.activations.softmax(out)
         loss = loss_fn(y_test, out)
         loss_metric.update_state(loss)
