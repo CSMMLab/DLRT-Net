@@ -133,7 +133,6 @@ class DLRANetAdaptive(keras.Model):
         z = self.dlraBlock3(z, step=step)
         z = self.dlraBlockOutput(z)
         return z
-    
 
     @staticmethod
     def set_none_grads_to_zero(grads, weights):
@@ -241,7 +240,6 @@ class DLRALayer(keras.layers.Layer):
         self.aux_b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=False, name="aux_b")
         self.aux_b.assign(self.b)  # non trainable bias or k and l step
 
-      
         self.aux_U = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
                                      trainable=False, name="aux_U")
         self.aux_Unp1 = self.add_weight(shape=(self.input_dim, self.low_rank), initializer="random_normal",
@@ -270,14 +268,14 @@ class DLRALayer(keras.layers.Layer):
         elif step == 1:  # l-step
             z = tf.matmul(tf.matmul(inputs, self.aux_U), self.l_t) + self.aux_b
         else:  # s-step
-            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1) +self.b
+            z = tf.matmul(tf.matmul(tf.matmul(inputs, self.aux_Unp1), self.s), self.aux_Vtnp1) + self.b
         return tf.keras.activations.relu(z + self.b)
 
     @tf.function
     def k_step_preprocessing(self):
         # update bias
         self.aux_b.assign(self.b)
-        
+
         k = tf.matmul(self.aux_U, self.s)
         self.k.assign(k)  # = tf.Variable(initial_value=k, trainable=True, name="k_")
         return 0
@@ -477,14 +475,13 @@ class DLRALayerAdaptive(keras.layers.Layer):
 
         return tf.keras.activations.relu(z)
 
-
-    #@tf.function
+    @tf.function
     def k_step_preprocessing(self):
         k = tf.matmul(self.aux_U[:, :self.low_rank], self.s[:self.low_rank, :self.low_rank])
         self.k[:, :self.low_rank].assign(k)
         return 0
 
-    #@tf.function
+    @tf.function
     def k_step_postprocessing_adapt(self):
         k_extended = tf.concat((self.k[:, :self.low_rank], self.aux_U[:, :self.low_rank]), axis=1)
         aux_Unp1, _ = tf.linalg.qr(k_extended)
@@ -493,13 +490,13 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_N[:2 * self.low_rank, :self.low_rank].assign(aux_N)
         return 0
 
-    # @tf.function
-    def l_step_preprocessing(self ):
+    @tf.function
+    def l_step_preprocessing(self):
         l_t = tf.matmul(self.s[:self.low_rank, :self.low_rank], self.aux_Vt[:self.low_rank, :])
         self.l_t[:self.low_rank, :].assign(l_t)  # = tf.Variable(initial_value=l_t, trainable=True, name="lt_")
         return 0
 
-    # @tf.function
+    @tf.function
     def l_step_postprocessing_adapt(self):
         l_extended = tf.concat(
             (tf.transpose(self.l_t[:self.low_rank, :]), tf.transpose(self.aux_Vt[:self.low_rank, :])), axis=1)
@@ -509,15 +506,12 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_M[:2 * self.low_rank, :self.low_rank].assign(aux_M)
         return 0
 
-    # @tf.function
+    @tf.function
     def s_step_preprocessing(self):
-        #self.aux_U[:, :2 * self.low_rank].assign(self.aux_Unp1[:, :2 * self.low_rank])
-        #self.aux_Vt[:2 * self.low_rank, :].assign(self.aux_Vtnp1[:2 * self.low_rank, :])
         s = tf.matmul(
             tf.matmul(self.aux_N[:2 * self.low_rank, :self.low_rank], self.s[: self.low_rank, :self.low_rank]),
             tf.transpose(self.aux_M[:2 * self.low_rank, :self.low_rank]))
         self.s[:2 * self.low_rank, :2 * self.low_rank].assign(s)
-        # tf.Variable(initial_value=s, trainable=True, name="s_")
         return 0
 
     # @tf.function
@@ -526,7 +520,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         # d=singular values, u2 = left singuar vecs, v2= right singular vecs
         s_small = self.s[:2 * self.low_rank, :2 * self.low_rank]
         d, u2, v2 = tf.linalg.svd(s_small)
-        # print(d.shape)
+
         tmp = 0.0
         tol = self.epsAdapt * tf.linalg.norm(d)  # absolute value treshold (try also relative one)
         rmax = int(tf.floor(d.shape[0] / 2))
@@ -539,21 +533,14 @@ class DLRALayerAdaptive(keras.layers.Layer):
         rmax = tf.minimum(rmax, self.rmax_total)
         rmax = tf.maximum(rmax, 2)
 
-        # if rmax > self.rmax_total:
-        #    rmax = self.rmax_total
-        # if rmax < 2:
-        #    rmax = 2
-
         # update s
-        # self.s.assign(tf.scalar_mul(0, self.s))
         self.s[:rmax, :rmax].assign(tf.linalg.tensor_diag(d[:rmax]))
-        # self.s = s
 
         # update u and v
         self.aux_U[:, :rmax].assign(tf.matmul(self.aux_Unp1[:, :2 * self.low_rank], u2[:, :rmax]))
         self.aux_Vt[:rmax, :].assign(tf.matmul(v2[:rmax, :], self.aux_Vtnp1[:2 * self.low_rank, :]))
         self.low_rank = int(rmax)
-        
+
         # update bias
         self.aux_b.assign(self.b)
         return 0
