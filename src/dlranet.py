@@ -560,6 +560,9 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_U[:, :rmax].assign(tf.matmul(self.aux_Unp1[:, :2 * self.low_rank], u2[:, :rmax]))
         self.aux_Vt[:rmax, :].assign(tf.matmul(v2[:rmax, :], self.aux_Vtnp1[:2 * self.low_rank, :]))
         self.low_rank = int(rmax)
+
+        # update bias
+        self.aux_b.assign(self.b)
         return 0
 
     def get_config(self):
