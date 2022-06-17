@@ -491,7 +491,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.k[:, :self.low_rank].assign(k)
         return 0
 
-    # @tf.function
+    @tf.function
     def k_step_postprocessing_adapt(self):
         k_extended = tf.concat((self.k[:, :self.low_rank], self.aux_U[:, :self.low_rank]), axis=1)
         aux_Unp1, _ = tf.linalg.qr(k_extended)
@@ -506,7 +506,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.l_t[:self.low_rank, :].assign(l_t)  # = tf.Variable(initial_value=l_t, trainable=True, name="lt_")
         return 0
 
-    # @tf.function
+    @tf.function
     def l_step_postprocessing_adapt(self):
         l_extended = tf.concat(
             (tf.transpose(self.l_t[:self.low_rank, :]), tf.transpose(self.aux_Vt[:self.low_rank, :])), axis=1)
@@ -516,7 +516,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_M[:2 * self.low_rank, :self.low_rank].assign(aux_M)
         return 0
 
-    # @tf.function
+    @tf.function
     def s_step_preprocessing(self):
         # self.aux_U[:, :2 * self.low_rank].assign(self.aux_Unp1[:, :2 * self.low_rank])
         # self.aux_Vt[:2 * self.low_rank, :].assign(self.aux_Vtnp1[:2 * self.low_rank, :])
@@ -527,7 +527,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         # tf.Variable(initial_value=s, trainable=True, name="s_")
         return 0
 
-    # @tf.function
+    @tf.function
     def rank_adaption(self):
         # 1) compute SVD of S
         # d=singular values, u2 = left singuar vecs, v2= right singular vecs
