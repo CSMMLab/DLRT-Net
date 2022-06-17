@@ -10,7 +10,7 @@ from os import path, makedirs
 
 def train(start_rank, tolerance, load_model, dim_layer):
     # specify training
-    epochs = 100
+    epochs = 1000
     batch_size = 256
 
     filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
@@ -46,7 +46,7 @@ def train(start_rank, tolerance, load_model, dim_layer):
     loss_metric_acc_val = tf.keras.metrics.Accuracy()
 
     # Build dataset
-    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+    (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
     x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
 

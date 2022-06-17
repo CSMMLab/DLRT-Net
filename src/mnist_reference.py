@@ -10,7 +10,7 @@ from os import path, makedirs
 
 def train(load_model=1):
     # specify training
-    epochs = 250
+    epochs = 1000
     batch_size = 256
 
     filename = "dense_500x5"
@@ -40,7 +40,7 @@ def train(load_model=1):
     acc_metric = tf.keras.metrics.Accuracy()
 
     # Build dataset
-    (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+    (x_train, y_train), (x_test, y_test) = keras.datasets.fashion_mnist.load_data()
     x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
 
