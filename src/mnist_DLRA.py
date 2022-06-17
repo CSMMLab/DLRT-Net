@@ -95,6 +95,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             model.dlraBlock2.l_step_preprocessing()
             model.dlraBlock3.k_step_preprocessing()
             model.dlraBlock3.l_step_preprocessing()
+            
 
             # 1.b) Tape Gradients for K-Step
             model.toggle_non_s_step_training()
@@ -105,10 +106,82 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
+                
+            if step  == 0:
+                # Network monotoring and verbosity
+                loss_metric.update_state(loss)
+                prediction = tf.math.argmax(out, 1)
+                acc_metric.update_state(prediction, batch_train[1])
+
+                loss_value = loss_metric.result().numpy()
+                acc_value = acc_metric.result().numpy()
+                print("----- Training Metrics  ----")
+
+                print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
+                print("Accuracy: " + str(acc_value))
+                print("Loss: "+ str(loss_value))
+                print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
+                    int(model.dlraBlock1.low_rank)) + " | " + str(
+                    int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
+                # Reset metrics
+                loss_metric.reset_state()
+                acc_metric.reset_state()
+
+                print("----- Validation Metrics----")
+                # Compute vallidation loss and accuracy
+                loss_val = 0
+                acc_val = 0
+
+                # Validate model
+                out = model(x_val, step=0, training=True)
+                out = tf.keras.activations.softmax(out)
+                loss_val = loss_fn(y_val, out)
+                loss_metric.update_state(loss_val)
+                loss_val = loss_metric.result().numpy()
+
+                prediction = tf.math.argmax(out, 1)
+                acc_metric.update_state(prediction, y_val)
+                acc_val = acc_metric.result().numpy()
+                print("Accuracy: " + str(acc_val))
+                print("Loss: "+ str(loss_val))
+                # save current model if it's the best
+                if acc_val >= best_acc and loss_val <= best_loss:
+                    best_acc = acc_val
+                    best_loss = loss_val
+                    print("new best model with accuracy: " + str(best_acc) + " and loss " + str(best_loss))
+
+                    model.save(folder_name=folder_name_best)
+                model.save(folder_name=folder_name)
+                # Reset metrics
+                loss_metric.reset_state()
+                acc_metric.reset_state()
+                
+                print("----- Test Metrics (not used for early stopping) ----")
+                
+                # Test model
+                out = model(x_test, step=0, training=True)
+                out = tf.keras.activations.softmax(out)
+                loss_test = loss_fn(y_test, out)
+                loss_metric.update_state(loss_test)
+                loss_test = loss_metric.result().numpy()
+
+                prediction = tf.math.argmax(out, 1)
+                acc_metric.update_state(prediction, y_test)
+                acc_test = acc_metric.result().numpy()
+                print("Accuracy: " + str(acc_test))
+                print("Loss: "+ str(loss_test))
+                # Reset metrics
+                loss_metric.reset_state()
+                acc_metric.reset_state()
+                print("-------------------------------------\n\n")
+
+                
+            # Gradient updates for k step
             grads_k_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_k_step)
 
+                
             # 1.b) Tape Gradients for L-Step
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=1, training=True)
@@ -162,74 +235,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             model.dlraBlock2.rank_adaption()
             model.dlraBlock3.rank_adaption()
 
-            # Network monotoring and verbosity
-            loss_metric.update_state(loss)
-            prediction = tf.math.argmax(out, 1)
-            acc_metric.update_state(prediction, batch_train[1])
-
-            loss_value = loss_metric.result().numpy()
-            acc_value = acc_metric.result().numpy()
-            if step % 100 == 0:
-                print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
-                print("Accuracy: " + str(acc_value))
-                print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
-                    int(model.dlraBlock1.low_rank)) + " | " + str(
-                    int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
-
-            # Reset metrics
-            loss_metric.reset_state()
-            acc_metric.reset_state()
-
-        # Compute vallidation loss and accuracy
-        loss_val = 0
-        acc_val = 0
-
-        #  K  Step Preproccessing
-        model.dlraBlockInput.k_step_preprocessing()
-        model.dlraBlock1.k_step_preprocessing()
-        model.dlraBlock2.k_step_preprocessing()
-        model.dlraBlock3.k_step_preprocessing()
-
-        # Validate model
-        out = model(x_val, step=0, training=False)
-        out = tf.keras.activations.softmax(out)
-        loss = loss_fn(y_val, out)
-        loss_metric.update_state(loss)
-        loss_val = loss_metric.result().numpy()
-
-        prediction = tf.math.argmax(out, 1)
-        acc_metric.update_state(prediction, y_val)
-        acc_val = acc_metric.result().numpy()
-        print("Val Accuracy: " + str(acc_val))
-
-        # save current model if it's the best
-        if acc_val >= best_acc and loss_val <= best_loss:
-            best_acc = acc_val
-            best_loss = loss_val
-            print("new best model with accuracy: " + str(best_acc) + " and loss " + str(best_loss))
-
-            model.save(folder_name=folder_name_best)
-        model.save(folder_name=folder_name)
-
-        # Reset metrics
-        loss_metric.reset_state()
-        acc_metric.reset_state()
-
-        # Test model
-        out = model(x_test, step=0, training=False)
-        out = tf.keras.activations.softmax(out)
-        loss = loss_fn(y_test, out)
-        loss_metric.update_state(loss)
-        loss_test = loss_metric.result().numpy()
-
-        prediction = tf.math.argmax(out, 1)
-        acc_metric.update_state(prediction, y_test)
-        acc_test = acc_metric.result().numpy()
-        log_string = "Loss: " + str(loss_test) + "| Accuracy" + str(acc_test) + "\n"
-        print("Test :" + log_string)
-        # Reset metrics
-        loss_metric.reset_state()
-        acc_metric.reset_state()
+            
 
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
