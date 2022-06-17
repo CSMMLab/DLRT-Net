@@ -7,7 +7,7 @@ from optparse import OptionParser
 from os import path, makedirs
 
 
-def train(start_rank, tolerance, load_model, dim_layer):
+def train(start_rank, tolerance, load_model, dim_layer, rmax):
     # specify training
     epochs = 10
     batch_size = 256
@@ -31,7 +31,7 @@ def train(start_rank, tolerance, load_model, dim_layer):
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
 
-    max_rank = 350  # maximum rank of S matrix
+    max_rank = rmax  # maximum rank of S matrix
 
     dlra_layer_dim = dim_layer
 
@@ -258,8 +258,9 @@ if __name__ == '__main__':
     parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
     parser.add_option("-l", "--load_model", dest="load_model", default=1)
-    parser.add_option("-a", "--train", dest="train", default=0)
+    parser.add_option("-a", "--train", dest="train", default=1)
     parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
+    parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
@@ -267,7 +268,8 @@ if __name__ == '__main__':
     options.load_model = int(options.load_model)
     options.train = int(options.train)
     options.dim_layer = int(options.dim_layer)
+    options.max_rank = int(options.max_rank)
 
     if options.train == 1:
         train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
-              dim_layer=options.dim_layer)
+              dim_layer=options.dim_layer, rmax=options.max_rank)
