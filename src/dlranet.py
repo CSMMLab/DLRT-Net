@@ -433,7 +433,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
                                  trainable=True, name="k_")
         self.l_t = self.add_weight(shape=(self.rmax_total, self.units), initializer="random_normal",
                                    trainable=True, name="lt_")
-        self.s = self.add_weight(shape=(self.rmax_total, self.rmax_total), initializer="random_normal",
+        self.s = self.add_weight(shape=(2 * self.rmax_total, 2 * self.rmax_total), initializer="random_normal",
                                  trainable=True, name="s_")
         self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True, name="b_")
         # auxiliary variables
