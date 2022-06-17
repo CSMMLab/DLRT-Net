@@ -296,12 +296,6 @@ class DLRALayer(keras.layers.Layer):
         self.aux_N.assign(N)
         return 0
 
-    def k_step_postprocessing_adapt(self):
-        aux_Unp1, _ = tf.linalg.qr(tf.concat((self.k, self.aux_U), axis=1))
-        self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1, trainable=False, name="aux_Unp1")
-        self.aux_N = tf.matmul(tf.transpose(self.aux_Unp1), self.aux_U)
-        return 0
-
     @tf.function
     def l_step_preprocessing(self, ):
         l_t = tf.matmul(self.s, self.aux_Vt)
@@ -316,44 +310,12 @@ class DLRALayer(keras.layers.Layer):
         self.aux_M.assign(M)
         return 0
 
-    def l_step_postprocessing_adapt(self):
-        aux_Vtnp1, _ = tf.linalg.qr(tf.concat((tf.transpose(self.l_t), tf.transpose(self.aux_Vt)), axis=1))
-        self.aux_Vtnp1 = tf.transpose(aux_Vtnp1)
-        self.aux_M = tf.matmul(self.aux_Vtnp1, tf.transpose(self.aux_Vt))
-        return 0
-
     @tf.function
     def s_step_preprocessing(self):
         self.aux_U.assign(self.aux_Unp1)
         self.aux_Vt.assign(self.aux_Vtnp1)
         s = tf.matmul(tf.matmul(self.aux_N, self.s), tf.transpose(self.aux_M))
         self.s.assign(s)  # = tf.Variable(initial_value=s, trainable=True, name="s_")
-        return 0
-
-    def rank_adaption(self):
-        # 1) compute SVD of S
-        d, u2, v2 = tf.linalg.svd(self.s)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
-        # print(d.shape)
-        tmp = 0.0
-        tol = self.epsAdapt * tf.linalg.norm(d)  # absolute value treshold (try also relative one)
-        rmax = int(tf.floor(d.shape[0] / 2))
-        for j in range(0, 2 * rmax - 1):
-            tmp = tf.linalg.norm(d[j:2 * rmax - 1])
-            if tmp < tol:
-                rmax = j
-                break
-
-        rmax = tf.minimum(rmax, self.rmax_total)
-        rmax = tf.maximum(rmax, 2)
-
-        # update s
-        self.s = tf.linalg.tensor_diag(d[:rmax])
-        # self.s = s
-
-        # update u and v
-        self.aux_U = tf.matmul(self.aux_U, u2[:, :rmax])
-        self.aux_Vt = tf.matmul(v2[:rmax, :], self.aux_Vt)
-        self.low_rank = rmax
         return 0
 
     def get_config(self):
@@ -463,8 +425,8 @@ class DLRALayerAdaptive(keras.layers.Layer):
         super(DLRALayerAdaptive, self).__init__(**kwargs)
         self.epsAdapt = epsAdapt  # for unconventional integrator
         self.units = units
-        self.low_rank = low_rank
-        self.rmax_total = rmax_total
+        self.low_rank = low_rank  # tf.Variable(value=low_rank, dtype=tf.int32, trainable=False)
+        self.rmax_total = rmax_total  # tf.constant(value=rmax_total, dtype=tf.int32)
         self.input_dim = input_dim
 
         self.k = self.add_weight(shape=(input_dim, self.rmax_total), initializer="random_normal",
@@ -551,7 +513,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         # tf.Variable(initial_value=s, trainable=True, name="s_")
         return 0
 
-    @tf.function
+    # @tf.function
     def rank_adaption(self):
         # 1) compute SVD of S
         # d=singular values, u2 = left singuar vecs, v2= right singular vecs
@@ -569,6 +531,11 @@ class DLRALayerAdaptive(keras.layers.Layer):
         rmax = tf.minimum(rmax, self.rmax_total)
         rmax = tf.maximum(rmax, 2)
 
+        # if rmax > self.rmax_total:
+        #    rmax = self.rmax_total
+        # if rmax < 2:
+        #    rmax = 2
+
         # update s
         self.s[:rmax, :rmax].assign(tf.linalg.tensor_diag(d[:rmax]))
         # self.s = s
@@ -576,7 +543,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         # update u and v
         self.aux_U[:, :rmax].assign(tf.matmul(self.aux_U[:, :2 * self.low_rank], u2[:, :rmax]))
         self.aux_Vt[:rmax, :].assign(tf.matmul(v2[:rmax, :], self.aux_Vt[:2 * self.low_rank, :]))
-        self.low_rank = rmax
+        self.low_rank = int(rmax)
         return 0
 
     def get_config(self):
