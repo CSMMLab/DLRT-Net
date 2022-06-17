@@ -475,13 +475,13 @@ class DLRALayerAdaptive(keras.layers.Layer):
 
         return tf.keras.activations.relu(z)
 
-    @tf.function
+    #@tf.function
     def k_step_preprocessing(self):
         k = tf.matmul(self.aux_U[:, :self.low_rank], self.s[:self.low_rank, :self.low_rank])
         self.k[:, :self.low_rank].assign(k)
         return 0
 
-    @tf.function
+    #@tf.function
     def k_step_postprocessing_adapt(self):
         k_extended = tf.concat((self.k[:, :self.low_rank], self.aux_U[:, :self.low_rank]), axis=1)
         aux_Unp1, _ = tf.linalg.qr(k_extended)
@@ -490,13 +490,13 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_N[:2 * self.low_rank, :self.low_rank].assign(aux_N)
         return 0
 
-    @tf.function
+    #@tf.function
     def l_step_preprocessing(self):
         l_t = tf.matmul(self.s[:self.low_rank, :self.low_rank], self.aux_Vt[:self.low_rank, :])
         self.l_t[:self.low_rank, :].assign(l_t)  # = tf.Variable(initial_value=l_t, trainable=True, name="lt_")
         return 0
 
-    @tf.function
+    #@tf.function
     def l_step_postprocessing_adapt(self):
         l_extended = tf.concat(
             (tf.transpose(self.l_t[:self.low_rank, :]), tf.transpose(self.aux_Vt[:self.low_rank, :])), axis=1)
@@ -506,7 +506,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         self.aux_M[:2 * self.low_rank, :self.low_rank].assign(aux_M)
         return 0
 
-    @tf.function
+    #@tf.function
     def s_step_preprocessing(self):
         s = tf.matmul(
             tf.matmul(self.aux_N[:2 * self.low_rank, :self.low_rank], self.s[: self.low_rank, :self.low_rank]),
