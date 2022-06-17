@@ -7,7 +7,7 @@ from optparse import OptionParser
 from os import path, makedirs
 
 
-def train(start_rank, tolerance, load_model, dim_layer, rmax,epochs):
+def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     # specify training
     epochs = epochs
     batch_size = 256
@@ -173,7 +173,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax,epochs):
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
                 print("Accuracy: " + str(acc_value))
                 print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
-                   int(model.dlraBlock1.low_rank)) + " | " + str(
+                    int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
 
             # Reset metrics
@@ -274,4 +274,4 @@ if __name__ == '__main__':
 
     if options.train == 1:
         train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
-              dim_layer=options.dim_layer, rmax=options.max_rank,epochs=options.epochs)
+              dim_layer=options.dim_layer, rmax=options.max_rank, epochs=options.epochs)
