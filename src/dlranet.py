@@ -554,26 +554,26 @@ class DLRALayerAdaptive(keras.layers.Layer):
 
     def save(self, folder_name, layer_id):
         # main_variables
-        k_np = self.k.numpy()
+        k_np = self.k[:, :self.low_rank].numpy()
         np.save(folder_name + "/k" + str(layer_id) + ".npy", k_np)
-        l_t_np = self.l_t.numpy()
+        l_t_np = self.l_t[:self.low_rank, :self.low_rank].numpy()
         np.save(folder_name + "/l_t" + str(layer_id) + ".npy", l_t_np)
-        s_np = self.s.numpy()
+        s_np = self.s[:2 * self.low_rank, :2 * self.low_rank].numpy()
         np.save(folder_name + "/s" + str(layer_id) + ".npy", s_np)
         b_np = self.b.numpy()
         np.save(folder_name + "/b" + str(layer_id) + ".npy", b_np)
         # aux_variables
-        aux_U_np = self.aux_U.numpy()
+        aux_U_np = self.aux_U[:, :self.low_rank].numpy()
         np.save(folder_name + "/aux_U" + str(layer_id) + ".npy", aux_U_np)
-        aux_Unp1_np = self.aux_Unp1.numpy()
+        aux_Unp1_np = self.aux_Unp1[:, :2 * self.low_rank].numpy()
         np.save(folder_name + "/aux_Unp1" + str(layer_id) + ".npy", aux_Unp1_np)
-        aux_Vt_np = self.aux_Vt.numpy()
+        aux_Vt_np = self.aux_Vt[:, :self.low_rank].numpy()
         np.save(folder_name + "/aux_Vt" + str(layer_id) + ".npy", aux_Vt_np)
-        aux_Vtnp1_np = self.aux_Vtnp1.numpy()
+        aux_Vtnp1_np = self.aux_Vtnp1[:, :2 * self.low_rank].numpy()
         np.save(folder_name + "/aux_Vtnp1" + str(layer_id) + ".npy", aux_Vtnp1_np)
-        aux_N_np = self.aux_N.numpy()
+        aux_N_np = self.aux_N[:2 * self.low_rank, :self.low_rank].numpy()
         np.save(folder_name + "/aux_N" + str(layer_id) + ".npy", aux_N_np)
-        aux_M_np = self.aux_M.numpy()
+        aux_M_np = self.aux_M[:2 * self.low_rank, :self.low_rank].numpy()
         np.save(folder_name + "/aux_M" + str(layer_id) + ".npy", aux_M_np)
         return 0
 
