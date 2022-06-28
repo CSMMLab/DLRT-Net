@@ -9,3 +9,69 @@ python mnist_DLRA_fixed_rank.py -s 70 -t 1.0 -l 0 --train 1 -d 500
 python mnist_DLRA_fixed_rank.py -s 80 -t 1.0 -l 0 --train 1 -d 500
 python mnist_DLRA_fixed_rank.py -s 90 -t 1.0 -l 0 --train 1 -d 500
 python mnist_DLRA_fixed_rank.py -s 100 -t 1.0 -l 0 --train 1 -d 500
+
+python mnist_DLRA_fixed_rank.py -s 10 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 20 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 30 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 40 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 50 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 60 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 70 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 80 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 90 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 100 -t 1.0 -l 0 --train 1 -d 500
+
+python mnist_DLRA_fixed_rank.py -s 10 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 20 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 30 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 40 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 50 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 60 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 70 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 80 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 90 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 100 -t 1.0 -l 0 --train 1 -d 500
+
+python mnist_DLRA_fixed_rank.py -s 10 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 20 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 30 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 40 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 50 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 60 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 70 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 80 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 90 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 100 -t 1.0 -l 0 --train 1 -d 500
+
+python mnist_DLRA_fixed_rank.py -s 10 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 20 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 30 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 40 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 50 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 60 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 70 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 80 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 90 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 100 -t 1.0 -l 0 --train 1 -d 500
+
+python mnist_DLRA_fixed_rank.py -s 10 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 20 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 30 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 40 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 50 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 60 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 70 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 80 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 90 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 100 -t 1.0 -l 0 --train 1 -d 500
+
+python mnist_DLRA_fixed_rank.py -s 10 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 20 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 30 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 40 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 50 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 60 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 70 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 80 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 90 -t 1.0 -l 0 --train 1 -d 500
+python mnist_DLRA_fixed_rank.py -s 100 -t 1.0 -l 0 --train 1 -d 500
