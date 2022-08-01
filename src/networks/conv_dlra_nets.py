@@ -40,12 +40,14 @@ class VGG15DLRANHead(keras.Model):
                                             rmax_total=rmax_total, )
         self.dlraBlockOutput = Linear(input_dim=4096, units=output_dim)
 
+    @tf.function
     def build_model(self):
         self.dlraBlock1.build_model()
         self.dlraBlock2.build_model()
 
         return 0
 
+    @tf.function
     def call(self, inputs, step: int = 0):
         z = self.vgg16_body(inputs)
         z = self.flatten_layer(z)
@@ -55,40 +57,48 @@ class VGG15DLRANHead(keras.Model):
 
         return z
 
+    @tf.function
     def k_step_preprocessing(self):
         self.dlraBlock1.k_step_preprocessing()
         self.dlraBlock2.k_step_preprocessing()
         return 0
 
+    @tf.function
     def l_step_preprocessing(self):
         self.dlraBlock1.l_step_preprocessing()
         self.dlraBlock2.l_step_preprocessing()
 
+    @tf.function
     def k_step_postprocessing(self):
         self.dlraBlock1.k_step_postprocessing()
         self.dlraBlock2.k_step_postprocessing()
         return 0
 
+    @tf.function
     def l_step_postprocessing(self):
         self.dlraBlock1.l_step_postprocessing()
         self.dlraBlock2.l_step_postprocessing()
         return 0
 
+    @tf.function
     def k_step_postprocessing_adapt(self):
         self.dlraBlock1.k_step_postprocessing_adapt()
         self.dlraBlock2.k_step_postprocessing_adapt()
         return 0
 
+    @tf.function
     def l_step_postprocessing_adapt(self):
         self.dlraBlock1.l_step_postprocessing_adapt()
         self.dlraBlock2.l_step_postprocessing_adapt()
         return 0
 
+    @tf.function
     def rank_adaption(self):
         self.dlraBlock1.rank_adaption()
         self.dlraBlock2.rank_adaption()
         return 0
 
+    @tf.function
     def s_step_preprocessing(self):
         self.dlraBlock1.s_step_preprocessing()
         self.dlraBlock2.s_step_preprocessing()
