@@ -1,4 +1,5 @@
-from dlranet import DLRANet, create_csv_logger_cb
+from networks.dense_dlra_nets import DLRANet
+from networks.utils import create_csv_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras

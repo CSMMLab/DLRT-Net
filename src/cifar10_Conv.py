@@ -1,5 +1,5 @@
 from xmlrpc.client import boolean
-from networks.conv_dlra_nets import VGG15DLRANHead
+from networks.conv_nets import VGG15DLRANHead_NoDLRA
 from networks.utils import create_csv_logger_cb
 
 import tensorflow as tf
@@ -8,6 +8,7 @@ from tensorflow import keras
 import numpy as np
 from optparse import OptionParser
 from os import path, makedirs
+import os
 
 
 def test(start_rank, tolerance):
@@ -28,8 +29,8 @@ def test(start_rank, tolerance):
     max_rank = 150  # maximum rank of S matrix
 
     dlra_layer_dim = 200
-    model = VGG15DLRANHead(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
-                           dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    model = VGG15DLRANHead_NoDLRA(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+                                  dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
     # Choose loss
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
@@ -81,6 +82,8 @@ def test(start_rank, tolerance):
 
 
 def train(start_rank, tolerance, load_model):
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+
     # specify training
     epochs = 100
     batch_size = 256
@@ -106,7 +109,8 @@ def train(start_rank, tolerance, load_model):
     max_rank = 10000  # maximum rank of S matrix
     low_rank = 10000
     dlra_layer_dim = 784
-    model = VGG15DLRANHead(low_rank=low_rank, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3), output_dim=10)
+    model = VGG15DLRANHead_NoDLRA(low_rank=low_rank, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3),
+                                  output_dim=10)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -159,14 +163,8 @@ def train(start_rank, tolerance, load_model):
         # Iterate over the batches of the dataset.
 
         for step, batch_train in enumerate(train_dataset):
-            # 1.a) K and L Step Preproccessing
-            model.k_step_preprocessing()
-            model.l_step_preprocessing()
-
-            # 1.b) Tape Gradients for K-Step
-            model.toggle_non_s_step_training()
             with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=0, training=True)
+                out = model(batch_train[0], training=True)
                 # softmax activation for classification
                 out = tf.keras.activations.softmax(out)
                 out = tf.reshape(out, shape=(batch_train[0].shape[0], 10))
@@ -177,45 +175,7 @@ def train(start_rank, tolerance, load_model):
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_k_step)
 
-            # 1.b) Tape Gradients for L-Step
-            with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=1, training=True)
-                # softmax activation for classification
-                out = tf.keras.activations.softmax(out)
-                # Compute reconstruction loss
-                loss = loss_fn(batch_train[1], out)
-                loss += sum(model.losses)  # Add KLD regularization loss
-            grads_l_step = tape.gradient(loss, model.trainable_weights)
-            model.set_none_grads_to_zero(grads_l_step, model.trainable_weights)
-            model.set_dlra_bias_grads_to_zero(grads_l_step)
-
-            # Gradient update for K and L
             optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))
-            optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
-
-            # Postprocessing K and L
-            model.k_step_postprocessing_adapt()
-            model.l_step_postprocessing_adapt()
-
-            # S-Step Preprocessing
-            model.s_step_preprocessing()
-            model.toggle_s_step_training()
-
-            # 3.b) Tape Gradients
-            with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=2, training=True)
-                # softmax activation for classification
-                out = tf.keras.activations.softmax(out)
-                # Compute reconstruction loss
-                loss = loss_fn(batch_train[1], out)
-                loss += sum(model.losses)  # Add KLD regularization loss
-            # 3.c) Apply Gradients
-            grads_s = tape.gradient(loss, model.trainable_weights)
-            model.set_none_grads_to_zero(grads_s, model.trainable_weights)
-            optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
-
-            # Rank Adaptivity
-            model.rank_adaption()
 
             # Network monotoring and verbosity
             loss_metric.update_state(loss)
