@@ -199,7 +199,7 @@ def train(start_rank, tolerance, load_model):
         acc_val = 0
 
         #  K  Step Preproccessing
-        model.k_step_preprocessing()
+        # model.k_step_preprocessing()
 
         # Validate model
         out = model(x_val[:200], step=0, training=False)
