@@ -40,7 +40,7 @@ class VGG15DLRANHead(keras.Model):
                                             rmax_total=rmax_total, )
         self.dlraBlockOutput = Linear(input_dim=4096, units=output_dim)
 
-    @tf.function
+    # @tf.function
     def build_model(self):
         self.dlraBlock1.build_model()
         self.dlraBlock2.build_model()
@@ -92,7 +92,7 @@ class VGG15DLRANHead(keras.Model):
         self.dlraBlock2.l_step_postprocessing_adapt()
         return 0
 
-    @tf.function
+    # @tf.function
     def rank_adaption(self):
         self.dlraBlock1.rank_adaption()
         self.dlraBlock2.rank_adaption()

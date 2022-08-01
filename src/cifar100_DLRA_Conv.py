@@ -85,9 +85,9 @@ def train(start_rank, tolerance, load_model):
     epochs = 100
     batch_size = 256
 
-    filename = "cifar10_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "cifar10_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "cifar10_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
+    filename = "cifar100_sr" + str(start_rank) + "_v" + str(tolerance)
+    folder_name = "cifar100_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name_best = "cifar100_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
 
     # check if dir exists
     if not path.exists(folder_name):
@@ -289,7 +289,7 @@ def train(start_rank, tolerance, load_model):
             log_string += ";" + str(rank)
 
         with open(file_name, "a") as log:
-            log.write(log_string)
+            log.write(log_string + "\n")
         print("Epoch Data :" + log_string)
 
     return 0
