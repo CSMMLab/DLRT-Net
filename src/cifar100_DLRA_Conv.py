@@ -104,7 +104,7 @@ def train(start_rank, tolerance, load_model):
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
     max_rank = 2000  # maximum rank of S matrix
-    model = VGG15DLRANHead(low_rank=start_rank, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3), output_dim=10)
+    model = VGG15DLRANHead(low_rank=start_rank, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3), output_dim=100)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
