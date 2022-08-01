@@ -167,7 +167,7 @@ def train(start_rank, tolerance, load_model):
                 out = model(batch_train[0], step=0, training=True)
                 # softmax activation for classification
                 out = tf.keras.activations.softmax(out)
-                out = tf.reshape(out, shape=(batch_train[0].shape[0], 10))
+                out = tf.reshape(out, shape=(batch_train[0].shape[0], 100))
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
