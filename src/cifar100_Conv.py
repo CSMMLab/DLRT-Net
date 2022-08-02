@@ -110,7 +110,7 @@ def train(start_rank, tolerance, load_model):
     low_rank = 10000
     dlra_layer_dim = 784
     model = VGG15DLRANHead_NoDLRA(low_rank=low_rank, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3),
-                                  output_dim=10)
+                                  output_dim=100)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -167,7 +167,7 @@ def train(start_rank, tolerance, load_model):
                 out = model(batch_train[0], training=True)
                 # softmax activation for classification
                 out = tf.keras.activations.softmax(out)
-                out = tf.reshape(out, shape=(batch_train[0].shape[0], 10))
+                out = tf.reshape(out, shape=(batch_train[0].shape[0], 100))
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
