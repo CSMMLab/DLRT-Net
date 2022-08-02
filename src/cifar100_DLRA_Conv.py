@@ -106,7 +106,7 @@ def train(start_rank, tolerance, load_model):
     max_rank = 2000  # maximum rank of S matrix
     model = VGG15DLRANHead(low_rank=start_rank, tol=tol, rmax_total=max_rank, image_dims=(32, 32, 3), output_dim=100)
     # Build optimizer
-    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
+    optimizer = tf.keras.optimizers.SGD()
     # Choose loss
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)

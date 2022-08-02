@@ -59,12 +59,16 @@ class VGG15DLRANHead(keras.Model):
 
     @tf.function
     def k_step_preprocessing(self):
+        self.vgg16_body.trainable = False
+
         self.dlraBlock1.k_step_preprocessing()
         self.dlraBlock2.k_step_preprocessing()
         return 0
 
     @tf.function
     def l_step_preprocessing(self):
+        self.vgg16_body.trainable = False
+
         self.dlraBlock1.l_step_preprocessing()
         self.dlraBlock2.l_step_preprocessing()
 
@@ -100,6 +104,8 @@ class VGG15DLRANHead(keras.Model):
 
     @tf.function
     def s_step_preprocessing(self):
+        self.vgg16_body.trainable = True
+
         self.dlraBlock1.s_step_preprocessing()
         self.dlraBlock2.s_step_preprocessing()
         return 0
