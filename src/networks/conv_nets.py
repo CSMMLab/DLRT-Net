@@ -24,7 +24,7 @@ class VGG15DLRANHead_NoDLRA(keras.Model):
         # vgg16_body
         self.vgg16_body = VGG16(weights='imagenet', include_top=False)
         # deactivate training for that
-        self.vgg16_body.trainable = False
+        self.vgg16_body.trainable = True
 
         self.flatten_layer = keras.layers.Flatten()
         self.dlraBlock1 = DenseLinear(input_dim=512, units=4096)
