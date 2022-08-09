@@ -37,7 +37,7 @@ def train(start_rank, tolerance, load_model, dim_layer):
     model = NaiveNet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                      dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
     # Build optimizer
-    optimizer = tf.keras.optimizers.SGD(learning_rate=1e-3)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)  # SGD()
     # Choose loss
     loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     # Choose metrics (to monitor training, but not to optimize on)
