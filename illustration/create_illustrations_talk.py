@@ -8,328 +8,35 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from adjustText import adjust_text
 
 
 def main():
-    plot_factorization(file1="_running_data_dlrtdlrt_lenet_0.01.csv",
-                       file2="_running_data_vanillavanilla_lenet0.01.csv")
-
-    print_param_counts()
-
-    # print_param_cout()
-    name = "e2edense_sr300_v0.17"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.15"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.13"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.11"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.09"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.07"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.05"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.03"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-
-    # plot_timings
-    plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
-    plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
-
-    """
-    name = "e2edense_sr200_v0.03"
-    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
-    name = "e2edense_sr200_v0.05"
-    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
-    name = "e2edense_sr200_v0.07"
-    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
-    name = "e2edense_sr200_v0.09"
-    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
-    name = "e2edense_sr200_v0.11"
-    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
-    name = "e2edense_sr200_v0.13"
-    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
-    name = "e2edense_sr200_v0.15"
-    plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
+    plot_model_counts()
+    return 0
 
 
-    name = "200x3_sr199_v0.07"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr199_v0.05"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr199_v0.03"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr199_v0.01"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr199_v0.005"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr200_v0.07"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr200_v0.05"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr200_v0.03"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr200_v0.01"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
-    name = "200x3_sr200_v0.005"
-    plot_run(load_folder="wednesday/" + name, save_name="wednesday_run/" + name)
+def plot_model_counts():
+    names = ["AlexNet", "VGG-19", "GPT-1", "BERT", "ViT", "Dall-E"]
+    year = [2013, 2015, 2018, 2019, 2020, 2021]
+    weights = [61000000, 138000000, 117000000, 340000000, 632000000, 12000000000]
 
-    # 1) Illustrate training performance of 3 way low rank, 1 way low rank, and full rank
-    folder = "paper_data/"
-    dlra_3layer = pd.read_csv(folder + "3LayerDLRA_MNIST.csv", delimiter=";", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
-
-    plt.plot(dlra_3layer[["train_loss", "train_acc", "vall_loss", "vall_acc"]])
-    plt.savefig("figures/dlra_3_layer.png")
     plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.savefig("figures/dlra_3_layer_rank.png")
-    plt.clf()
-
-    # 2) Create plots for parameter study
-    folder = "paper_data/sr_100/200x3_sr100_v0.01/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
-
-    plt.plot(dlra_3layer[["train_loss", "train_acc", "vall_loss", "vall_acc"]])
-    plt.savefig("figures/sr100_01.png")
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.savefig("figures/sr100_01_rank.png")
-    plt.clf()
-
-    folder = "paper_data/sr_100/200x3_sr100_v0.03/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=",", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
-
-    plt.plot(dlra_3layer[["train_loss", "train_acc", "vall_loss", "vall_acc"]])
-    plt.savefig("figures/sr100_03.png")
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.savefig("figures/sr100_03_rank.png")
-    plt.clf()
-
-    folder = "paper_data/sr_100/200x3_sr100_v0.05/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=",", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
-
-    plt.plot(dlra_3layer[["vall_loss", "vall_acc"]])
-    plt.plot(dlra_3layer[["train_loss"]], '-.')
-    plt.plot(dlra_3layer[["train_acc"]], '-.')
-    plt.savefig("figures/sr100_05.png")
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.savefig("figures/sr100_05_rank.png")
-    plt.clf()
-
-    folder = "paper_data/sr_100/200x3_sr100_v0.07/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=",", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
-
-    plt.plot(dlra_3layer[["vall_loss", "vall_acc"]])
-    plt.plot(dlra_3layer[["train_loss"]], '-.')
-    plt.plot(dlra_3layer[["train_acc"]], '-.')
-    plt.legend(["vall_loss", "vall_acc", "train_loss", "train_acc"])
-    plt.savefig("figures/sr100_07.png")
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/sr100_07_rank.png")
-    plt.clf()
-
-    # 3) Long time runs
-
-    folder = "paper_data/long_time_results/200x3_sr100_v0.07/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_004_.csv", delimiter=";")
-
-    plt.plot(dlra_3layer[["acc_val"]], '-')
-    plt.plot(dlra_3layer[["acc_train"]], '-.')
-    plt.plot(dlra_3layer[["acc_test"]], '--')
-    plt.legend(["acc_val", "acc_train", "acc_test"])
-    plt.ylim([0.8, 1.05])
-    plt.savefig("figures/long_time2000_acc.png", dpi=600)
-    plt.clf()
-
-    plt.plot(dlra_3layer[["loss_val"]], '-')
-    plt.plot(dlra_3layer[["loss_train"]], '-.')
-    plt.plot(dlra_3layer[["loss_test"]], '--')
-    plt.legend(["loss_val", "loss_train", "loss_test"])
-    plt.ylim([1e-3, 2.5])
-    plt.savefig("figures/long_time2000_loss.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/long_time2000_loss_log.png", dpi=600)
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/long_time2000_ranks.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/long_time2000_ranks_log.png", dpi=600)
-    plt.clf()
-
-    folder = "paper_data/long_time_results/small_validation_set/200x3_sr100_v0.07/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";", header=None,
-                              names=["train_loss", "train_acc", "vall_loss", "vall_acc", "vall_loss_trash", "rank1",
-                                     "rank2", "rank3"])
-
-    plt.plot(dlra_3layer[["vall_loss", "vall_acc"]])
-    plt.plot(dlra_3layer[["train_loss"]], '-.')
-    plt.plot(dlra_3layer[["train_acc"]], '-.')
-    plt.legend(["vall_loss", "vall_acc", "train_loss", "train_acc"])
-    plt.savefig("figures/long_time2000_small_val.png")
+    sns.set_theme()
+    sns.set_style("white")
+    plt.plot(year, weights, 'ok')
     plt.yscale("log")
-    plt.savefig("figures/long_time2000_small_val_log.png")
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/long_time2000_small_val_ranks.png")
-    plt.yscale("log")
-    plt.savefig("figures/long_time2000_small_val_ranks_log.png")
-    plt.clf()
+    plt.ylabel("parameters")
+    plt.xlabel("year of release")
+    texts = []
 
-    # 4) New results
+    for i in range(len(names)):
+        texts.append(plt.text(year[i], weights[i], names[i]))
 
-    folder = "paper_data/new_results/200x3_sr199_v0.07/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";")
+    adjust_text(texts, only_move={'texts': 'y'})
+    #    plt.show()
+    plt.savefig("figures_talk/networks.png", dpi=500, bbox_inches="tight")
 
-    plt.plot(dlra_3layer[["acc_val"]], '-')
-    plt.plot(dlra_3layer[["acc_train"]], '-.')
-    plt.plot(dlra_3layer[["acc_test"]], '--')
-    plt.legend(["acc_val", "acc_train", "acc_test"])
-    plt.ylim([0.8, 1.05])
-    plt.savefig("figures/new_res_007_acc.png", dpi=600)
-    plt.clf()
-
-    plt.plot(dlra_3layer[["loss_val"]], '-')
-    plt.plot(dlra_3layer[["loss_train"]], '-.')
-    plt.plot(dlra_3layer[["loss_test"]], '--')
-    plt.legend(["loss_val", "loss_train", "loss_test"])
-    plt.ylim([1e-3, 2.5])
-    plt.savefig("figures/new_res_007_loss.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_007_loss_log.png", dpi=600)
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/new_res_007_ranks.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_007_ranks_log.png", dpi=600)
-    plt.clf()
-
-    folder = "paper_data/new_results/200x3_sr199_v0.05/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";")
-
-    plt.plot(dlra_3layer[["acc_val"]], '-')
-    plt.plot(dlra_3layer[["acc_train"]], '-.')
-    plt.plot(dlra_3layer[["acc_test"]], '--')
-    plt.legend(["acc_val", "acc_train", "acc_test"])
-    plt.ylim([0.8, 1.05])
-    plt.savefig("figures/new_res_005_acc.png", dpi=600)
-    plt.clf()
-
-    plt.plot(dlra_3layer[["loss_val"]], '-')
-    plt.plot(dlra_3layer[["loss_train"]], '-.')
-    plt.plot(dlra_3layer[["loss_test"]], '--')
-    plt.legend(["loss_val", "loss_train", "loss_test"])
-    plt.ylim([1e-3, 2.5])
-    plt.savefig("figures/new_res_005_loss.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_005_loss_log.png", dpi=600)
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/new_res_005_ranks.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_005_ranks_log.png", dpi=600)
-    plt.clf()
-
-    folder = "paper_data/new_results/200x3_sr199_v0.03/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";")
-
-    plt.plot(dlra_3layer[["acc_val"]], '-')
-    plt.plot(dlra_3layer[["acc_train"]], '-.')
-    plt.plot(dlra_3layer[["acc_test"]], '--')
-    plt.legend(["acc_val", "acc_train", "acc_test"])
-    plt.ylim([0.8, 1.05])
-    plt.savefig("figures/new_res_003_acc.png", dpi=600)
-    plt.clf()
-
-    plt.plot(dlra_3layer[["loss_val"]], '-')
-    plt.plot(dlra_3layer[["loss_train"]], '-.')
-    plt.plot(dlra_3layer[["loss_test"]], '--')
-    plt.legend(["loss_val", "loss_train", "loss_test"])
-    plt.ylim([1e-3, 2.5])
-    plt.savefig("figures/new_res_003_loss.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_003_loss_log.png", dpi=600)
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/new_res_003_ranks.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_003_ranks_log.png", dpi=600)
-    plt.clf()
-
-    folder = "paper_data/new_results/200x3_sr199_v0.01/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";")
-
-    plt.plot(dlra_3layer[["acc_val"]], '-')
-    plt.plot(dlra_3layer[["acc_train"]], '-.')
-    plt.plot(dlra_3layer[["acc_test"]], '--')
-    plt.legend(["acc_val", "acc_train", "acc_test"])
-    plt.ylim([0.8, 1.05])
-    plt.savefig("figures/new_res_001_acc.png", dpi=600)
-    plt.clf()
-
-    plt.plot(dlra_3layer[["loss_val"]], '-')
-    plt.plot(dlra_3layer[["loss_train"]], '-.')
-    plt.plot(dlra_3layer[["loss_test"]], '--')
-    plt.legend(["loss_val", "loss_train", "loss_test"])
-    plt.ylim([1e-3, 2.5])
-    plt.savefig("figures/new_res_001_loss.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_001_loss_log.png", dpi=600)
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/new_res_001_ranks.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_001_ranks_log.png", dpi=600)
-    plt.clf()
-
-    folder = "paper_data/new_results/200x3_sr199_v0.005/historyLogs"
-    dlra_3layer = pd.read_csv(folder + "/history_001_.csv", delimiter=";")
-
-    plt.plot(dlra_3layer[["acc_val"]], '-')
-    plt.plot(dlra_3layer[["acc_train"]], '-.')
-    plt.plot(dlra_3layer[["acc_test"]], '--')
-    plt.legend(["acc_val", "acc_train", "acc_test"])
-    plt.ylim([0.8, 1.05])
-    plt.savefig("figures/new_res_0005_acc.png", dpi=600)
-    plt.clf()
-
-    plt.plot(dlra_3layer[["loss_val"]], '-')
-    plt.plot(dlra_3layer[["loss_train"]], '-.')
-    plt.plot(dlra_3layer[["loss_test"]], '--')
-    plt.legend(["loss_val", "loss_train", "loss_test"])
-    plt.ylim([1e-3, 2.5])
-    plt.savefig("figures/new_res_0005_loss.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_0005_loss_log.png", dpi=600)
-    plt.clf()
-    plt.plot(dlra_3layer[["rank1", "rank2", "rank3"]])
-    plt.legend(["layer1", "layer2", "layer3"])
-    plt.savefig("figures/new_res_0005_ranks.png", dpi=600)
-    plt.yscale('log')
-    plt.savefig("figures/new_res_0005_ranks_log.png", dpi=600)
-    plt.clf()
-    """
     return 0
 
 
