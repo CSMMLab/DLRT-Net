@@ -86,20 +86,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         # Iterate over the batches of the dataset.
 
         for step, batch_train in enumerate(train_dataset):
-            # 1.a) K and L Step Preproccessing
-            model.dlraBlockInput.k_step_preprocessing()
-            model.dlraBlockInput.l_step_preprocessing()
-            model.dlraBlock1.k_step_preprocessing()
-            model.dlraBlock1.l_step_preprocessing()
-            model.dlraBlock2.k_step_preprocessing()
-            model.dlraBlock2.l_step_preprocessing()
-            model.dlraBlock3.k_step_preprocessing()
-            model.dlraBlock3.l_step_preprocessing()
 
-            # 1.b) Tape Gradients for K-Step
-            model.toggle_non_s_step_training()
             with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=0, training=True)
+                out = model(batch_train[0], training=True)
                 # softmax activation for classification
                 out = tf.keras.activations.softmax(out)
                 # Compute reconstruction loss
@@ -175,62 +164,8 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 print("-------------------------------------\n\n")
 
             # Gradient updates for k step
-            grads_k_step = tape.gradient(loss, model.trainable_weights)
-            model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
-            model.set_dlra_bias_grads_to_zero(grads_k_step)
-
-            # 1.b) Tape Gradients for L-Step
-            with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=1, training=True)
-                # softmax activation for classification
-                out = tf.keras.activations.softmax(out)
-                # Compute reconstruction loss
-                loss = loss_fn(batch_train[1], out)
-                loss += sum(model.losses)  # Add KLD regularization loss
-            grads_l_step = tape.gradient(loss, model.trainable_weights)
-            model.set_none_grads_to_zero(grads_l_step, model.trainable_weights)
-            model.set_dlra_bias_grads_to_zero(grads_l_step)
-
-            # Gradient update for K and L
-            optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))
-            optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
-
-            # Postprocessing K and L
-            model.dlraBlockInput.k_step_postprocessing_adapt()
-            model.dlraBlockInput.l_step_postprocessing_adapt()
-            model.dlraBlock1.k_step_postprocessing_adapt()
-            model.dlraBlock1.l_step_postprocessing_adapt()
-            model.dlraBlock2.k_step_postprocessing_adapt()
-            model.dlraBlock2.l_step_postprocessing_adapt()
-            model.dlraBlock3.k_step_postprocessing_adapt()
-            model.dlraBlock3.l_step_postprocessing_adapt()
-
-            # S-Step Preprocessing
-            model.dlraBlockInput.s_step_preprocessing()
-            model.dlraBlock1.s_step_preprocessing()
-            model.dlraBlock2.s_step_preprocessing()
-            model.dlraBlock3.s_step_preprocessing()
-
-            model.toggle_s_step_training()
-
-            # 3.b) Tape Gradients
-            with tf.GradientTape() as tape:
-                out = model(batch_train[0], step=2, training=True)
-                # softmax activation for classification
-                out = tf.keras.activations.softmax(out)
-                # Compute reconstruction loss
-                loss = loss_fn(batch_train[1], out)
-                loss += sum(model.losses)  # Add KLD regularization loss
-            # 3.c) Apply Gradients
-            grads_s = tape.gradient(loss, model.trainable_weights)
-            model.set_none_grads_to_zero(grads_s, model.trainable_weights)
-            optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
-
-            # Rank Adaptivity
-            model.dlraBlockInput.rank_adaption()
-            model.dlraBlock1.rank_adaption()
-            model.dlraBlock2.rank_adaption()
-            model.dlraBlock3.rank_adaption()
+            grads = tape.gradient(loss, model.trainable_weights)
+            optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
