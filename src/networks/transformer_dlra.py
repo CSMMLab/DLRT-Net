@@ -90,7 +90,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
         self.depth = d_model // self.num_heads
 
-        self.wq = tf.keras.layers.Dense(d_model)  # Wx+b, dim(W)=d_model x d_model
+        self.wq = tf.keras.layers.Dense(d_model)
         self.wk = tf.keras.layers.Dense(d_model)
         self.wv = tf.keras.layers.Dense(d_model)
 
@@ -151,6 +151,8 @@ class EncoderLayer(tf.keras.layers.Layer):
         self.dropout2 = tf.keras.layers.Dropout(rate)
 
     def call(self, x, training, mask):
+        # x = embedded portuguese , training = english, mask= remove padding tokens
+
         attn_output, _ = self.mha(x, x, x, mask)  # (batch_size, input_seq_len, d_model)
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(x + attn_output)  # (batch_size, input_seq_len, d_model)
@@ -207,16 +209,17 @@ class Encoder(tf.keras.layers.Layer):
         self.d_model = d_model
         self.num_layers = num_layers
 
-        self.embedding = tf.keras.layers.Embedding(input_vocab_size, self.d_model)
+        self.embedding = tf.keras.layers.Embedding(input_vocab_size, d_model)
         self.pos_encoding = positional_encoding(MAX_TOKENS, self.d_model)
 
         self.enc_layers = [
-            EncoderLayer(d_model=self.d_model, num_heads=num_heads, dff=dff, rate=rate)
+            EncoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate)
             for _ in range(num_layers)]
 
         self.dropout = tf.keras.layers.Dropout(rate)
 
     def call(self, x, training, mask):
+        # x = portuguese , training = english, mask= remove padding tokens
         seq_len = tf.shape(x)[1]
 
         # adding embedding and position encoding.
@@ -330,6 +333,27 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
 
+def loss_function(real, pred):
+    mask = tf.math.logical_not(tf.math.equal(real, 0))
+    loss_ = loss_object(real, pred)
+
+    mask = tf.cast(mask, dtype=loss_.dtype)
+    loss_ *= mask
+
+    return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
+
+
+def accuracy_function(real, pred):
+    accuracies = tf.equal(real, tf.argmax(pred, axis=2))
+
+    mask = tf.math.logical_not(tf.math.equal(real, 0))
+    accuracies = tf.math.logical_and(mask, accuracies)
+
+    accuracies = tf.cast(accuracies, dtype=tf.float32)
+    mask = tf.cast(mask, dtype=tf.float32)
+    return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
+
+
 class Translator(tf.Module):
     def __init__(self, tokenizers, transformer):
         self.tokenizers = tokenizers
@@ -374,9 +398,9 @@ class Translator(tf.Module):
 
         output = tf.transpose(output_array.stack())
         # output.shape (1, tokens)
-        text = self.tokenizers.en.detokenize(output)[0]  # shape: ()
+        text = tokenizers.en.detokenize(output)[0]  # shape: ()
 
-        tokens = self.tokenizers.en.lookup(output)[0]
+        tokens = tokenizers.en.lookup(output)[0]
 
         # `tf.function` prevents us from using the attention_weights that were
         # calculated on the last iteration of the loop. So recalculate them outside

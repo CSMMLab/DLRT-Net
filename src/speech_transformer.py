@@ -3,13 +3,12 @@ import networks.transformer
 import tensorflow as tf
 import tensorflow_datasets as tfds
 
-import numpy as np
 from optparse import OptionParser
 from os import path, makedirs
-import logging
+
 import time
 
-# global constants
+# global constants # specify training
 MAX_TOKENS = 128
 BUFFER_SIZE = 20000
 BATCH_SIZE = 64
@@ -30,59 +29,7 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
 
 
-def filter_max_tokens(pt, en):
-    num_tokens = tf.maximum(tf.shape(pt)[1], tf.shape(en)[1])
-    return num_tokens < MAX_TOKENS
-
-
-def tokenize_pairs(pt, en):
-    pt = tokenizers.pt.tokenize(pt)
-    # Convert from ragged to dense, padding with zeros.
-    pt = pt.to_tensor()
-
-    en = tokenizers.en.tokenize(en)
-    # Convert from ragged to dense, padding with zeros.
-    en = en.to_tensor()
-    return pt, en
-
-
-def make_batches(ds):
-    return (
-        ds
-        .cache()
-        .shuffle(BUFFER_SIZE)
-        .batch(BATCH_SIZE)
-        .map(tokenize_pairs, num_parallel_calls=tf.data.AUTOTUNE)
-        .filter(filter_max_tokens)
-        .prefetch(tf.data.AUTOTUNE))
-
-
-def loss_function(real, pred):
-    mask = tf.math.logical_not(tf.math.equal(real, 0))
-    loss_ = loss_object(real, pred)
-
-    mask = tf.cast(mask, dtype=loss_.dtype)
-    loss_ *= mask
-
-    return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
-
-
-def accuracy_function(real, pred):
-    accuracies = tf.equal(real, tf.argmax(pred, axis=2))
-
-    mask = tf.math.logical_not(tf.math.equal(real, 0))
-    accuracies = tf.math.logical_and(mask, accuracies)
-
-    accuracies = tf.cast(accuracies, dtype=tf.float32)
-    mask = tf.cast(mask, dtype=tf.float32)
-    return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
-
-
 def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
-    # specify training
-    epochs = epochs
-    batch_size = 256
-
     filename = "weight_data/transformer_sr" + str(start_rank) + "_v" + str(tolerance)
     folder_name = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
     folder_name_best = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
@@ -96,15 +43,13 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     print("save model as: " + filename)
 
     # load dataset
-    examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True,
-                                   as_supervised=True)
+    examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
     train_examples, val_examples = examples['train'], examples['validation']
 
     for pt_examples, en_examples in train_examples.batch(3).take(1):
         for pt in pt_examples.numpy():
             print(pt.decode('utf-8'))
     print()
-
     for en in en_examples.numpy():
         print(en.decode('utf-8'))
 
@@ -199,6 +144,54 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
     return 0
+
+
+def filter_max_tokens(pt, en):
+    num_tokens = tf.maximum(tf.shape(pt)[1], tf.shape(en)[1])
+    return num_tokens < MAX_TOKENS
+
+
+def tokenize_pairs(pt, en):
+    pt = tokenizers.pt.tokenize(pt)
+    # Convert from ragged to dense, padding with zeros.
+    pt = pt.to_tensor()
+
+    en = tokenizers.en.tokenize(en)
+    # Convert from ragged to dense, padding with zeros.
+    en = en.to_tensor()
+    return pt, en
+
+
+def make_batches(ds):
+    return (
+        ds
+        .cache()
+        .shuffle(BUFFER_SIZE)
+        .batch(BATCH_SIZE)
+        .map(tokenize_pairs, num_parallel_calls=tf.data.AUTOTUNE)
+        .filter(filter_max_tokens)
+        .prefetch(tf.data.AUTOTUNE))
+
+
+def loss_function(real, pred):
+    mask = tf.math.logical_not(tf.math.equal(real, 0))
+    loss_ = loss_object(real, pred)
+
+    mask = tf.cast(mask, dtype=loss_.dtype)
+    loss_ *= mask
+
+    return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
+
+
+def accuracy_function(real, pred):
+    accuracies = tf.equal(real, tf.argmax(pred, axis=2))
+
+    mask = tf.math.logical_not(tf.math.equal(real, 0))
+    accuracies = tf.math.logical_and(mask, accuracies)
+
+    accuracies = tf.cast(accuracies, dtype=tf.float32)
+    mask = tf.cast(mask, dtype=tf.float32)
+    return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
 
 
 if __name__ == '__main__':
