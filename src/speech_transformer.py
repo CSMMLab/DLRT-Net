@@ -1,18 +1,33 @@
-from networks.transformer import Translator
+import networks.transformer
 
 import tensorflow as tf
+import tensorflow_datasets as tfds
+
 import numpy as np
 from optparse import OptionParser
 from os import path, makedirs
-import matplotlib.pyplot as plt
-
-import tensorflow_datasets as tfds
+import logging
+import time
 
 # global constants
 MAX_TOKENS = 128
 BUFFER_SIZE = 20000
 BATCH_SIZE = 64
 EPOCHS = 20
+
+# global model
+# Text tokenization & detokenization
+model_name = 'ted_hrlr_translate_pt_en_converter'
+tf.keras.utils.get_file(
+    f'{model_name}.zip',
+    f'https://storage.googleapis.com/download.tensorflow.org/models/{model_name}.zip',
+    cache_dir='.', cache_subdir='', extract=True
+)
+tokenizers = tf.saved_model.load(model_name)
+
+# global network properties
+loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+    from_logits=True, reduction='none')
 
 
 def filter_max_tokens(pt, en):
@@ -88,23 +103,10 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     for pt_examples, en_examples in train_examples.batch(3).take(1):
         for pt in pt_examples.numpy():
             print(pt.decode('utf-8'))
-
     print()
 
     for en in en_examples.numpy():
         print(en.decode('utf-8'))
-
-    # Text tokenization & detokenization
-    model_name = 'ted_hrlr_translate_pt_en_converter'
-    tf.keras.utils.get_file(
-        f'{model_name}.zip',
-        f'https://storage.googleapis.com/download.tensorflow.org/models/{model_name}.zip',
-        cache_dir='.', cache_subdir='', extract=True
-    )
-
-    tokenizers = tf.saved_model.load(model_name)
-    encoded = tokenizers.en.tokenize(en_examples)
-    tokens = tokenizers.en.lookup(encoded)
 
     # investigate data
     lengths = []
@@ -119,12 +121,14 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
     all_lengths = np.concatenate(lengths)
 
+    """
     plt.hist(all_lengths, np.linspace(0, 500, 101))
     plt.ylim(plt.ylim())
     max_length = max(all_lengths)
     plt.plot([max_length, max_length], plt.ylim())
     plt.title(f'Max tokens per example: {max_length}');
     plt.show()
+    """
 
     train_batches = make_batches(train_examples)
     val_batches = make_batches(val_examples)
@@ -135,21 +139,16 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     num_heads = 8
     dropout_rate = 0.1
 
-    learning_rate = CustomSchedule(d_model)
+    learning_rate = networks.transformer.CustomSchedule(d_model)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98,
                                          epsilon=1e-9)
-
-    temp_learning_rate_schedule = CustomSchedule(d_model)
-
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
-        from_logits=True, reduction='none')
 
     train_loss = tf.keras.metrics.Mean(name='train_loss')
     train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
 
     # build model
-    transformer = Transformer(
+    transformer = networks.transformer.Transformer(
         num_layers=num_layers,
         d_model=d_model,
         num_heads=num_heads,
@@ -185,7 +184,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
-            train_step(inp, tar)
+            train_step(inp, tar, transformer, optimizer, train_loss, train_accuracy)
 
             if batch % 50 == 0:
                 print(
@@ -208,8 +207,8 @@ train_step_signature = [
 ]
 
 
-@tf.function(input_signature=train_step_signature)
-def train_step(inp, tar):
+@tf.function
+def train_step(inp, tar, transformer, optimizer, train_loss, train_accuracy):
     tar_inp = tar[:, :-1]
     tar_real = tar[:, 1:]
 
