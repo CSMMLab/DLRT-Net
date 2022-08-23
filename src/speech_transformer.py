@@ -1,7 +1,6 @@
 from networks.transformer import Translator
 
 import tensorflow as tf
-from tensorflow import keras
 import numpy as np
 from optparse import OptionParser
 from os import path, makedirs
@@ -13,10 +12,13 @@ import tensorflow_datasets as tfds
 MAX_TOKENS = 128
 BUFFER_SIZE = 20000
 BATCH_SIZE = 64
+EPOCHS = 20
+
 
 def filter_max_tokens(pt, en):
-  num_tokens = tf.maximum(tf.shape(pt)[1],tf.shape(en)[1])
-  return num_tokens < MAX_TOKENS
+    num_tokens = tf.maximum(tf.shape(pt)[1], tf.shape(en)[1])
+    return num_tokens < MAX_TOKENS
+
 
 def tokenize_pairs(pt, en):
     pt = tokenizers.pt.tokenize(pt)
@@ -28,16 +30,18 @@ def tokenize_pairs(pt, en):
     en = en.to_tensor()
     return pt, en
 
+
 def make_batches(ds):
-  return (
-      ds
-      .cache()
-      .shuffle(BUFFER_SIZE)
-      .batch(BATCH_SIZE)
-      .map(tokenize_pairs, num_parallel_calls=tf.data.AUTOTUNE)
-      .filter(filter_max_tokens)
-      .prefetch(tf.data.AUTOTUNE))
-    
+    return (
+        ds
+        .cache()
+        .shuffle(BUFFER_SIZE)
+        .batch(BATCH_SIZE)
+        .map(tokenize_pairs, num_parallel_calls=tf.data.AUTOTUNE)
+        .filter(filter_max_tokens)
+        .prefetch(tf.data.AUTOTUNE))
+
+
 def loss_function(real, pred):
     mask = tf.math.logical_not(tf.math.equal(real, 0))
     loss_ = loss_object(real, pred)
@@ -45,7 +49,7 @@ def loss_function(real, pred):
     mask = tf.cast(mask, dtype=loss_.dtype)
     loss_ *= mask
 
-    return tf.reduce_sum(loss_)/tf.reduce_sum(mask)
+    return tf.reduce_sum(loss_) / tf.reduce_sum(mask)
 
 
 def accuracy_function(real, pred):
@@ -56,7 +60,7 @@ def accuracy_function(real, pred):
 
     accuracies = tf.cast(accuracies, dtype=tf.float32)
     mask = tf.cast(mask, dtype=tf.float32)
-    return tf.reduce_sum(accuracies)/tf.reduce_sum(mask)
+    return tf.reduce_sum(accuracies) / tf.reduce_sum(mask)
 
 
 def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
@@ -78,7 +82,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True,
-                               as_supervised=True)
+                                   as_supervised=True)
     train_examples, val_examples = examples['train'], examples['validation']
 
     for pt_examples, en_examples in train_examples.batch(3).take(1):
@@ -93,9 +97,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     # Text tokenization & detokenization
     model_name = 'ted_hrlr_translate_pt_en_converter'
     tf.keras.utils.get_file(
-    f'{model_name}.zip',
-    f'https://storage.googleapis.com/download.tensorflow.org/models/{model_name}.zip',
-    cache_dir='.', cache_subdir='', extract=True
+        f'{model_name}.zip',
+        f'https://storage.googleapis.com/download.tensorflow.org/models/{model_name}.zip',
+        cache_dir='.', cache_subdir='', extract=True
     )
 
     tokenizers = tf.saved_model.load(model_name)
@@ -134,7 +138,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     learning_rate = CustomSchedule(d_model)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98,
-                                     epsilon=1e-9)
+                                         epsilon=1e-9)
 
     temp_learning_rate_schedule = CustomSchedule(d_model)
 
@@ -158,7 +162,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
     # store model weights in checkpoints
     ckpt = tf.train.Checkpoint(transformer=transformer,
-                            optimizer=optimizer)
+                               optimizer=optimizer)
 
     ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
 
@@ -166,8 +170,6 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     if ckpt_manager.latest_checkpoint:
         ckpt.restore(ckpt_manager.latest_checkpoint)
         print('Latest checkpoint restored!!')
-
-    EPOCHS = 20
 
     # The @tf.function trace-compiles train_step into a TF graph for faster
     # execution. The function specializes to the precise shape of the argument
@@ -186,18 +188,19 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             train_step(inp, tar)
 
             if batch % 50 == 0:
-                print(f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
+                print(
+                    f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
 
         if (epoch + 1) % 5 == 0:
             ckpt_save_path = ckpt_manager.save()
-            print(f'Saving checkpoint for epoch {epoch+1} at {ckpt_save_path}')
+            print(f'Saving checkpoint for epoch {epoch + 1} at {ckpt_save_path}')
 
         print(f'Epoch {epoch + 1} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
 
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
-
     return 0
+
 
 train_step_signature = [
     tf.TensorSpec(shape=(None, None), dtype=tf.int64),
@@ -212,7 +215,7 @@ def train_step(inp, tar):
 
     with tf.GradientTape() as tape:
         predictions, _ = transformer([inp, tar_inp],
-                                    training = True)
+                                     training=True)
         loss = loss_function(tar_real, predictions)
 
     gradients = tape.gradient(loss, transformer.trainable_variables)
