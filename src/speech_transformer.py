@@ -109,26 +109,6 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         print(en.decode('utf-8'))
 
     # investigate data
-    lengths = []
-
-    for pt_examples, en_examples in train_examples.batch(1024):
-        pt_tokens = tokenizers.en.tokenize(pt_examples)
-        lengths.append(pt_tokens.row_lengths())
-
-        en_tokens = tokenizers.en.tokenize(en_examples)
-        lengths.append(en_tokens.row_lengths())
-        print('.', end='', flush=True)
-
-    all_lengths = np.concatenate(lengths)
-
-    """
-    plt.hist(all_lengths, np.linspace(0, 500, 101))
-    plt.ylim(plt.ylim())
-    max_length = max(all_lengths)
-    plt.plot([max_length, max_length], plt.ylim())
-    plt.title(f'Max tokens per example: {max_length}');
-    plt.show()
-    """
 
     train_batches = make_batches(train_examples)
     val_batches = make_batches(val_examples)
@@ -175,6 +155,26 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     # tensors. To avoid re-tracing due to the variable sequence lengths or variable
     # batch sizes (the last batch is smaller), use input_signature to specify
     # more generic shapes.
+    train_step_signature = [
+        tf.TensorSpec(shape=(None, None), dtype=tf.int64),
+        tf.TensorSpec(shape=(None, None), dtype=tf.int64),
+    ]
+
+    @tf.function(input_signature=train_step_signature)
+    def train_step(inp, tar):
+        tar_inp = tar[:, :-1]
+        tar_real = tar[:, 1:]
+
+        with tf.GradientTape() as tape:
+            predictions, _ = transformer([inp, tar_inp],
+                                         training=True)
+            loss = loss_function(tar_real, predictions)
+
+        gradients = tape.gradient(loss, transformer.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, transformer.trainable_variables))
+
+        train_loss(loss)
+        train_accuracy(accuracy_function(tar_real, predictions))
 
     for epoch in range(EPOCHS):
         start = time.time()
@@ -184,7 +184,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
-            train_step(inp, tar, transformer, optimizer, train_loss, train_accuracy)
+            train_step(inp, tar)
 
             if batch % 50 == 0:
                 print(
@@ -199,29 +199,6 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
     return 0
-
-
-train_step_signature = [
-    tf.TensorSpec(shape=(None, None), dtype=tf.int64),
-    tf.TensorSpec(shape=(None, None), dtype=tf.int64),
-]
-
-
-@tf.function
-def train_step(inp, tar, transformer, optimizer, train_loss, train_accuracy):
-    tar_inp = tar[:, :-1]
-    tar_real = tar[:, 1:]
-
-    with tf.GradientTape() as tape:
-        predictions, _ = transformer([inp, tar_inp],
-                                     training=True)
-        loss = loss_function(tar_real, predictions)
-
-    gradients = tape.gradient(loss, transformer.trainable_variables)
-    optimizer.apply_gradients(zip(gradients, transformer.trainable_variables))
-
-    train_loss(loss)
-    train_accuracy(accuracy_function(tar_real, predictions))
 
 
 if __name__ == '__main__':
