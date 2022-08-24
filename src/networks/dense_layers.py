@@ -782,7 +782,6 @@ class DLRALayerAdaptiveLinear(keras.layers.Layer):
         s_small = self.s[:2 * self.low_rank, :2 * self.low_rank]
         d, u2, v2 = tf.linalg.svd(s_small)
 
-        tmp = 0.0
         tol = self.epsAdapt * tf.linalg.norm(d)  # absolute value treshold (try also relative one)
         rmax = int(tf.floor(d.shape[0] / 2))
         for j in range(0, 2 * rmax - 1):

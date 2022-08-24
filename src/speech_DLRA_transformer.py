@@ -59,10 +59,10 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     train_batches = make_batches(train_examples)
     val_batches = make_batches(val_examples)
 
-    num_layers = 4
-    d_model = 128
-    dff = 512
-    num_heads = 8
+    num_layers = 1
+    d_model = 32
+    dff = 128
+    num_heads = 2
     dropout_rate = 0.1
 
     learning_rate = networks.transformer.CustomSchedule(d_model)
@@ -106,7 +106,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     ]
 
-    # @tf.function(input_signature=train_step_signature)
+    @tf.function(input_signature=train_step_signature)
     def train_step_low_rank(inp, tar):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]
@@ -161,10 +161,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         transformer.set_none_grads_to_zero(grads_s, transformer.trainable_weights)
         optimizer.apply_gradients(zip(grads_s, transformer.trainable_weights))  # All gradients except K and L matrix
 
-        # Rank Adaptivity
-        transformer.rank_adaption()
-
-        return transformer.get_rank()
+        return 0
 
     for epoch in range(EPOCHS):
         start = time.time()
@@ -174,7 +171,10 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
-            ranks = train_step_low_rank(inp, tar)
+            train_step_low_rank(inp, tar)
+            # Rank Adaptivity
+            transformer.rank_adaption()
+            ranks = transformer.get_rank()
 
             if batch % 50 == 0:
                 print(
