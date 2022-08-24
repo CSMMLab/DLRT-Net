@@ -105,7 +105,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     ]
 
-    @tf.function(input_signature=train_step_signature)
+    # @tf.function(input_signature=train_step_signature)
     def train_step(inp, tar):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]

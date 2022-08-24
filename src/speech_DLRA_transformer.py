@@ -1,3 +1,4 @@
+import networks.transformer_dlra
 import networks.transformer
 
 import tensorflow as tf
@@ -73,7 +74,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
 
     # build model
-    transformer = networks.transformer.Transformer(
+    transformer = networks.transformer_dlra.TransformerDLRA(
         num_layers=num_layers,
         d_model=d_model,
         num_heads=num_heads,
@@ -105,21 +106,63 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     ]
 
-    @tf.function(input_signature=train_step_signature)
-    def train_step(inp, tar):
+    # @tf.function(input_signature=train_step_signature)
+    def train_step_low_rank(inp, tar):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]
 
+        # 1.a) K and L Step Preproccessing
+        transformer.k_step_preprocessing()
+        transformer.l_step_preprocessing()
+
+        # 1.b) Tape Gradients for K-Step
+        # transformer.toggle_non_s_step_training()
         with tf.GradientTape() as tape:
-            predictions, _ = transformer([inp, tar_inp],
-                                         training=True)
+            predictions, _ = transformer([inp, tar_inp], training=True, step=0)
             loss = loss_function(tar_real, predictions)
 
-        gradients = tape.gradient(loss, transformer.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, transformer.trainable_variables))
+        # Gradient updates for k step
+        grads_k_step = tape.gradient(loss, transformer.trainable_weights)
+        transformer.set_none_grads_to_zero(grads_k_step, transformer.trainable_weights)
+        # transformer.set_dlra_bias_grads_to_zero(grads_k_step)
 
         train_loss(loss)
         train_accuracy(accuracy_function(tar_real, predictions))
+
+        # 1.b) Tape Gradients for L-Step
+        with tf.GradientTape() as tape:
+            predictions, _ = transformer([inp, tar_inp], training=True, step=1)
+            loss = loss_function(tar_real, predictions)
+
+        grads_l_step = tape.gradient(loss, transformer.trainable_weights)
+        transformer.set_none_grads_to_zero(grads_l_step, transformer.trainable_weights)
+        # transformer.set_dlra_bias_grads_to_zero(grads_l_step)
+
+        # Gradient update for K and L
+        optimizer.apply_gradients(zip(grads_k_step, transformer.trainable_weights))
+        optimizer.apply_gradients(zip(grads_l_step, transformer.trainable_weights))
+
+        # Postprocessing K and L
+        transformer.k_step_postprocessing_adapt()
+        transformer.l_step_postprocessing_adapt()
+
+        # S-Step Preprocessing
+        transformer.s_step_preprocessing()
+
+        # transformer.toggle_s_step_training()
+
+        # 3.b) Tape Gradients
+        with tf.GradientTape() as tape:
+            predictions, _ = transformer([inp, tar_inp], training=True, step=2)
+            loss = loss_function(tar_real, predictions)
+
+        # 3.c) Apply Gradients
+        grads_s = tape.gradient(loss, transformer.trainable_weights)
+        transformer.set_none_grads_to_zero(grads_s, transformer.trainable_weights)
+        optimizer.apply_gradients(zip(grads_s, transformer.trainable_weights))  # All gradients except K and L matrix
+
+        # Rank Adaptivity
+        transformer.rank_adaption()
 
     for epoch in range(EPOCHS):
         start = time.time()
@@ -129,7 +172,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
-            train_step(inp, tar)
+            train_step_low_rank(inp, tar)
 
             if batch % 50 == 0:
                 print(
