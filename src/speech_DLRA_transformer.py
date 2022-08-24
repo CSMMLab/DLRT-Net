@@ -59,12 +59,12 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     train_batches = make_batches(train_examples)
     val_batches = make_batches(val_examples)
 
-    num_layers = 1
-    d_model = 32
-    dff = 128
-    num_heads = 2
+    num_layers = 4
+    d_model = 128
+    dff = 512
+    num_heads = 8
     dropout_rate = 0.1
-
+    
     learning_rate = networks.transformer.CustomSchedule(d_model)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98,
@@ -83,7 +83,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         target_vocab_size=tokenizers.en.get_vocab_size().numpy(),
         rate=dropout_rate)
 
-    checkpoint_path = './checkpoints/train'
+    checkpoint_path = './checkpoints_dlrt/train'
 
     # store model weights in checkpoints
     ckpt = tf.train.Checkpoint(transformer=transformer,
