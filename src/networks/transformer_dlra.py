@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from src.networks.dense_layers import DLRALayerAdaptiveLinear
+from networks.dense_layers import DLRALayerAdaptiveLinear
 
 # global constants !!!!! DANGEROUS!!!
 MAX_TOKENS = 128
