@@ -8,7 +8,7 @@ MAX_TOKENS = 128
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
-    def __init__(self, *, d_model, num_heads):
+    def __init__(self, *, d_model, num_heads, tolerance):
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.d_model = d_model
@@ -16,7 +16,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         assert d_model % self.num_heads == 0
 
         self.depth = d_model // self.num_heads
-        self.epsilon = 0.1
+        self.epsilon = tolerance
 
         self.wq = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
                                           epsAdapt=self.epsilon)
@@ -100,10 +100,10 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 
 class EncoderLayer(tf.keras.layers.Layer):
-    def __init__(self, *, d_model, num_heads, dff, rate=0.1):
+    def __init__(self, *, d_model, num_heads, dff, rate=0.1, tolerance=0.1):
         super(EncoderLayer, self).__init__()
 
-        self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads)
+        self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
         self.ffn = point_wise_feed_forward_network(d_model, dff)
 
         self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
@@ -148,11 +148,11 @@ class EncoderLayer(tf.keras.layers.Layer):
 
 
 class DecoderLayer(tf.keras.layers.Layer):
-    def __init__(self, *, d_model, num_heads, dff, rate=0.1):
+    def __init__(self, *, d_model, num_heads, dff, rate=0.1, tolerance=0.1):
         super(DecoderLayer, self).__init__()
 
-        self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads)
-        self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads)
+        self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
+        self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
 
         self.ffn = point_wise_feed_forward_network(d_model, dff)
 
@@ -212,7 +212,7 @@ class DecoderLayer(tf.keras.layers.Layer):
 
 class Encoder(tf.keras.layers.Layer):
     def __init__(self, *, num_layers, d_model, num_heads, dff, input_vocab_size,
-                 rate=0.1):
+                 rate=0.1, tolerance):
         super(Encoder, self).__init__()
 
         self.d_model = d_model
@@ -222,7 +222,7 @@ class Encoder(tf.keras.layers.Layer):
         self.pos_encoding = positional_encoding(MAX_TOKENS, self.d_model)
 
         self.enc_layers = [
-            EncoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate)
+            EncoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate, tolerance=tolerance)
             for _ in range(num_layers)]
 
         self.dropout = tf.keras.layers.Dropout(rate)
@@ -276,7 +276,7 @@ class Encoder(tf.keras.layers.Layer):
 
 class Decoder(tf.keras.layers.Layer):
     def __init__(self, *, num_layers, d_model, num_heads, dff, target_vocab_size,
-                 rate=0.1):
+                 rate=0.1, tolerance=0.1):
         super(Decoder, self).__init__()
 
         self.d_model = d_model
@@ -286,7 +286,7 @@ class Decoder(tf.keras.layers.Layer):
         self.pos_encoding = positional_encoding(MAX_TOKENS, d_model)
 
         self.dec_layers = [
-            DecoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate)
+            DecoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate, tolerance=tolerance)
             for _ in range(num_layers)]
         self.dropout = tf.keras.layers.Dropout(rate)
 
@@ -343,15 +343,15 @@ class Decoder(tf.keras.layers.Layer):
 
 class TransformerDLRA(tf.keras.Model):
     def __init__(self, *, num_layers, d_model, num_heads, dff, input_vocab_size,
-                 target_vocab_size, rate=0.1):
+                 target_vocab_size, rate=0.1, tolerance=0.1):
         super().__init__()
         self.encoder = Encoder(num_layers=num_layers, d_model=d_model,
                                num_heads=num_heads, dff=dff,
-                               input_vocab_size=input_vocab_size, rate=rate)
+                               input_vocab_size=input_vocab_size, rate=rate, tolerance=tolerance)
 
         self.decoder = Decoder(num_layers=num_layers, d_model=d_model,
                                num_heads=num_heads, dff=dff,
-                               target_vocab_size=target_vocab_size, rate=rate)
+                               target_vocab_size=target_vocab_size, rate=rate, tolerance=tolerance)
 
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)
 

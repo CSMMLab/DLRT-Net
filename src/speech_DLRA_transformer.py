@@ -30,19 +30,7 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
 
 
-def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
-    filename = "weight_data/transformer_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
-
-    # check if dir exists
-    if not path.exists(folder_name):
-        makedirs(folder_name)
-    if not path.exists(folder_name_best):
-        makedirs(folder_name_best)
-
-    print("save model as: " + filename)
-
+def train(tolerance):
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
     train_examples, val_examples = examples['train'], examples['validation']
@@ -64,7 +52,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     dff = 512
     num_heads = 8
     dropout_rate = 0.1
-    
+
     learning_rate = networks.transformer.CustomSchedule(d_model)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate, beta_1=0.9, beta_2=0.98,
@@ -81,9 +69,10 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         dff=dff,
         input_vocab_size=tokenizers.pt.get_vocab_size().numpy(),
         target_vocab_size=tokenizers.en.get_vocab_size().numpy(),
-        rate=dropout_rate)
+        rate=dropout_rate,
+        tolerance=tolerance)
 
-    checkpoint_path = './checkpoints_dlrt/train'
+    checkpoint_path = './checkpoints_big_' + str(tolerance) + '/train'
 
     # store model weights in checkpoints
     ckpt = tf.train.Checkpoint(transformer=transformer,
@@ -246,23 +235,13 @@ if __name__ == '__main__':
     print("Parsing options")
     # --- parse options ---
     parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-    parser.add_option("-l", "--load_model", dest="load_model", default=1)
-    parser.add_option("-a", "--train", dest="train", default=1)
-    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
-    parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
     parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
     options.tolerance = float(options.tolerance)
-    options.load_model = int(options.load_model)
-    options.train = int(options.train)
-    options.dim_layer = int(options.dim_layer)
-    options.max_rank = int(options.max_rank)
     options.epochs = int(options.epochs)
 
     if options.train == 1:
-        train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
-              dim_layer=options.dim_layer, rmax=options.max_rank, epochs=options.epochs)
+        train(tolerance=options.tolerance)
