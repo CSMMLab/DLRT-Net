@@ -267,6 +267,12 @@ class Encoder(tf.keras.layers.Layer):
         for i in range(self.num_layers):
             self.enc_layers[i].rank_adaption()
 
+    def get_rank(self):
+        ranks = []
+        for i in range(self.num_layers):
+            ranks.append(self.enc_layers[i].get_rank())
+        return ranks
+
 
 class Decoder(tf.keras.layers.Layer):
     def __init__(self, *, num_layers, d_model, num_heads, dff, target_vocab_size,
@@ -330,7 +336,9 @@ class Decoder(tf.keras.layers.Layer):
 
     def get_rank(self):
         ranks = []
-        return 0  # sself.mha1.get_rank(), self.mha2.get_rank()
+        for i in range(self.num_layers):
+            ranks.append(self.dec_layers[i].get_rank())
+        return ranks
 
 
 class TransformerDLRA(tf.keras.Model):
@@ -398,6 +406,9 @@ class TransformerDLRA(tf.keras.Model):
     def rank_adaption(self):
         self.encoder.rank_adaption()
         self.decoder.rank_adaption()
+
+    def get_rank(self):
+        return self.encoder.get_rank(), self.decoder.get_rank()
 
     @staticmethod
     def set_none_grads_to_zero(grads, weights):
