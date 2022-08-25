@@ -96,7 +96,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.wv.rank_adaption()
 
     def get_rank(self):
-        return self.wq.get_rank(), self.wk.get_rank(), self.wv.get_rank()
+        return [self.wq.get_rank(), self.wk.get_rank(), self.wv.get_rank()]
 
 
 class EncoderLayer(tf.keras.layers.Layer):
@@ -207,7 +207,7 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha2.rank_adaption()
 
     def get_rank(self):
-        return self.mha1.get_rank(), self.mha2.get_rank()
+        return [self.mha1.get_rank(), self.mha2.get_rank()]
 
 
 class Encoder(tf.keras.layers.Layer):
@@ -408,7 +408,7 @@ class TransformerDLRA(tf.keras.Model):
         self.decoder.rank_adaption()
 
     def get_rank(self):
-        return self.encoder.get_rank(), self.decoder.get_rank()
+        return [self.encoder.get_rank(), self.decoder.get_rank()]
 
     @staticmethod
     def set_none_grads_to_zero(grads, weights):

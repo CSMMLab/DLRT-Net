@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 from optparse import OptionParser
-from os import path, makedirs
+from networks.utils import create_csv_logger_cb, list_of_lists_to_string
 
 import time
 
@@ -29,16 +29,8 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
 
 
-def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
-    filename = "weight_data/transformer_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
-
-    # check if dir exists
-    if not path.exists(folder_name):
-        makedirs(folder_name)
-    if not path.exists(folder_name_best):
-        makedirs(folder_name_best)
+def train():
+    filename = "./logs/big_transformer"
 
     print("save model as: " + filename)
 
@@ -95,6 +87,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         ckpt.restore(ckpt_manager.latest_checkpoint)
         print('Latest checkpoint restored!!')
 
+    # Create logger
+    log_file, file_name = create_csv_logger_cb(folder_name=filename)
+
     # The @tf.function trace-compiles train_step into a TF graph for faster
     # execution. The function specializes to the precise shape of the argument
     # tensors. To avoid re-tracing due to the variable sequence lengths or variable
@@ -105,7 +100,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     ]
 
-    # @tf.function(input_signature=train_step_signature)
+    @tf.function(input_signature=train_step_signature)
     def train_step(inp, tar):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]
@@ -135,6 +130,10 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 print(
                     f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
 
+        # Log Data of current epoch
+        log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + "\n"
+        with open(file_name, "a") as log:
+            log.write(log_string)
         if (epoch + 1) % 5 == 0:
             ckpt_save_path = ckpt_manager.save()
             print(f'Saving checkpoint for epoch {epoch + 1} at {ckpt_save_path}')
@@ -196,26 +195,4 @@ def accuracy_function(real, pred):
 
 if __name__ == '__main__':
     print("---------- Start Network Training Suite ------------")
-    print("Parsing options")
-    # --- parse options ---
-    parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-    parser.add_option("-l", "--load_model", dest="load_model", default=1)
-    parser.add_option("-a", "--train", dest="train", default=1)
-    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
-    parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
-    parser.add_option("-e", "--epochs", dest="epochs", default=10)
-
-    (options, args) = parser.parse_args()
-    options.start_rank = int(options.start_rank)
-    options.tolerance = float(options.tolerance)
-    options.load_model = int(options.load_model)
-    options.train = int(options.train)
-    options.dim_layer = int(options.dim_layer)
-    options.max_rank = int(options.max_rank)
-    options.epochs = int(options.epochs)
-
-    if options.train == 1:
-        train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
-              dim_layer=options.dim_layer, rmax=options.max_rank, epochs=options.epochs)
+    train()

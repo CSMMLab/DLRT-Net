@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 from optparse import OptionParser
-from os import path, makedirs
+from networks.utils import create_csv_logger_cb, list_of_lists_to_string
 
 import time
 
@@ -29,18 +29,8 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
 
 
-def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
-    filename = "weight_data/transformer_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "weight_data/transformer" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
-
-    # check if dir exists
-    if not path.exists(folder_name):
-        makedirs(folder_name)
-    if not path.exists(folder_name_best):
-        makedirs(folder_name_best)
-
-    print("save model as: " + filename)
+def train():
+    filename = "./logs/transformer"
 
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
@@ -95,6 +85,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         ckpt.restore(ckpt_manager.latest_checkpoint)
         print('Latest checkpoint restored!!')
 
+    # Create logger
+    log_file, file_name = create_csv_logger_cb(folder_name=filename)
+
     # The @tf.function trace-compiles train_step into a TF graph for faster
     # execution. The function specializes to the precise shape of the argument
     # tensors. To avoid re-tracing due to the variable sequence lengths or variable
@@ -105,7 +98,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     ]
 
-    # @tf.function(input_signature=train_step_signature)
+    @tf.function(input_signature=train_step_signature)
     def train_step(inp, tar):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]
@@ -134,6 +127,11 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             if batch % 50 == 0:
                 print(
                     f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
+
+        # Log Data of current epoch
+        log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + "\n"
+        with open(file_name, "a") as log:
+            log.write(log_string)
 
         if (epoch + 1) % 5 == 0:
             ckpt_save_path = ckpt_manager.save()

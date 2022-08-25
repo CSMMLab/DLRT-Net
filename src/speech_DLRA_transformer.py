@@ -5,7 +5,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 from optparse import OptionParser
-from os import path, makedirs
+from networks.utils import create_csv_logger_cb, list_of_lists_to_string
 
 import time
 
@@ -31,6 +31,8 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
 
 
 def train(tolerance):
+    filename = "./logs/big_DLRA_transformer/tolerance_" + str(tolerance)
+
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
     train_examples, val_examples = examples['train'], examples['validation']
@@ -84,6 +86,9 @@ def train(tolerance):
     if ckpt_manager.latest_checkpoint:
         ckpt.restore(ckpt_manager.latest_checkpoint)
         print('Latest checkpoint restored!!')
+
+    # Create logger
+    log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
     # The @tf.function trace-compiles train_step into a TF graph for faster
     # execution. The function specializes to the precise shape of the argument
@@ -171,6 +176,12 @@ def train(tolerance):
                 print("Ranks:")
                 print(ranks)
 
+        # Log Data of current epoch
+        log_string = str(train_loss.result().numpy()) + ";" + str(
+            train_accuracy.result().numpy()) + list_of_lists_to_string(ranks) + "\n"
+        with open(file_name, "a") as log:
+            log.write(log_string)
+
         if (epoch + 1) % 5 == 0:
             ckpt_save_path = ckpt_manager.save()
             print(f'Saving checkpoint for epoch {epoch + 1} at {ckpt_save_path}')
@@ -239,9 +250,7 @@ if __name__ == '__main__':
     parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
     (options, args) = parser.parse_args()
-    options.start_rank = int(options.start_rank)
     options.tolerance = float(options.tolerance)
     options.epochs = int(options.epochs)
 
-    if options.train == 1:
-        train(tolerance=options.tolerance)
+    train(tolerance=options.tolerance)

@@ -22,3 +22,17 @@ def create_csv_logger_cb(folder_name: str):
     f = open(logFileName, "a")
 
     return f, logFileName
+
+
+def list_of_lists_to_string(list_o_lists: list) -> str:
+    res = ""
+    for i in list_o_lists:
+        for j in i:
+            for k in j:
+                if type(k) == list:
+                    for l in k:
+                        res = res + ";" + str(l)
+                else:
+                    res = res + ";" + str(k)
+
+    return res
