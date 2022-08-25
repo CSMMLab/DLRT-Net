@@ -164,8 +164,7 @@ def train(tolerance):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]
 
-        predictions, _ = transformer([inp, tar_inp],
-                                        training=False)
+        predictions, _ = transformer([inp, tar_inp], training=False, step=0)
         loss = loss_function(tar_real, predictions)
 
         validation_loss(loss)
@@ -191,11 +190,13 @@ def train(tolerance):
                 print(ranks)
 
         # compute validation
+        transformer.k_step_preprocessing()
         for (batch, (inp, tar)) in enumerate(val_batches):
-            validation_step()
+            validation_step(inp, tar)
 
         # Log Data of current epoch
-        log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + str(validation_loss.result().numpy()) + ";" + str(validation_accuracy.result().numpy()) + "\n"
+        log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + str(
+            validation_loss.result().numpy()) + ";" + str(validation_accuracy.result().numpy()) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
 
