@@ -30,7 +30,7 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
 
 
 def train(tolerance):
-    filename = "./logs/big_DLRA_transformer/tolerance_" + str(tolerance)
+    filename = "./logs/big_DLRA_transformer_f/tolerance_" + str(tolerance)
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
     train_examples, val_examples = examples['train'], examples['validation']

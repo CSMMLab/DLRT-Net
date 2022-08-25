@@ -470,6 +470,9 @@ class DLRALayerAdaptive(keras.layers.Layer):
                                  trainable=True, name="aux_M", dtype=tf.float32)
         return 0
 
+    def get_rank(self):
+        return self.low_rank
+
 
 class DLRALayerLinear(keras.layers.Layer):
     def __init__(self, input_dim: int, units=32, low_rank=10, epsAdapt=0.1, rmax_total=100, name="dlra_block",

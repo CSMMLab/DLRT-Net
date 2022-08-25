@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from networks.dense_layers import DLRALayerAdaptiveLinear
+from networks.dense_layers import DLRALayerAdaptiveLinear, DLRALayerAdaptive
 
 # global constants !!!!! DANGEROUS!!!
 MAX_TOKENS = 128
@@ -39,7 +39,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
-    def call(self, v, k, q, mask, step):
+    def call(self, v, k, q, mask, step: int):
         batch_size = tf.shape(q)[0]
 
         q = self.wq(q, step)  # (batch_size, seq_len, d_model)
@@ -104,7 +104,12 @@ class EncoderLayer(tf.keras.layers.Layer):
         super(EncoderLayer, self).__init__()
 
         self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
-        self.ffn = point_wise_feed_forward_network(d_model, dff)
+        self.ffn1 = DLRALayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn2 = DLRALayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+
+        # Build low-rank layers
+        self.ffn1.build_model()
+        self.ffn2.build_model()
 
         self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
@@ -119,7 +124,9 @@ class EncoderLayer(tf.keras.layers.Layer):
         attn_output = self.dropout1(attn_output, training=training)
         out1 = self.layernorm1(x + attn_output)  # (batch_size, input_seq_len, d_model)
 
-        ffn_output = self.ffn(out1)  # (batch_size, input_seq_len, d_model)
+        ffn_output = self.ffn1(out1, step)  # (batch_size, input_seq_len, dff)
+        ffn_output = self.ffn2(ffn_output, step)  # (batch_size, input_seq_len, d_model)
+
         ffn_output = self.dropout2(ffn_output, training=training)
         out2 = self.layernorm2(out1 + ffn_output)  # (batch_size, input_seq_len, d_model)
 
@@ -127,24 +134,36 @@ class EncoderLayer(tf.keras.layers.Layer):
 
     def k_step_preprocessing(self):
         self.mha.k_step_preprocessing()
+        self.ffn1.k_step_preprocessing()
+        self.ffn2.k_step_preprocessing()
 
     def k_step_postprocessing_adapt(self):
         self.mha.k_step_postprocessing_adapt()
+        self.ffn1.k_step_postprocessing_adapt()
+        self.ffn2.k_step_postprocessing_adapt()
 
     def l_step_preprocessing(self):
         self.mha.l_step_preprocessing()
+        self.ffn1.l_step_preprocessing()
+        self.ffn2.l_step_preprocessing()
 
     def l_step_postprocessing_adapt(self):
         self.mha.l_step_postprocessing_adapt()
+        self.ffn1.l_step_postprocessing_adapt()
+        self.ffn2.l_step_postprocessing_adapt()
 
     def s_step_preprocessing(self):
         self.mha.s_step_preprocessing()
+        self.ffn1.s_step_preprocessing()
+        self.ffn2.s_step_preprocessing()
 
     def rank_adaption(self):
         self.mha.rank_adaption()
+        self.ffn1.rank_adaption()
+        self.ffn2.rank_adaption()
 
     def get_rank(self):
-        return self.mha.get_rank()
+        return [self.mha.get_rank(), self.ffn1.get_rank(), self.ffn2.get_rank()]
 
 
 class DecoderLayer(tf.keras.layers.Layer):
@@ -154,7 +173,11 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
         self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
 
-        self.ffn = point_wise_feed_forward_network(d_model, dff)
+        self.ffn1 = DLRALayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn2 = DLRALayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+        # Build low-rank layers
+        self.ffn1.build_model()
+        self.ffn2.build_model()
 
         self.layernorm1 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
         self.layernorm2 = tf.keras.layers.LayerNormalization(epsilon=1e-6)
@@ -176,7 +199,9 @@ class DecoderLayer(tf.keras.layers.Layer):
         attn2 = self.dropout2(attn2, training=training)
         out2 = self.layernorm2(attn2 + out1)  # (batch_size, target_seq_len, d_model)
 
-        ffn_output = self.ffn(out2)  # (batch_size, target_seq_len, d_model)
+        ffn_output = self.ffn1(out1, step)  # (batch_size, input_seq_len, dff)
+        ffn_output = self.ffn2(ffn_output, step)  # (batch_size, input_seq_len, d_model)
+
         ffn_output = self.dropout3(ffn_output, training=training)
         out3 = self.layernorm3(ffn_output + out2)  # (batch_size, target_seq_len, d_model)
 
@@ -185,29 +210,41 @@ class DecoderLayer(tf.keras.layers.Layer):
     def k_step_preprocessing(self):
         self.mha1.k_step_preprocessing()
         self.mha2.k_step_preprocessing()
+        self.ffn1.k_step_preprocessing()
+        self.ffn2.k_step_preprocessing()
 
     def k_step_postprocessing_adapt(self):
         self.mha1.k_step_postprocessing_adapt()
         self.mha2.k_step_postprocessing_adapt()
+        self.ffn1.k_step_postprocessing_adapt()
+        self.ffn2.k_step_postprocessing_adapt()
 
     def l_step_preprocessing(self):
         self.mha1.l_step_preprocessing()
         self.mha2.l_step_preprocessing()
+        self.ffn1.l_step_preprocessing()
+        self.ffn2.l_step_preprocessing()
 
     def l_step_postprocessing_adapt(self):
         self.mha1.l_step_postprocessing_adapt()
         self.mha2.l_step_postprocessing_adapt()
+        self.ffn1.l_step_postprocessing_adapt()
+        self.ffn2.l_step_postprocessing_adapt()
 
     def s_step_preprocessing(self):
         self.mha1.s_step_preprocessing()
         self.mha2.s_step_preprocessing()
+        self.ffn1.s_step_preprocessing()
+        self.ffn2.s_step_preprocessing()
 
     def rank_adaption(self):
         self.mha1.rank_adaption()
         self.mha2.rank_adaption()
+        self.ffn1.rank_adaption()
+        self.ffn2.rank_adaption()
 
     def get_rank(self):
-        return [self.mha1.get_rank(), self.mha2.get_rank()]
+        return [self.mha1.get_rank(), self.mha2.get_rank(), self.ffn1.get_rank(), self.ffn2.get_rank()]
 
 
 class Encoder(tf.keras.layers.Layer):
@@ -353,7 +390,7 @@ class TransformerDLRA(tf.keras.Model):
                                num_heads=num_heads, dff=dff,
                                target_vocab_size=target_vocab_size, rate=rate, tolerance=tolerance)
 
-        self.final_layer = tf.keras.layers.Dense(target_vocab_size)
+        self.final_layer = tf.keras.layers.Dense(target_vocab_size)  # stays full rank
 
     def call(self, inputs, training, step):
         # Keras models prefer if you pass all your inputs in the first argument
@@ -575,10 +612,3 @@ def scaled_dot_product_attention(q, k, v, mask):
     output = tf.matmul(attention_weights, v)  # (..., seq_len_q, depth_v)
 
     return output, attention_weights
-
-
-def point_wise_feed_forward_network(d_model, dff):
-    return tf.keras.Sequential([
-        tf.keras.layers.Dense(dff, activation='relu'),  # (batch_size, seq_len, dff)
-        tf.keras.layers.Dense(d_model)  # (batch_size, seq_len, d_model)
-    ])
