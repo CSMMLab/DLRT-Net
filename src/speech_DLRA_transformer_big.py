@@ -12,7 +12,7 @@ import time
 MAX_TOKENS = 128
 BUFFER_SIZE = 20000
 BATCH_SIZE = 64
-EPOCHS = 1000
+EPOCHS = 400
 
 # global model
 # Text tokenization & detokenization
