@@ -72,7 +72,7 @@ def train(tolerance):
         rate=dropout_rate,
         tolerance=tolerance)
 
-    checkpoint_path = './checkpoints_big_' + str(tolerance) + '/train'
+    checkpoint_path = filename + '/checkpoints'
 
     # store model weights in checkpoints
     ckpt = tf.train.Checkpoint(transformer=transformer,

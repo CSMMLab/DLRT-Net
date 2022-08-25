@@ -72,7 +72,7 @@ def train():
         target_vocab_size=tokenizers.en.get_vocab_size().numpy(),
         rate=dropout_rate)
 
-    checkpoint_path = './checkpoints/train'
+    checkpoint_path = filename + '/checkpoints'
 
     # store model weights in checkpoints
     ckpt = tf.train.Checkpoint(transformer=transformer,
