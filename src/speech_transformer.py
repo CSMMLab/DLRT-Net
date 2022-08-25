@@ -234,7 +234,5 @@ if __name__ == '__main__':
     options.dim_layer = int(options.dim_layer)
     options.max_rank = int(options.max_rank)
     options.epochs = int(options.epochs)
-
-    if options.train == 1:
-        train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
-              dim_layer=options.dim_layer, rmax=options.max_rank, epochs=options.epochs)
+    EPOCHS = options.epochs
+    train()
