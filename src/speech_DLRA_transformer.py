@@ -196,9 +196,10 @@ def train(tolerance):
             validation_step(inp, tar)
 
         # Log Data of current epoch
-        log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + str(
-            validation_loss.result().numpy()) + ";" + str(
+        log_string = str(epoch) + ";" + str(time.time() - start) + ";" + str(train_loss.result().numpy()) + ";" + str(
+            train_accuracy.result().numpy()) + str(validation_loss.result().numpy()) + ";" + str(
             validation_accuracy.result().numpy()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
+
         with open(file_name, "a") as log:
             log.write(log_string)
 
