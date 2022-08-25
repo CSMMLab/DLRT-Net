@@ -255,5 +255,4 @@ if __name__ == '__main__':
     options.tolerance = float(options.tolerance)
     options.epochs = int(options.epochs)
 
-    if options.train == 1:
-        train(tolerance=options.tolerance)
+    train(tolerance=options.tolerance)
