@@ -170,6 +170,7 @@ def train(tolerance):
         validation_loss(loss)
         validation_accuracy(accuracy_function(tar_real, predictions))
 
+    ranks = []
     for epoch in range(EPOCHS):
         start = time.time()
 
@@ -196,7 +197,8 @@ def train(tolerance):
 
         # Log Data of current epoch
         log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + str(
-            validation_loss.result().numpy()) + ";" + str(validation_accuracy.result().numpy()) + "\n"
+            validation_loss.result().numpy()) + ";" + str(
+            validation_accuracy.result().numpy()) + list_of_lists_to_string(ranks) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
 
