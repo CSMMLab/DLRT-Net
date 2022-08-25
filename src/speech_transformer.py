@@ -61,6 +61,8 @@ def train():
 
     train_loss = tf.keras.metrics.Mean(name='train_loss')
     train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
+    validation_loss = tf.keras.metrics.Mean(name='validation_loss')
+    validation_accuracy = tf.keras.metrics.Mean(name='validation_accuracy')
 
     # build model
     transformer = networks.transformer.Transformer(
@@ -114,11 +116,26 @@ def train():
         train_loss(loss)
         train_accuracy(accuracy_function(tar_real, predictions))
 
+    @tf.function(input_signature=train_step_signature)
+    def validation_step(inp, tar):
+        tar_inp = tar[:, :-1]
+        tar_real = tar[:, 1:]
+
+        predictions, _ = transformer([inp, tar_inp],
+                                        training=False)
+        loss = loss_function(tar_real, predictions)
+
+        validation_loss(loss)
+        validation_accuracy(accuracy_function(tar_real, predictions))
+
     for epoch in range(EPOCHS):
         start = time.time()
 
         train_loss.reset_states()
         train_accuracy.reset_states()
+
+        validation_loss.reset_states()
+        validation_accuracy.reset_states()
 
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
@@ -128,8 +145,12 @@ def train():
                 print(
                     f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
 
+        # compute validation
+        for (batch, (inp, tar)) in enumerate(val_batches):
+            validation_step()
+
         # Log Data of current epoch
-        log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + "\n"
+        log_string = str(train_loss.result().numpy()) + ";" + str(train_accuracy.result().numpy()) + str(validation_loss.result().numpy()) + ";" + str(validation_accuracy.result().numpy()) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
 
