@@ -31,6 +31,8 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
 
 def train(tolerance):
     filename = "./logs/big_DLRA_transformer_f/tolerance_" + str(tolerance)
+    filename_check = "./weight_checks/big_DLRA_transformer_f/tolerance_" + str(tolerance)
+
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
     train_examples, val_examples = examples['train'], examples['validation']
@@ -74,7 +76,7 @@ def train(tolerance):
         rate=dropout_rate,
         tolerance=tolerance)
 
-    checkpoint_path = filename + '/checkpoints'
+    checkpoint_path = filename_check + '/checkpoints'
 
     # store model weights in checkpoints
     ckpt = tf.train.Checkpoint(transformer=transformer,

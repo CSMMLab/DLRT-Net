@@ -31,6 +31,7 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
 
 def train():
     filename = "./logs/transformer"
+    filename_check = "./weight_checks/transformer"
 
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
@@ -74,7 +75,7 @@ def train():
         target_vocab_size=tokenizers.en.get_vocab_size().numpy(),
         rate=dropout_rate)
 
-    checkpoint_path = filename + '/checkpoints'
+    checkpoint_path = filename_check + '/checkpoints'
 
     # store model weights in checkpoints
     ckpt = tf.train.Checkpoint(transformer=transformer,
