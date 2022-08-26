@@ -67,7 +67,7 @@ def train(low_rank):
     validation_accuracy = tf.keras.metrics.Mean(name='validation_accuracy')
 
     # build model
-    transformer = networks.transformer_dlra.TransformerDLRAFR(
+    transformer = networks.transformer_dlra_fr.TransformerDLRAFR(
         num_layers=num_layers,
         d_model=d_model,
         num_heads=num_heads,
