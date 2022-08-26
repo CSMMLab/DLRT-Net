@@ -272,7 +272,7 @@ if __name__ == '__main__':
     # --- parse options ---
     parser = OptionParser()
     parser.add_option("-r", "--low_rank", dest="low_rank", default=50)
-    parser.add_option("-e", "--epochs", dest="epochs", default=10)
+    parser.add_option("-e", "--epochs", dest="epochs", default=500)
 
     (options, args) = parser.parse_args()
     options.low_rank = int(options.low_rank)

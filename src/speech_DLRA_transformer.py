@@ -274,7 +274,7 @@ if __name__ == '__main__':
     # --- parse options ---
     parser = OptionParser()
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-    parser.add_option("-e", "--epochs", dest="epochs", default=10)
+    parser.add_option("-e", "--epochs", dest="epochs", default=500)
 
     (options, args) = parser.parse_args()
     options.tolerance = float(options.tolerance)
