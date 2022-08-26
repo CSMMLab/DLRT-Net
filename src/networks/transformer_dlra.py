@@ -500,7 +500,7 @@ class TransformerDLRA(tf.keras.Model):
         low_decoder, full_decoder = self.decoder.get_weights_num()
         return low_encoder + low_decoder + self.target_vocab_size * self.d_model, full_encoder + full_decoder + self.target_vocab_size * self.d_model
 
-    def get_compression_rate():
+    def get_compression_rate(self):
         low, full = self.get_weights_num()
         return low / full
 

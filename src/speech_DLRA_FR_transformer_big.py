@@ -1,4 +1,4 @@
-import networks.transformer_dlra
+import networks.transformer_dlra_fr
 import networks.transformer
 
 import tensorflow as tf
@@ -66,7 +66,7 @@ def train(low_rank):
     validation_accuracy = tf.keras.metrics.Mean(name='validation_accuracy')
 
     # build model
-    transformer = networks.transformer_dlra_fr.TransformerDLRA_FR(
+    transformer = networks.transformer_dlra_fr.TransformerDLRAFR(
         num_layers=num_layers,
         d_model=d_model,
         num_heads=num_heads,
@@ -273,12 +273,12 @@ if __name__ == '__main__':
     print("Parsing options")
     # --- parse options ---
     parser = OptionParser()
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
+    parser.add_option("-r", "--low_rank", dest="low_rank", default=50)
     parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
     (options, args) = parser.parse_args()
-    options.tolerance = float(options.tolerance)
+    options.low_rank = float(options.low_rank)
     options.epochs = int(options.epochs)
     EPOCHS = options.epochs
 
-    train(tolerance=options.tolerance)
+    train(low_rank=options.low_rank)

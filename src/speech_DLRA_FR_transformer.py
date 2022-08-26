@@ -1,4 +1,4 @@
-import networks.transformer_dlra
+import networks.transformer_dlra_fr
 import networks.transformer
 
 import tensorflow as tf
@@ -30,9 +30,9 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
 
 
-def train(tolerance):
-    filename = "./logs/DLRA_FR_transformer_f/tolerance_" + str(tolerance)
-    filename_check = "./weight_checks/DLRA_FR_transformer_f/tolerance_" + str(tolerance)
+def train(low_rank):
+    filename = "./logs/DLRA_FR_transformer_f/low_rank_" + str(low_rank)
+    filename_check = "./weight_checks/DLRA_FR_transformer_f/low_rank_" + str(low_rank)
 
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
@@ -67,7 +67,7 @@ def train(tolerance):
     validation_accuracy = tf.keras.metrics.Mean(name='validation_accuracy')
 
     # build model
-    transformer = networks.transformer_dlra.TransformerDLRA(
+    transformer = networks.transformer_dlra.TransformerDLRAFR(
         num_layers=num_layers,
         d_model=d_model,
         num_heads=num_heads,
@@ -75,7 +75,7 @@ def train(tolerance):
         input_vocab_size=tokenizers.pt.get_vocab_size().numpy(),
         target_vocab_size=tokenizers.en.get_vocab_size().numpy(),
         rate=dropout_rate,
-        tolerance=tolerance)
+        low_rank=low_rank)
 
     checkpoint_path = filename_check + '/checkpoints'
 
@@ -274,12 +274,12 @@ if __name__ == '__main__':
     print("Parsing options")
     # --- parse options ---
     parser = OptionParser()
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
+    parser.add_option("-r", "--low_rank", dest="low_rank", default=50)
     parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
     (options, args) = parser.parse_args()
-    options.tolerance = float(options.tolerance)
+    options.low_rank = float(options.low_rank)
     options.epochs = int(options.epochs)
     EPOCHS = options.epochs
 
-    train(tolerance=options.tolerance)
+    train(low_rank=options.low_rank)

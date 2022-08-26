@@ -16,22 +16,19 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         assert d_model % self.num_heads == 0
 
         self.depth = d_model // self.num_heads
-        self.epsilon = tolerance
+        self.low_rank = low_rank
 
-        self.wq = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                  epsAdapt=self.epsilon)
-        self.wk = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                  epsAdapt=self.epsilon)
-        self.wv = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                  epsAdapt=self.epsilon)
+        self.wq = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
+        self.wk = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
+        self.wv = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
 
-        self.dense = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                     epsAdapt=self.epsilon)
+        self.dense = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
 
         # Build low-rank
         self.wq.build_model()
         self.wk.build_model()
         self.wv.build_model()
+        self.dense.build_model()
 
     def split_heads(self, x, batch_size):
         """Split the last dimension into (num_heads, depth).
@@ -114,12 +111,12 @@ class MultiHeadAttention(tf.keras.layers.Layer):
 
 
 class EncoderLayer(tf.keras.layers.Layer):
-    def __init__(self, *, d_model, num_heads, dff, rate=0.1, tolerance=0.1):
+    def __init__(self, *, d_model, num_heads, dff, rate=0.1, low_rank=50):
         super(EncoderLayer, self).__init__()
 
-        self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
-        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
-        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads, low_rank=low_rank)
+        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=low_rank)
+        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=low_rank)
 
         # Build low-rank layers
         self.ffn1.build_model()
@@ -187,14 +184,14 @@ class EncoderLayer(tf.keras.layers.Layer):
 
 
 class DecoderLayer(tf.keras.layers.Layer):
-    def __init__(self, *, d_model, num_heads, dff, rate=0.1, tolerance=0.1):
+    def __init__(self, *, d_model, num_heads, dff, rate=0.1, low_rank=50):
         super(DecoderLayer, self).__init__()
 
-        self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
-        self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
+        self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, low_rank=low_rank)
+        self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, low_rank=low_rank)
 
-        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
-        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=low_rank)
+        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=low_rank)
         # Build low-rank layers
         self.ffn1.build_model()
         self.ffn2.build_model()
@@ -276,7 +273,7 @@ class DecoderLayer(tf.keras.layers.Layer):
 
 class Encoder(tf.keras.layers.Layer):
     def __init__(self, *, num_layers, d_model, num_heads, dff, input_vocab_size,
-                 rate=0.1, tolerance):
+                 rate=0.1, low_rank=50):
         super(Encoder, self).__init__()
 
         self.d_model = d_model
@@ -286,7 +283,7 @@ class Encoder(tf.keras.layers.Layer):
         self.pos_encoding = positional_encoding(MAX_TOKENS, self.d_model)
 
         self.enc_layers = [
-            EncoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate, tolerance=tolerance)
+            EncoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate, low_rank=low_rank)
             for _ in range(num_layers)]
 
         self.dropout = tf.keras.layers.Dropout(rate)
@@ -349,7 +346,7 @@ class Encoder(tf.keras.layers.Layer):
 
 class Decoder(tf.keras.layers.Layer):
     def __init__(self, *, num_layers, d_model, num_heads, dff, target_vocab_size,
-                 rate=0.1, tolerance=0.1):
+                 rate=0.1, low_rank=50):
         super(Decoder, self).__init__()
 
         self.d_model = d_model
@@ -359,7 +356,7 @@ class Decoder(tf.keras.layers.Layer):
         self.pos_encoding = positional_encoding(MAX_TOKENS, d_model)
 
         self.dec_layers = [
-            DecoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate, tolerance=tolerance)
+            DecoderLayer(d_model=d_model, num_heads=num_heads, dff=dff, rate=rate, low_rank=low_rank)
             for _ in range(num_layers)]
         self.dropout = tf.keras.layers.Dropout(rate)
 
@@ -423,17 +420,17 @@ class Decoder(tf.keras.layers.Layer):
         return low, full
 
 
-class TransformerDLRA(tf.keras.Model):
+class TransformerDLRAFR(tf.keras.Model):
     def __init__(self, *, num_layers, d_model, num_heads, dff, input_vocab_size,
-                 target_vocab_size, rate=0.1, tolerance=0.1):
+                 target_vocab_size, rate=0.1, low_rank=50):
         super().__init__()
         self.encoder = Encoder(num_layers=num_layers, d_model=d_model,
                                num_heads=num_heads, dff=dff,
-                               input_vocab_size=input_vocab_size, rate=rate, tolerance=tolerance)
+                               input_vocab_size=input_vocab_size, rate=rate, low_rank=low_rank)
 
         self.decoder = Decoder(num_layers=num_layers, d_model=d_model,
                                num_heads=num_heads, dff=dff,
-                               target_vocab_size=target_vocab_size, rate=rate, tolerance=tolerance)
+                               target_vocab_size=target_vocab_size, rate=rate, low_rank=low_rank)
 
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)  # stays full rank
         self.target_vocab_size = target_vocab_size
@@ -499,7 +496,7 @@ class TransformerDLRA(tf.keras.Model):
         low_decoder, full_decoder = self.decoder.get_weights_num()
         return low_encoder + low_decoder + self.target_vocab_size * self.d_model, full_encoder + full_decoder + self.target_vocab_size * self.d_model
 
-    def get_compression_rate():
+    def get_compression_rate(self):
         low, full = self.get_weights_num()
         return low / full
 
