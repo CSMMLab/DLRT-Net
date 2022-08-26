@@ -165,7 +165,7 @@ def train(tolerance):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]
 
-        predictions, _ = transformer([inp, tar_inp], training=False, step=0)
+        predictions, _ = transformer([inp, tar_inp], training=False, step=2)
         loss = loss_function(tar_real, predictions)
 
         validation_loss(loss)
@@ -177,6 +177,8 @@ def train(tolerance):
 
         train_loss.reset_states()
         train_accuracy.reset_states()
+        validation_loss.reset_states()
+        validation_accuracy.reset_states()
 
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
@@ -191,9 +193,8 @@ def train(tolerance):
                 print(transformer.get_rank())
 
         # compute validation
-        # transformer.k_step_preprocessing()
-        # for (batch, (inp, tar)) in enumerate(val_batches):
-        #    validation_step(inp, tar)
+        for (batch, (inp, tar)) in enumerate(val_batches):
+            validation_step(inp, tar)
 
         # Log Data of current epoch
         log_string = str(epoch) + ";" + str(time.time() - start) + ";" + str(train_loss.result().numpy()) + ";" + str(
