@@ -1,14 +1,14 @@
 import numpy as np
 import tensorflow as tf
 
-from networks.dense_layers import DLRALayerAdaptiveLinear, DLRALayerAdaptive
+from networks.dense_layers import DLRALayerLinear, DLRALayer
 
 # global constants !!!!! DANGEROUS!!!
 MAX_TOKENS = 128
 
 
 class MultiHeadAttention(tf.keras.layers.Layer):
-    def __init__(self, *, d_model, num_heads, tolerance):
+    def __init__(self, *, d_model, num_heads, low_rank):
         super(MultiHeadAttention, self).__init__()
         self.num_heads = num_heads
         self.d_model = d_model
@@ -18,21 +18,20 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.depth = d_model // self.num_heads
         self.epsilon = tolerance
 
-        self.wq = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                          epsAdapt=self.epsilon)
-        self.wk = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                          epsAdapt=self.epsilon)
-        self.wv = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                          epsAdapt=self.epsilon)
+        self.wq = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+                                  epsAdapt=self.epsilon)
+        self.wk = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+                                  epsAdapt=self.epsilon)
+        self.wv = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+                                  epsAdapt=self.epsilon)
 
-        self.dense = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
-                                             epsAdapt=self.epsilon)
+        self.dense = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+                                     epsAdapt=self.epsilon)
 
         # Build low-rank
         self.wq.build_model()
         self.wk.build_model()
         self.wv.build_model()
-        self.dense.build_model()
 
     def split_heads(self, x, batch_size):
         """Split the last dimension into (num_heads, depth).
@@ -119,8 +118,8 @@ class EncoderLayer(tf.keras.layers.Layer):
         super(EncoderLayer, self).__init__()
 
         self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
-        self.ffn1 = DLRALayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
-        self.ffn2 = DLRALayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
 
         # Build low-rank layers
         self.ffn1.build_model()
@@ -194,8 +193,8 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
         self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
 
-        self.ffn1 = DLRALayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
-        self.ffn2 = DLRALayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
         # Build low-rank layers
         self.ffn1.build_model()
         self.ffn2.build_model()
