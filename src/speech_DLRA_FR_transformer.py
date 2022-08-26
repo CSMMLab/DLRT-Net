@@ -145,8 +145,8 @@ def train(low_rank):
         optimizer.apply_gradients(zip(grads_l_step, transformer.trainable_weights))
 
         # Postprocessing K and L
-        transformer.k_step_postprocessing_adapt()
-        transformer.l_step_postprocessing_adapt()
+        transformer.k_step_postprocessing()
+        transformer.l_step_postprocessing()
 
         # S-Step Preprocessing
         transformer.s_step_preprocessing()
@@ -188,8 +188,6 @@ def train(low_rank):
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
             train_step_low_rank(inp, tar)
-            # Rank Adaptivity
-            transformer.rank_adaption()
 
             if batch % 50 == 0:
                 print(
@@ -278,7 +276,7 @@ if __name__ == '__main__':
     parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
     (options, args) = parser.parse_args()
-    options.low_rank = float(options.low_rank)
+    options.low_rank = int(options.low_rank)
     options.epochs = int(options.epochs)
     EPOCHS = options.epochs
 
