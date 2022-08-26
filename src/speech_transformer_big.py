@@ -63,6 +63,8 @@ def train():
 
     train_loss = tf.keras.metrics.Mean(name='train_loss')
     train_accuracy = tf.keras.metrics.Mean(name='train_accuracy')
+    validation_loss = tf.keras.metrics.Mean(name='validation_loss')
+    validation_accuracy = tf.keras.metrics.Mean(name='validation_accuracy')
 
     # build model
     transformer = networks.transformer.Transformer(
@@ -133,6 +135,9 @@ def train():
         train_loss.reset_states()
         train_accuracy.reset_states()
 
+        validation_loss.reset_states()
+        validation_accuracy.reset_states()
+
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
             train_step(inp, tar)
@@ -148,7 +153,7 @@ def train():
         # Log Data of current epoch
         log_string = str(epoch) + ";" + str(time.time() - start) + ";" + str(train_loss.result().numpy()) + ";" + str(
             train_accuracy.result().numpy()) + ";" + str(validation_loss.result().numpy()) + ";" + str(
-            validation_accuracy.result().numpy()) + "\n"        
+            validation_accuracy.result().numpy()) + "\n"
         with open(file_name, "a") as log:
             log.write(log_string)
         if (epoch + 1) % 5 == 0:

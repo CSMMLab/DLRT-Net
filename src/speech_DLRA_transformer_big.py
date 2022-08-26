@@ -167,7 +167,7 @@ def train(tolerance):
         tar_inp = tar[:, :-1]
         tar_real = tar[:, 1:]
 
-        predictions, _ = transformer([inp, tar_inp], training=False, step=1)
+        predictions, _ = transformer([inp, tar_inp], training=False, step=0)
 
         loss = loss_function(tar_real, predictions)
 
@@ -186,21 +186,20 @@ def train(tolerance):
             train_step_low_rank(inp, tar)
             # Rank Adaptivity
             transformer.rank_adaption()
-            ranks = transformer.get_rank()
             if batch % 50 == 0:
                 print(
                     f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
                 print("Ranks:")
-                print(ranks)
+                print(transformer.get_rank())
 
         # compute validation
-        transformer.k_step_preprocessing()
-        for (batch, (inp, tar)) in enumerate(val_batches):
-            validation_step(inp, tar)
+        # transformer.k_step_preprocessing()
+        # for (batch, (inp, tar)) in enumerate(val_batches):
+        #    validation_step(inp, tar)
 
         # Log Data of current epoch
         log_string = str(epoch) + ";" + str(time.time() - start) + ";" + str(train_loss.result().numpy()) + ";" + str(
-            train_accuracy.result().numpy()) + str(validation_loss.result().numpy()) + ";" + str(
+            train_accuracy.result().numpy()) + ";" + str(validation_loss.result().numpy()) + ";" + str(
             validation_accuracy.result().numpy()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
 
         with open(file_name, "a") as log:
