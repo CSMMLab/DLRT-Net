@@ -144,8 +144,8 @@ def train(low_rank):
         optimizer.apply_gradients(zip(grads_l_step, transformer.trainable_weights))
 
         # Postprocessing K and L
-        transformer.k_step_postprocessing_adapt()
-        transformer.l_step_postprocessing_adapt()
+        transformer.k_step_postprocessing()
+        transformer.l_step_postprocessing()
 
         # S-Step Preprocessing
         transformer.s_step_preprocessing()
@@ -188,8 +188,6 @@ def train(low_rank):
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
             train_step_low_rank(inp, tar)
-            # Rank Adaptivity
-            transformer.rank_adaption()
             if batch % 50 == 0:
                 print(
                     f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
@@ -204,7 +202,7 @@ def train(low_rank):
         log_string = str(epoch) + ";" + str(time.time() - start) + ";" + str(train_loss.result().numpy()) + ";" + str(
             train_accuracy.result().numpy()) + ";" + str(validation_loss.result().numpy()) + ";" + str(
             validation_accuracy.result().numpy()) + ";" + str(
-            transformer.get_compression_rate()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
+            1 - transformer.get_compression_rate()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
 
         with open(file_name, "a") as log:
             log.write(log_string)
@@ -274,10 +272,10 @@ if __name__ == '__main__':
     # --- parse options ---
     parser = OptionParser()
     parser.add_option("-r", "--low_rank", dest="low_rank", default=50)
-    parser.add_option("-e", "--epochs", dest="epochs", default=10)
+    parser.add_option("-e", "--epochs", dest="epochs", default=500)
 
     (options, args) = parser.parse_args()
-    options.low_rank = float(options.low_rank)
+    options.low_rank = int(options.low_rank)
     options.epochs = int(options.epochs)
     EPOCHS = options.epochs
 

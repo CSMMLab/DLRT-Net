@@ -204,7 +204,7 @@ def train(tolerance):
         log_string = str(epoch) + ";" + str(time.time() - start) + ";" + str(train_loss.result().numpy()) + ";" + str(
             train_accuracy.result().numpy()) + ";" + str(validation_loss.result().numpy()) + ";" + str(
             validation_accuracy.result().numpy()) + ";" + str(
-            transformer.get_compression_rate()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
+            1 - transformer.get_compression_rate()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
 
         with open(file_name, "a") as log:
             log.write(log_string)
@@ -274,7 +274,7 @@ if __name__ == '__main__':
     # --- parse options ---
     parser = OptionParser()
     parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-    parser.add_option("-e", "--epochs", dest="epochs", default=10)
+    parser.add_option("-e", "--epochs", dest="epochs", default=500)
 
     (options, args) = parser.parse_args()
     options.tolerance = float(options.tolerance)

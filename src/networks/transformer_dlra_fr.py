@@ -69,11 +69,11 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.wv.k_step_preprocessing()
         self.dense.k_step_preprocessing()
 
-    def k_step_postprocessing_adapt(self):
-        self.wq.k_step_postprocessing_adapt()
-        self.wk.k_step_postprocessing_adapt()
-        self.wv.k_step_postprocessing_adapt()
-        self.dense.k_step_postprocessing_adapt()
+    def k_step_postprocessing(self):
+        self.wq.k_step_postprocessing()
+        self.wk.k_step_postprocessing()
+        self.wv.k_step_postprocessing()
+        self.dense.k_step_postprocessing()
 
     def l_step_preprocessing(self):
         self.wq.l_step_preprocessing()
@@ -81,23 +81,17 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.wv.l_step_preprocessing()
         self.dense.l_step_preprocessing()
 
-    def l_step_postprocessing_adapt(self):
-        self.wq.l_step_postprocessing_adapt()
-        self.wk.l_step_postprocessing_adapt()
-        self.wv.l_step_postprocessing_adapt()
-        self.dense.l_step_postprocessing_adapt()
+    def l_step_postprocessing(self):
+        self.wq.l_step_postprocessing()
+        self.wk.l_step_postprocessing()
+        self.wv.l_step_postprocessing()
+        self.dense.l_step_postprocessing()
 
     def s_step_preprocessing(self):
         self.wq.s_step_preprocessing()
         self.wk.s_step_preprocessing()
         self.wv.s_step_preprocessing()
         self.dense.s_step_preprocessing()
-
-    def rank_adaption(self):
-        self.wq.rank_adaption()
-        self.wk.rank_adaption()
-        self.wv.rank_adaption()
-        self.dense.rank_adaption()
 
     def get_rank(self):
         return [self.wq.get_rank(), self.wk.get_rank(), self.wv.get_rank()]
@@ -148,30 +142,25 @@ class EncoderLayer(tf.keras.layers.Layer):
         self.ffn1.k_step_preprocessing()
         self.ffn2.k_step_preprocessing()
 
-    def k_step_postprocessing_adapt(self):
-        self.mha.k_step_postprocessing_adapt()
-        self.ffn1.k_step_postprocessing_adapt()
-        self.ffn2.k_step_postprocessing_adapt()
+    def k_step_postprocessing(self):
+        self.mha.k_step_postprocessing()
+        self.ffn1.k_step_postprocessing()
+        self.ffn2.k_step_postprocessing()
 
     def l_step_preprocessing(self):
         self.mha.l_step_preprocessing()
-        self.ffn1.l_step_preprocessing()
-        self.ffn2.l_step_preprocessing()
+        self.ffn1.k_step_postprocessing()
+        self.ffn2.k_step_postprocessing()
 
-    def l_step_postprocessing_adapt(self):
-        self.mha.l_step_postprocessing_adapt()
-        self.ffn1.l_step_postprocessing_adapt()
-        self.ffn2.l_step_postprocessing_adapt()
+    def l_step_postprocessing(self):
+        self.mha.l_step_postprocessing()
+        self.ffn1.l_step_postprocessing()
+        self.ffn2.l_step_postprocessing()
 
     def s_step_preprocessing(self):
         self.mha.s_step_preprocessing()
         self.ffn1.s_step_preprocessing()
         self.ffn2.s_step_preprocessing()
-
-    def rank_adaption(self):
-        self.mha.rank_adaption()
-        self.ffn1.rank_adaption()
-        self.ffn2.rank_adaption()
 
     def get_rank(self):
         return [self.mha.get_rank(), self.ffn1.get_rank(), self.ffn2.get_rank()]
@@ -230,11 +219,11 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.ffn1.k_step_preprocessing()
         self.ffn2.k_step_preprocessing()
 
-    def k_step_postprocessing_adapt(self):
-        self.mha1.k_step_postprocessing_adapt()
-        self.mha2.k_step_postprocessing_adapt()
-        self.ffn1.k_step_postprocessing_adapt()
-        self.ffn2.k_step_postprocessing_adapt()
+    def k_step_postprocessing(self):
+        self.mha1.k_step_postprocessing()
+        self.mha2.k_step_postprocessing()
+        self.ffn1.k_step_postprocessing()
+        self.ffn2.k_step_postprocessing()
 
     def l_step_preprocessing(self):
         self.mha1.l_step_preprocessing()
@@ -242,23 +231,17 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.ffn1.l_step_preprocessing()
         self.ffn2.l_step_preprocessing()
 
-    def l_step_postprocessing_adapt(self):
-        self.mha1.l_step_postprocessing_adapt()
-        self.mha2.l_step_postprocessing_adapt()
-        self.ffn1.l_step_postprocessing_adapt()
-        self.ffn2.l_step_postprocessing_adapt()
+    def l_step_postprocessing(self):
+        self.mha1.l_step_postprocessing()
+        self.mha2.l_step_postprocessing()
+        self.ffn1.l_step_postprocessing()
+        self.ffn2.l_step_postprocessing()
 
     def s_step_preprocessing(self):
         self.mha1.s_step_preprocessing()
         self.mha2.s_step_preprocessing()
         self.ffn1.s_step_preprocessing()
         self.ffn2.s_step_preprocessing()
-
-    def rank_adaption(self):
-        self.mha1.rank_adaption()
-        self.mha2.rank_adaption()
-        self.ffn1.rank_adaption()
-        self.ffn2.rank_adaption()
 
     def get_rank(self):
         return [self.mha1.get_rank(), self.mha2.get_rank(), self.ffn1.get_rank(), self.ffn2.get_rank()]
@@ -308,25 +291,21 @@ class Encoder(tf.keras.layers.Layer):
         for i in range(self.num_layers):
             self.enc_layers[i].k_step_preprocessing()
 
-    def k_step_postprocessing_adapt(self):
+    def k_step_postprocessing(self):
         for i in range(self.num_layers):
-            self.enc_layers[i].k_step_postprocessing_adapt()
+            self.enc_layers[i].k_step_postprocessing()
 
     def l_step_preprocessing(self):
         for i in range(self.num_layers):
             self.enc_layers[i].l_step_preprocessing()
 
-    def l_step_postprocessing_adapt(self):
+    def l_step_postprocessing(self):
         for i in range(self.num_layers):
-            self.enc_layers[i].l_step_postprocessing_adapt()
+            self.enc_layers[i].l_step_postprocessing()
 
     def s_step_preprocessing(self):
         for i in range(self.num_layers):
             self.enc_layers[i].s_step_preprocessing()
-
-    def rank_adaption(self):
-        for i in range(self.num_layers):
-            self.enc_layers[i].rank_adaption()
 
     def get_rank(self):
         ranks = []
@@ -384,25 +363,21 @@ class Decoder(tf.keras.layers.Layer):
         for i in range(self.num_layers):
             self.dec_layers[i].k_step_preprocessing()
 
-    def k_step_postprocessing_adapt(self):
+    def k_step_postprocessing(self):
         for i in range(self.num_layers):
-            self.dec_layers[i].k_step_postprocessing_adapt()
+            self.dec_layers[i].k_step_postprocessing()
 
     def l_step_preprocessing(self):
         for i in range(self.num_layers):
             self.dec_layers[i].l_step_preprocessing()
 
-    def l_step_postprocessing_adapt(self):
+    def l_step_postprocessing(self):
         for i in range(self.num_layers):
-            self.dec_layers[i].l_step_postprocessing_adapt()
+            self.dec_layers[i].l_step_postprocessing()
 
     def s_step_preprocessing(self):
         for i in range(self.num_layers):
             self.dec_layers[i].s_step_preprocessing()
-
-    def rank_adaption(self):
-        for i in range(self.num_layers):
-            self.dec_layers[i].rank_adaption()
 
     def get_rank(self):
         ranks = []
@@ -468,25 +443,21 @@ class TransformerDLRAFR(tf.keras.Model):
         self.encoder.k_step_preprocessing()
         self.decoder.k_step_preprocessing()
 
-    def k_step_postprocessing_adapt(self):
-        self.encoder.k_step_postprocessing_adapt()
-        self.decoder.k_step_postprocessing_adapt()
+    def k_step_postprocessing(self):
+        self.encoder.k_step_postprocessing()
+        self.decoder.k_step_postprocessing()
 
     def l_step_preprocessing(self):
         self.encoder.l_step_preprocessing()
         self.decoder.l_step_preprocessing()
 
-    def l_step_postprocessing_adapt(self):
-        self.encoder.l_step_postprocessing_adapt()
-        self.decoder.l_step_postprocessing_adapt()
+    def l_step_postprocessing(self):
+        self.encoder.l_step_postprocessing()
+        self.decoder.l_step_postprocessing()
 
     def s_step_preprocessing(self):
         self.encoder.s_step_preprocessing()
         self.decoder.s_step_preprocessing()
-
-    def rank_adaption(self):
-        self.encoder.rank_adaption()
-        self.decoder.rank_adaption()
 
     def get_rank(self):
         return [self.encoder.get_rank(), self.decoder.get_rank()]
