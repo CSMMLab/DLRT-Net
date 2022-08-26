@@ -93,7 +93,7 @@ def train(tolerance):
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
 
     # print headline
-    log_string = "loss_train;acc_train;loss_val;acc_val;loss_test;acc_test;rank1;rank2;rank3;rank4\n"
+    log_string = "epoch;time;loss_train;acc_train;loss_val;acc_val;compression;ranks\n"
     with open(file_name, "a") as log:
         log.write(log_string)
 
@@ -203,7 +203,8 @@ def train(tolerance):
         # Log Data of current epoch
         log_string = str(epoch) + ";" + str(time.time() - start) + ";" + str(train_loss.result().numpy()) + ";" + str(
             train_accuracy.result().numpy()) + ";" + str(validation_loss.result().numpy()) + ";" + str(
-            validation_accuracy.result().numpy()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
+            validation_accuracy.result().numpy()) + ";" + str(
+            transformer.get_compression_rate()) + list_of_lists_to_string(transformer.get_rank()) + "\n"
 
         with open(file_name, "a") as log:
             log.write(log_string)

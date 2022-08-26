@@ -6,7 +6,6 @@ import tensorflow_datasets as tfds
 
 from optparse import OptionParser
 from networks.utils import create_csv_logger_cb, list_of_lists_to_string
-
 import time
 
 # global constants # specify training
@@ -30,9 +29,9 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
     from_logits=True, reduction='none')
 
 
-def train(tolerance):
-    filename = "./logs/DLRA_transformer_f/tolerance_" + str(tolerance)
-    filename_check = "./weight_checks/DLRA_transformer_f/tolerance_" + str(tolerance)
+def train(low_rank):
+    filename = "./logs/big_DLRA_FR_transformer_f/low_rank_" + str(low_rank)
+    filename_check = "./weight_checks/big_DLRA_FR_transformer_f/low_rank_" + str(low_rank)
 
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
@@ -50,9 +49,9 @@ def train(tolerance):
     train_batches = make_batches(train_examples)
     val_batches = make_batches(val_examples)
 
-    num_layers = 4
-    d_model = 128
-    dff = 512
+    num_layers = 6
+    d_model = 512
+    dff = 2048
     num_heads = 8
     dropout_rate = 0.1
 
@@ -67,7 +66,7 @@ def train(tolerance):
     validation_accuracy = tf.keras.metrics.Mean(name='validation_accuracy')
 
     # build model
-    transformer = networks.transformer_dlra.TransformerDLRA(
+    transformer = networks.transformer_dlra_fr.TransformerDLRA_FR(
         num_layers=num_layers,
         d_model=d_model,
         num_heads=num_heads,
@@ -75,7 +74,7 @@ def train(tolerance):
         input_vocab_size=tokenizers.pt.get_vocab_size().numpy(),
         target_vocab_size=tokenizers.en.get_vocab_size().numpy(),
         rate=dropout_rate,
-        tolerance=tolerance)
+        low_rank=low_rank)
 
     checkpoint_path = filename_check + '/checkpoints'
 
@@ -90,8 +89,9 @@ def train(tolerance):
         ckpt.restore(ckpt_manager.latest_checkpoint)
         print('Latest checkpoint restored!!')
 
-    # Create logger
+        # Create logger
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
+
     # print headline
     log_string = "epoch;time;loss_train;acc_train;loss_val;acc_val;compression;ranks\n"
     with open(file_name, "a") as log:
@@ -170,6 +170,7 @@ def train(tolerance):
         tar_real = tar[:, 1:]
 
         predictions, _ = transformer([inp, tar_inp], training=False, step=2)
+
         loss = loss_function(tar_real, predictions)
 
         validation_loss(loss)
@@ -189,7 +190,6 @@ def train(tolerance):
             train_step_low_rank(inp, tar)
             # Rank Adaptivity
             transformer.rank_adaption()
-
             if batch % 50 == 0:
                 print(
                     f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')

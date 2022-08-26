@@ -74,13 +74,11 @@ class DenseLinear(keras.layers.Layer):
 
 
 class DLRALayer(keras.layers.Layer):
-    def __init__(self, input_dim: int, units=32, low_rank=10, epsAdapt=0.1, rmax_total=100, name="dlra_block",
+    def __init__(self, input_dim: int, units=32, low_rank=10, name="dlra_block",
                  **kwargs):
         super(DLRALayer, self).__init__(**kwargs)
-        self.epsAdapt = epsAdapt  # for unconventional integrator
         self.units = units
         self.low_rank = low_rank
-        self.rmax_total = rmax_total
         self.input_dim = input_dim
 
     def build_model(self):
@@ -475,13 +473,11 @@ class DLRALayerAdaptive(keras.layers.Layer):
 
 
 class DLRALayerLinear(keras.layers.Layer):
-    def __init__(self, input_dim: int, units=32, low_rank=10, epsAdapt=0.1, rmax_total=100, name="dlra_block",
+    def __init__(self, input_dim: int, units=32, low_rank=10, name="dlra_block",
                  **kwargs):
         super(DLRALayerLinear, self).__init__(**kwargs)
-        self.epsAdapt = epsAdapt  # for unconventional integrator
         self.units = units
         self.low_rank = low_rank
-        self.rmax_total = rmax_total
         self.input_dim = input_dim
 
     def build_model(self):

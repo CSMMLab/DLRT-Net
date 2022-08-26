@@ -92,6 +92,7 @@ def train(tolerance):
 
     # Create logger
     log_file, file_name = create_csv_logger_cb(folder_name=filename)
+
     # print headline
     log_string = "epoch;time;loss_train;acc_train;loss_val;acc_val;compression;ranks\n"
     with open(file_name, "a") as log:
