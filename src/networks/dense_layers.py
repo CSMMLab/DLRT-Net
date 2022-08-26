@@ -471,6 +471,11 @@ class DLRALayerAdaptive(keras.layers.Layer):
     def get_rank(self):
         return self.low_rank
 
+    def get_weights_num(self):
+        full_rank_weights = self.input_dim * self.units
+        low_rank_weights = self.low_rank * (self.input_dim + self.units + self.low_rank)
+        return low_rank_weights, full_rank_weights
+
 
 class DLRALayerLinear(keras.layers.Layer):
     def __init__(self, input_dim: int, units=32, low_rank=10, name="dlra_block",
@@ -871,3 +876,8 @@ class DLRALayerAdaptiveLinear(keras.layers.Layer):
 
     def get_rank(self):
         return self.low_rank
+
+    def get_weights_num(self):
+        full_rank_weights = self.input_dim * self.units
+        low_rank_weights = self.low_rank * (self.input_dim + self.units + self.low_rank)
+        return low_rank_weights, full_rank_weights

@@ -25,7 +25,8 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.wv = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
                                           epsAdapt=self.epsilon)
 
-        self.dense = tf.keras.layers.Dense(d_model)
+        self.dense = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+                                          epsAdapt=self.epsilon)
 
         # Build low-rank
         self.wq.build_model()
@@ -61,7 +62,7 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         concat_attention = tf.reshape(scaled_attention,
                                       (batch_size, -1, self.d_model))  # (batch_size, seq_len_q, d_model)
 
-        output = self.dense(concat_attention)  # (batch_size, seq_len_q, d_model)
+        output = self.dense(concat_attention, step)  # (batch_size, seq_len_q, d_model)
 
         return output, attention_weights
 
@@ -69,34 +70,47 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.wq.k_step_preprocessing()
         self.wk.k_step_preprocessing()
         self.wv.k_step_preprocessing()
+        self.dense.k_step_preprocessing()
 
     def k_step_postprocessing_adapt(self):
         self.wq.k_step_postprocessing_adapt()
         self.wk.k_step_postprocessing_adapt()
         self.wv.k_step_postprocessing_adapt()
+        self.dense.k_step_postprocessing_adapt()
 
     def l_step_preprocessing(self):
         self.wq.l_step_preprocessing()
         self.wk.l_step_preprocessing()
         self.wv.l_step_preprocessing()
+        self.dense.l_step_preprocessing()
 
     def l_step_postprocessing_adapt(self):
         self.wq.l_step_postprocessing_adapt()
         self.wk.l_step_postprocessing_adapt()
         self.wv.l_step_postprocessing_adapt()
+        self.dense.l_step_postprocessing_adapt()
 
     def s_step_preprocessing(self):
         self.wq.s_step_preprocessing()
         self.wk.s_step_preprocessing()
         self.wv.s_step_preprocessing()
+        self.dense.s_step_preprocessing()
 
     def rank_adaption(self):
         self.wq.rank_adaption()
         self.wk.rank_adaption()
         self.wv.rank_adaption()
+        self.dense.rank_adaption()
 
     def get_rank(self):
         return [self.wq.get_rank(), self.wk.get_rank(), self.wv.get_rank()]
+
+    def get_weights_num(self):
+        low_wq, full_wq  = self.wq.get_weights_num()
+        low_wk, full_wk = self.wk.get_weights_num()
+        low_wv, full_wv = self.wv.get_weights_num()
+        low_dense, full_dense = self.dense.get_weights_num()
+        return low_wq + low_wk + low_wv + low_dense, full_wq + full_wk + full_wv + full_dense
 
 
 class EncoderLayer(tf.keras.layers.Layer):
@@ -164,6 +178,12 @@ class EncoderLayer(tf.keras.layers.Layer):
 
     def get_rank(self):
         return [self.mha.get_rank(), self.ffn1.get_rank(), self.ffn2.get_rank()]
+
+    def get_weights_num(self):
+        low_mha, full_mha  = self.mha.get_weights_num()
+        low_ffn1, full_ffn1 = self.ffn1.get_weights_num()
+        low_ffn2, full_ffn2 = self.ffn2.get_weights_num()
+        return low_mha + low_ffn1 + low_ffn2, full_mha + full_ffn1 + full_ffn2
 
 
 class DecoderLayer(tf.keras.layers.Layer):
@@ -246,6 +266,13 @@ class DecoderLayer(tf.keras.layers.Layer):
     def get_rank(self):
         return [self.mha1.get_rank(), self.mha2.get_rank(), self.ffn1.get_rank(), self.ffn2.get_rank()]
 
+    def get_weights_num(self):
+        low_mha1, full_mha1  = self.mha1.get_weights_num()
+        low_mha2, full_mha2  = self.mha2.get_weights_num()
+        low_ffn1, full_ffn1 = self.ffn1.get_weights_num()
+        low_ffn2, full_ffn2 = self.ffn2.get_weights_num()
+        return low_mha1 + low_mha2 + low_ffn1 + low_ffn2, full_mha1 + full_mha2 + full_ffn1 + full_ffn2
+
 
 class Encoder(tf.keras.layers.Layer):
     def __init__(self, *, num_layers, d_model, num_heads, dff, input_vocab_size,
@@ -309,6 +336,15 @@ class Encoder(tf.keras.layers.Layer):
         for i in range(self.num_layers):
             ranks.append(self.enc_layers[i].get_rank())
         return ranks
+
+    def get_weights_num(self):
+        low = 0
+        full = 0
+        for i in range(self.num_layers):
+            low_i, full_i = self.enc_layers[i].get_weights_num()
+            low += low_i
+            full += full_i
+        return low, full
 
 
 class Decoder(tf.keras.layers.Layer):
@@ -377,6 +413,15 @@ class Decoder(tf.keras.layers.Layer):
             ranks.append(self.dec_layers[i].get_rank())
         return ranks
 
+    def get_weights_num(self):
+        low = 0
+        full = 0
+        for i in range(self.num_layers):
+            low_i, full_i = self.dec_layers[i].get_weights_num()
+            low += low_i
+            full += full_i
+        return low, full
+
 
 class TransformerDLRA(tf.keras.Model):
     def __init__(self, *, num_layers, d_model, num_heads, dff, input_vocab_size,
@@ -391,6 +436,8 @@ class TransformerDLRA(tf.keras.Model):
                                target_vocab_size=target_vocab_size, rate=rate, tolerance=tolerance)
 
         self.final_layer = tf.keras.layers.Dense(target_vocab_size)  # stays full rank
+        self.target_vocab_size = target_vocab_size
+        self.d_model = d_model
 
     def call(self, inputs, training, step):
         # Keras models prefer if you pass all your inputs in the first argument
@@ -446,6 +493,15 @@ class TransformerDLRA(tf.keras.Model):
 
     def get_rank(self):
         return [self.encoder.get_rank(), self.decoder.get_rank()]
+
+    def get_weights_num(self):
+        low_encoder, full_encoder  = self.encoder.get_weights_num()
+        low_decoder, full_decoder  = self.decoder.get_weights_num()
+        return low_encoder + low_decoder + self.target_vocab_size * self.d_model, full_encoder + full_decoder + self.target_vocab_size * self.d_model
+
+    def get_compression_rate():
+        low, full = self.get_weights_num()
+        return low / full
 
     @staticmethod
     def set_none_grads_to_zero(grads, weights):
