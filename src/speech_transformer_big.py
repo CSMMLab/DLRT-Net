@@ -217,4 +217,12 @@ def accuracy_function(real, pred):
 
 if __name__ == '__main__':
     print("---------- Start Network Training Suite ------------")
+    print("Parsing options")
+
+    parser = OptionParser()
+
+    parser.add_option("-e", "--epochs", dest="epochs", default=200)
+    (options, args) = parser.parse_args()
+    options.epochs = int(options.epochs)
+    EPOCHS = options.epochs
     train()
