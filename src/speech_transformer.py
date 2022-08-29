@@ -220,21 +220,10 @@ if __name__ == '__main__':
     print("Parsing options")
     # --- parse options ---
     parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
-    parser.add_option("-l", "--load_model", dest="load_model", default=1)
-    parser.add_option("-a", "--train", dest="train", default=1)
-    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
-    parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
-    parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
+    parser.add_option("-e", "--epochs", dest="epochs", default=200)
     (options, args) = parser.parse_args()
-    options.start_rank = int(options.start_rank)
-    options.tolerance = float(options.tolerance)
-    options.load_model = int(options.load_model)
-    options.train = int(options.train)
-    options.dim_layer = int(options.dim_layer)
-    options.max_rank = int(options.max_rank)
     options.epochs = int(options.epochs)
     EPOCHS = options.epochs
+
     train()
