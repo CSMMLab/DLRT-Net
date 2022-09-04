@@ -31,8 +31,8 @@ loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
 
 
 def train(low_rank):
-    filename = "./logs/DLRA_FR_transformer_f/low_rank_" + str(low_rank)
-    filename_check = "./weight_checks/DLRA_FR_transformer_f/low_rank_" + str(low_rank)
+    filename = "./logs/DLRA_FR_transformer_f/fix_rank_" + str(low_rank)
+    filename_check = "./weight_checks/DLRA_FR_transformer_f/fix_rank_" + str(low_rank)
 
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
