@@ -128,7 +128,7 @@ def train():
 
         validation_loss(loss)
         validation_accuracy(accuracy_function(tar_real, predictions))
-
+        
     for epoch in range(EPOCHS):
         start = time.time()
 
