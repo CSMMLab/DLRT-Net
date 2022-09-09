@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 from optparse import OptionParser
-from networks.utils import create_csv_logger_cb, list_of_lists_to_string
+from networks.utils import create_csv_logger_cb, create_test_output_files
 
 from networks.translator import Translator
 import time
@@ -36,7 +36,7 @@ def train():
 
     # load dataset
     examples, metadata = tfds.load('ted_hrlr_translate/pt_to_en', with_info=True, as_supervised=True)
-    train_examples, val_examples = examples['train'], examples['validation']
+    train_examples, val_examples, test_examples = examples['train'], examples['validation'], examples['test']
 
     for pt_examples, en_examples in train_examples.batch(3).take(1):
         for pt in pt_examples.numpy():
@@ -49,6 +49,7 @@ def train():
 
     train_batches = make_batches(train_examples)
     val_batches = make_batches(val_examples)
+    # test_batches = make_batches(test_examples)
 
     num_layers = 4
     d_model = 128
@@ -90,7 +91,7 @@ def train():
         print('Latest checkpoint restored!!')
 
     # Create logger
-    log_file, file_name = create_csv_logger_cb(folder_name=filename)
+    _, file_name = create_csv_logger_cb(folder_name=filename)
 
     # The @tf.function trace-compiles train_step into a TF graph for faster
     # execution. The function specializes to the precise shape of the argument
@@ -101,6 +102,20 @@ def train():
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     ]
+
+    # Test the translator
+    translator = Translator(tokenizers, transformer)
+
+    f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
+
+    for (batch, (inp, tar)) in enumerate(test_examples):
+        translated_text, translated_tokens, attention_weights = translator(tf.constant(inp))
+        with open(f_pt, "a") as log:
+            log.write(str(inp.numpy()) + "\n")
+        with open(f_en_pred, "a") as log:
+            log.write(str(translated_text.numpy()) + "\n")
+        with open(f_en_ref, "a") as log:
+            log.write(str(tar.numpy()) + "\n")
 
     @tf.function(input_signature=train_step_signature)
     def train_step(inp, tar):
@@ -129,7 +144,7 @@ def train():
         validation_loss(loss)
         validation_accuracy(accuracy_function(tar_real, predictions))
 
-    for epoch in range(EPOCHS):
+    for epoch in range(0):
         start = time.time()
 
         train_loss.reset_states()
@@ -165,15 +180,24 @@ def train():
 
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
-    # Employ the model in a translator
+    test_tranformer(transformer, tokenizers, test_examples, filename)
+    return 0
+
+
+def test_tranformer(transformer, tokenizers, test_examples, filename):
+    # Test the translator
     translator = Translator(tokenizers, transformer)
 
-    sentence = 'este é um problema que temos que resolver.'
-    ground_truth = 'this is a problem we have to solve .'
+    f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
 
-    translated_text, translated_tokens, attention_weights = translator(
-        tf.constant(sentence))
-    print_translation(sentence, translated_text, ground_truth)
+    for (batch, (inp, tar)) in enumerate(test_examples):
+        translated_text, translated_tokens, attention_weights = translator(tf.constant(inp))
+        with open(f_pt, "a") as log:
+            log.write(str(inp.numpy()) + "\n")
+        with open(f_en_pred, "a") as log:
+            log.write(str(translated_text.numpy()) + "\n")
+        with open(f_en_ref, "a") as log:
+            log.write(str(tar.numpy()) + "\n")
 
     return 0
 
