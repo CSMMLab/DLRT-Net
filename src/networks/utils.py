@@ -112,9 +112,9 @@ def test_transformer(transformer, tokenizers, test_examples, filename):
             log.write(str(score) + " | " + str(translated_text.numpy()) + "\n")
         with open(f_en_ref, "a") as log:
             log.write(str(tar.numpy()) + "\n")
-        print("tested on example:" + str(batch) + " of " + str(n))
+        print("tested on example:" + str(batch) + " of " + str(n) + ". Bleu score: " + str(score))
 
-    with open(f_en_pred, "a") as log:
-        log.write(str(cumulative_bleu / n) + " | +++++++++++ END OF FILE +++++++++++ \n")
+        with open(f_en_pred, "a") as log:
+            log.write(str(cumulative_bleu / n) + " | +++++++++++ END OF FILE +++++++++++ \n")
 
-    return 0
+        return 0
