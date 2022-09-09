@@ -6,6 +6,7 @@ import tensorflow_datasets as tfds
 from optparse import OptionParser
 from networks.utils import create_csv_logger_cb, list_of_lists_to_string
 
+from networks.translator import Translator
 import time
 
 # global constants # specify training
@@ -164,7 +165,23 @@ def train():
 
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
+    # Employ the model in a translator
+    translator = Translator(tokenizers, transformer)
+
+    sentence = 'este é um problema que temos que resolver.'
+    ground_truth = 'this is a problem we have to solve .'
+
+    translated_text, translated_tokens, attention_weights = translator(
+        tf.constant(sentence))
+    print_translation(sentence, translated_text, ground_truth)
+
     return 0
+
+
+def print_translation(sentence, tokens, ground_truth):
+    print(f'{"Input:":15s}: {sentence}')
+    print(f'{"Prediction":15s}: {tokens.numpy().decode("utf-8")}')
+    print(f'{"Ground truth":15s}: {ground_truth}')
 
 
 def filter_max_tokens(pt, en):
