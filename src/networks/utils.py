@@ -53,7 +53,7 @@ def create_test_output_files(folder_name: str):
     count = 1
     while path.isfile(logName + '.txt'):
         count += 1
-        logName = folder_name + '/test_output/en_pred_001_' + str(count).zfill(3) + '_'
+        logName = folder_name + '/test_output/en_pred_' + str(count).zfill(3) + '_'
 
     logFileName = logName + '.txt'
     # create logger callback
