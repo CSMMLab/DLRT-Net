@@ -103,20 +103,6 @@ def train():
         tf.TensorSpec(shape=(None, None), dtype=tf.int64),
     ]
 
-    # Test the translator
-    translator = Translator(tokenizers, transformer)
-
-    f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
-
-    for (batch, (inp, tar)) in enumerate(test_examples):
-        translated_text, translated_tokens, attention_weights = translator(tf.constant(inp))
-        with open(f_pt, "a") as log:
-            log.write(str(inp.numpy()) + "\n")
-        with open(f_en_pred, "a") as log:
-            log.write(str(translated_text.numpy()) + "\n")
-        with open(f_en_ref, "a") as log:
-            log.write(str(tar.numpy()) + "\n")
-
     @tf.function(input_signature=train_step_signature)
     def train_step(inp, tar):
         tar_inp = tar[:, :-1]
@@ -190,6 +176,7 @@ def test_tranformer(transformer, tokenizers, test_examples, filename):
 
     f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
 
+    n = len(test_examples)
     for (batch, (inp, tar)) in enumerate(test_examples):
         translated_text, translated_tokens, attention_weights = translator(tf.constant(inp))
         with open(f_pt, "a") as log:
@@ -198,6 +185,7 @@ def test_tranformer(transformer, tokenizers, test_examples, filename):
             log.write(str(translated_text.numpy()) + "\n")
         with open(f_en_ref, "a") as log:
             log.write(str(tar.numpy()) + "\n")
+        print("tested on example:" + str(batch) + " of " + str(n))
 
     return 0
 
