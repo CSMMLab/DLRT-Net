@@ -115,6 +115,6 @@ def test_transformer(transformer, tokenizers, test_examples, filename):
         print("tested on example:" + str(batch) + " of " + str(n))
 
     with open(f_en_pred, "a") as log:
-        log.write(str(cumulative_bleu) + " | +++++++++++ END OF FILE +++++++++++ \n")
+        log.write(str(cumulative_bleu / n) + " | +++++++++++ END OF FILE +++++++++++ \n")
 
     return 0
