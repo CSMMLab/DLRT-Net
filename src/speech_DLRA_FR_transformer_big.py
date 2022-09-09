@@ -5,9 +5,8 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 
 from optparse import OptionParser
-from networks.utils import create_csv_logger_cb, list_of_lists_to_string, create_test_output_files
+from networks.utils import create_csv_logger_cb, list_of_lists_to_string, test_transformer
 
-from networks.translator import Translator
 import time
 
 # global constants # specify training
@@ -217,25 +216,7 @@ def train(low_rank):
 
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
-    test_tranformer(transformer, tokenizers, test_examples, filename)
-    return 0
-
-
-def test_tranformer(transformer, tokenizers, test_examples, filename):
-    # Test the translator
-    translator = Translator(tokenizers, transformer)
-
-    f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
-
-    for (batch, (inp, tar)) in enumerate(test_examples):
-        translated_text, translated_tokens, attention_weights = translator(tf.constant(inp))
-        with open(f_pt, "a") as log:
-            log.write(str(inp.numpy()) + "\n")
-        with open(f_en_pred, "a") as log:
-            log.write(str(translated_text.numpy()) + "\n")
-        with open(f_en_ref, "a") as log:
-            log.write(str(tar.numpy()) + "\n")
-
+    test_transformer(transformer, tokenizers, test_examples, filename)
     return 0
 
 

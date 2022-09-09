@@ -4,3 +4,4 @@ tensorflow==2.8.0
 pandas
 tensorflow_datasets
 tensorflow-text==2.8.*
+nltk

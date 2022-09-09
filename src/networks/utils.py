@@ -1,4 +1,9 @@
 from os import path, makedirs
+from networks.translator import Translator
+
+import tensorflow as tf
+
+from nltk.translate.bleu_score import sentence_bleu
 
 
 def create_csv_logger_cb(folder_name: str):
@@ -80,3 +85,36 @@ def list_of_lists_to_string(list_o_lists: list) -> str:
                     res = res + ";" + str(k)
 
     return res
+
+
+def test_transformer(transformer, tokenizers, test_examples, filename):
+    # Test the translator
+    translator = Translator(tokenizers, transformer)
+
+    f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
+
+    n = len(test_examples)
+
+    cumulative_bleu = 0.0
+    for (batch, (inp, tar)) in enumerate(test_examples):
+        translated_text, translated_tokens, attention_weights = translator(tf.constant(inp))
+
+        # make list of words
+        pre_list = str(translated_text.numpy()).split(" ")
+        tar_list = str(tar.numpy()).split(" ")
+
+        # compute bleu score
+        score = sentence_bleu(tar_list, pre_list)
+        cumulative_bleu += score
+        with open(f_pt, "a") as log:
+            log.write(str(inp.numpy()) + "\n")
+        with open(f_en_pred, "a") as log:
+            log.write(str(score) + " | " + str(translated_text.numpy()) + "\n")
+        with open(f_en_ref, "a") as log:
+            log.write(str(tar.numpy()) + "\n")
+        print("tested on example:" + str(batch) + " of " + str(n))
+
+    with open(f_en_pred, "a") as log:
+        log.write(str(cumulative_bleu) + " | +++++++++++ END OF FILE +++++++++++ \n")
+
+    return 0
