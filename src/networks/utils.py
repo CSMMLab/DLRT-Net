@@ -87,9 +87,9 @@ def list_of_lists_to_string(list_o_lists: list) -> str:
     return res
 
 
-def test_transformer(transformer, tokenizers, test_examples, filename):
+def test_transformer(transformer, tokenizers, test_examples, filename, dlra:False):
     # Test the translator
-    translator = Translator(tokenizers, transformer)
+    translator = Translator(tokenizers, transformer,dlra)
 
     f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
 

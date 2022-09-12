@@ -128,7 +128,7 @@ def train():
 
         validation_loss(loss)
         validation_accuracy(accuracy_function(tar_real, predictions))
-        
+
     for epoch in range(EPOCHS):
         start = time.time()
 
@@ -165,7 +165,7 @@ def train():
 
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
-    test_transformer(transformer, tokenizers, test_examples, filename)
+    test_transformer(transformer, tokenizers, test_examples, filename, dlra=False)
     return 0
 
 

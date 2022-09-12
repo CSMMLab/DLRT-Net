@@ -216,7 +216,7 @@ def train(low_rank):
 
         print(f'Time taken for 1 epoch: {time.time() - start:.2f} secs\n')
 
-    test_transformer(transformer, tokenizers, test_examples, filename)
+    test_transformer(transformer, tokenizers, test_examples, filename, dlra=True)
     return 0
 
 

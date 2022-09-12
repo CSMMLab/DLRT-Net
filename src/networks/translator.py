@@ -4,9 +4,10 @@ MAX_TOKENS = 128
 
 
 class Translator(tf.Module):
-    def __init__(self, tokenizers, transformer):
+    def __init__(self, tokenizers, transformer, dlra: False):
         self.tokenizers = tokenizers
         self.transformer = transformer
+        self.dlra = dlra
 
     def __call__(self, sentence, max_length=MAX_TOKENS):
         # The input sentence is Portuguese, hence adding the `[START]` and `[END]` tokens.
@@ -31,7 +32,10 @@ class Translator(tf.Module):
 
         for i in tf.range(max_length):
             output = tf.transpose(output_array.stack())
-            predictions, _ = self.transformer([encoder_input, output], training=False)
+            if self.dlra:
+                predictions, _ = self.transformer([encoder_input, output], training=False, step=0)
+            else:
+                predictions, _ = self.transformer([encoder_input, output], training=False)
 
             # Select the last token from the `seq_len` dimension.
             predictions = predictions[:, -1:, :]  # Shape `(batch_size, 1, vocab_size)`.
@@ -54,6 +58,8 @@ class Translator(tf.Module):
         # `tf.function` prevents us from using the attention_weights that were
         # calculated on the last iteration of the loop.
         # Therefore, recalculate them outside the loop.
-        _, attention_weights = self.transformer([encoder_input, output[:, :-1]], training=False)
-
+        if self.dlra:
+            _, attention_weights = self.transformer([encoder_input, output[:, :-1]], training=False, step=0)
+        else:
+            _, attention_weights = self.transformer([encoder_input, output[:, :-1]], training=False)
         return text, tokens, attention_weights
