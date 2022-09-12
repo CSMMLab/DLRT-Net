@@ -104,7 +104,7 @@ def test_transformer(transformer, tokenizers, test_examples, filename):
         tar_list = str(tar.numpy()).split(" ")
 
         # compute bleu score
-        score = sentence_bleu(tar_list, pre_list)
+        score = sentence_bleu(references=[tar_list], hypothesis=pre_list)
         cumulative_bleu += score
         with open(f_pt, "a") as log:
             log.write(str(inp.numpy()) + "\n")
