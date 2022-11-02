@@ -23,4 +23,4 @@ Code supplement for all dense neural network experiments of the arXiv Preprint
        
 ### Useful links
 
-The pytorch version can be found [here](https://github.com/emabuell/pytorch_dlr](https://github.com/COMPiLELab/DLRT/tree/efficient_gradient)
+The pytorch version can be found [here](https://github.com/COMPiLELab/DLRT/tree/efficient_gradient)
