@@ -6,16 +6,13 @@ from .dense_layers import Linear, DLRTLayer, DLRTLayerAdaptive
 
 class DLRTNet(keras.Model):
 
-    def __init__(self, input_dim=1, output_dim=1, name="e2eDLRANet", tol=0.4, low_rank=20, dlra_layer_dim=200,
-                 rmax_total=100, **kwargs):
+    def __init__(self, input_dim=1, output_dim=1, name="e2eDLRANet", low_rank=20, dlra_layer_dim=200, **kwargs):
         super(DLRTNet, self).__init__(name=name, **kwargs)
         # dlra_layer_dim = 250
         self.input_dim = input_dim
         self.dlra_layer_dim = dlra_layer_dim
         self.low_rank = low_rank
         self.output_dim = output_dim
-        self.tol = tol
-        self.rmax_total = rmax_total
 
         self.dlraBlockInput = DLRTLayer(input_dim=self.input_dim, units=self.dlra_layer_dim, low_rank=self.low_rank)
         self.dlraBlock1 = DLRTLayer(input_dim=self.dlra_layer_dim, units=self.dlra_layer_dim, low_rank=self.low_rank)
@@ -120,8 +117,6 @@ class DLRTNetAdaptive(keras.Model):
                                             rmax_total=rmax_total, )
         self.dlraBlockOutput = Linear(input_dim=dlra_layer_dim, units=output_dim)
 
-        self.build_model()
-
     def build_model(self):
         self.dlraBlockInput.build_model()
         self.dlraBlock1.build_model()
@@ -193,11 +188,19 @@ class ReferenceNet(keras.Model):
 
     def __init__(self, input_dim=10, output_dim=1, layer_dim=200, name="referenceNet", **kwargs):
         super(ReferenceNet, self).__init__(name=name, **kwargs)
-        self.layer1 = Linear2(units=layer_dim, input_dim=input_dim)
-        self.layer2 = Linear2(units=layer_dim, input_dim=layer_dim)
-        self.layer3 = Linear2(units=layer_dim, input_dim=layer_dim)
-        self.layer4 = Linear2(units=layer_dim, input_dim=layer_dim)
-        self.layer5 = Linear2(units=output_dim, input_dim=layer_dim)
+        self.layer1 = Linear(units=layer_dim, input_dim=input_dim)
+        self.layer2 = Linear(units=layer_dim, input_dim=layer_dim)
+        self.layer3 = Linear(units=layer_dim, input_dim=layer_dim)
+        self.layer4 = Linear(units=layer_dim, input_dim=layer_dim)
+        self.layer5 = Linear(units=output_dim, input_dim=layer_dim)
+
+    def build_model(self):
+        self.layer1.build_model()
+        self.layer2.build_model()
+        self.layer3.build_model()
+        self.layer4.build_model()
+        self.layer5.build_model()
+        return 0
 
     @tf.function
     def call(self, inputs):
@@ -219,3 +222,11 @@ class ReferenceNet(keras.Model):
         self.layer4.save(folder_name, layer_id=3)
         self.layer5.save(folder_name, layer_id=4)
         return
+
+    def load(self, folder_name):
+        self.layer1.load(folder_name=folder_name, layer_id=0)
+        self.layer2.load(folder_name=folder_name, layer_id=1)
+        self.layer3.load(folder_name=folder_name, layer_id=2)
+        self.layer4.load(folder_name=folder_name, layer_id=3)
+        self.layer5.load(folder_name=folder_name, layer_id=4)
+        return 0

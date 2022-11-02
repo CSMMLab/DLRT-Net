@@ -9,14 +9,16 @@ from optparse import OptionParser
 from os import path, makedirs
 
 
-def train(start_rank, load_model, dim_layer):
+def train(start_rank, tolerance, load_model):
     # specify training
-    epochs = 100
+    epochs = 200
     batch_size = 256
 
-    filename = "e2edense_fr" + str(start_rank) + "_v"
-    folder_name = "e2edense_fr" + str(start_rank) + "_v/latest_model"
-    folder_name_best = "e2edense_fr" + str(start_rank) + "_v/best_model"
+    name = "mnist_dense_sr"
+    filename = name + str(start_rank) + "_v" + str(tolerance)
+    folder_name = name + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name_best = name + str(start_rank) + "_v" + str(tolerance) + '/best_model'
+    folder_dense_weights = "dense_weights" + '/best_model'
 
     # check if dir exists
     if not path.exists(folder_name):
@@ -34,9 +36,8 @@ def train(start_rank, load_model, dim_layer):
     tol = tolerance  # eigenvalue treshold
     max_rank = 350  # maximum rank of S matrix
 
-    dlra_layer_dim = dim_layer
-    model = DLRTNet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
-                    dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    dlra_layer_dim = 784
+    model = DLRTNet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank, dlra_layer_dim=dlra_layer_dim)
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -75,14 +76,73 @@ def train(start_rank, load_model, dim_layer):
         log.write(log_string)
 
     # load weights
+    model.build_model()
     if load_model == 1:
-        model.load(folder_name=folder_name)
-    else:
-        model.build_model()
+        model.load_from_fullW(folder_name=folder_dense_weights, rank=start_rank)
 
     best_acc = 0
     best_loss = 10
-    # Iterate over epochs. (Training loop)
+
+    # Measure truncated performance
+    # Compute vallidation loss and accuracy
+    loss_val = 0
+    acc_val = 0
+
+    #  K  Step Preproccessing
+    model.dlraBlockInput.k_step_preprocessing()
+    model.dlraBlock1.k_step_preprocessing()
+    model.dlraBlock2.k_step_preprocessing()
+    model.dlraBlock3.k_step_preprocessing()
+
+    # Validate model
+    out = model(x_val, step=0, training=False)
+    out = tf.keras.activations.softmax(out)
+    loss = loss_fn(y_val, out)
+    loss_metric.update_state(loss)
+    loss_val = loss_metric.result().numpy()
+
+    prediction = tf.math.argmax(out, 1)
+    acc_metric.update_state(prediction, y_val)
+    acc_val = acc_metric.result().numpy()
+    print("--------------------------------------")
+    print("Val Accuracy for the truncaded SVD network (not re-trained): " + str(acc_val))
+
+    # Reset metrics
+    loss_metric.reset_state()
+    acc_metric.reset_state()
+
+    # Test model
+    out = model(x_test, step=0, training=False)
+    out = tf.keras.activations.softmax(out)
+    loss = loss_fn(y_test, out)
+    loss_metric.update_state(loss)
+    loss_test = loss_metric.result().numpy()
+
+    prediction = tf.math.argmax(out, 1)
+    acc_metric.update_state(prediction, y_test)
+    acc_test = acc_metric.result().numpy()
+    log_string = "Test Loss: " + str(loss_test) + "| Test Accuracy" + str(acc_test) + "\n"
+    print("Test :" + log_string)
+    # Reset metrics
+    loss_metric.reset_state()
+    acc_metric.reset_state()
+
+    # Log Data of current epoch
+    log_string = "nan" + ";" + "nan" + ";" + str(
+        loss_val) + ";" + str(acc_val) + ";" + str(
+        loss_test) + ";" + str(acc_test) + ";" + str(
+        int(model.dlraBlockInput.low_rank)) + ";" + str(
+        int(model.dlraBlock1.low_rank)) + ";" + str(int(model.dlraBlock2.low_rank)) + ";" + str(
+        int(model.dlraBlock3.low_rank)) + "\n"
+    with open(file_name, "a") as log:
+        log.write(log_string)
+    print(
+        "Epoch Data (trunced SVD Network) : Train Loss, Train Accuracy, Validation Loss, Validation Accuracy, Test Loss, Test  Accuracy, rank layer 1, rank layer 2, rank layer 4")
+
+    print("Epoch Data (trunced SVD Network) :" + log_string)
+
+    print("-------------- Start Low-rank Finetuning--------------")
+    # Start Training
     for epoch in range(epochs):
         print("Start of epoch %d" % (epoch,))
         # Iterate over the batches of the dataset.
@@ -258,15 +318,14 @@ if __name__ == '__main__':
     # --- parse options ---
     parser = OptionParser()
     parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
+    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
     parser.add_option("-l", "--load_model", dest="load_model", default=1)
     parser.add_option("-a", "--train", dest="train", default=0)
-    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
+    options.tolerance = float(options.tolerance)
     options.load_model = int(options.load_model)
     options.train = int(options.train)
-    options.dim_layer = int(options.dim_layer)
 
-    if options.train == 1:
-        train(start_rank=options.start_rank, load_model=options.load_model, dim_layer=options.dim_layer)
+    train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model)

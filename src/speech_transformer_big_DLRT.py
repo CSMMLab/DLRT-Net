@@ -67,7 +67,7 @@ def train(tolerance):
     validation_accuracy = tf.keras.metrics.Mean(name='validation_accuracy')
 
     # build model
-    transformer = networks.transformer_dlra.TransformerDLRA(
+    transformer = networks.transformer_dlrt.TransformerDLRT(
         num_layers=num_layers,
         d_model=d_model,
         num_heads=num_heads,
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     print("Parsing options")
     # --- parse options ---
     parser = OptionParser()
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
+    parser.add_option("-t", "--tolerance", dest="tolerance", default=0.1)
     parser.add_option("-e", "--epochs", dest="epochs", default=500)
 
     (options, args) = parser.parse_args()

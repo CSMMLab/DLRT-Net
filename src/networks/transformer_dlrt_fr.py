@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from networks.dense_layers import DLRALayerLinear, DLRALayer
+from .dense_layers import DLRTLayerLinear, DLRTLayer
 
 # global constants !!!!! DANGEROUS!!!
 MAX_TOKENS = 128
@@ -18,11 +18,11 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.depth = d_model // self.num_heads
         self.low_rank = low_rank
 
-        self.wq = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
-        self.wk = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
-        self.wv = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
+        self.wq = DLRTLayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
+        self.wk = DLRTLayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
+        self.wv = DLRTLayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
 
-        self.dense = DLRALayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
+        self.dense = DLRTLayerLinear(input_dim=d_model, units=d_model, low_rank=self.low_rank)
 
         # Build low-rank
         self.wq.build_model()
@@ -109,8 +109,8 @@ class EncoderLayer(tf.keras.layers.Layer):
         super(EncoderLayer, self).__init__()
 
         self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads, low_rank=low_rank)
-        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=low_rank)
-        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=low_rank)
+        self.ffn1 = DLRTLayer(input_dim=d_model, units=dff, low_rank=low_rank)
+        self.ffn2 = DLRTLayerLinear(input_dim=dff, units=d_model, low_rank=low_rank)
 
         # Build low-rank layers
         self.ffn1.build_model()
@@ -179,8 +179,8 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, low_rank=low_rank)
         self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, low_rank=low_rank)
 
-        self.ffn1 = DLRALayer(input_dim=d_model, units=dff, low_rank=low_rank)
-        self.ffn2 = DLRALayerLinear(input_dim=dff, units=d_model, low_rank=low_rank)
+        self.ffn1 = DLRTLayer(input_dim=d_model, units=dff, low_rank=low_rank)
+        self.ffn2 = DLRTLayerLinear(input_dim=dff, units=d_model, low_rank=low_rank)
         # Build low-rank layers
         self.ffn1.build_model()
         self.ffn2.build_model()
@@ -395,7 +395,7 @@ class Decoder(tf.keras.layers.Layer):
         return low, full
 
 
-class TransformerDLRAFR(tf.keras.Model):
+class TransformerDLRTFR(tf.keras.Model):
     def __init__(self, *, num_layers, d_model, num_heads, dff, input_vocab_size,
                  target_vocab_size, rate=0.1, low_rank=50):
         super().__init__()

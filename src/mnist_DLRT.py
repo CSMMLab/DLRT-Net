@@ -13,9 +13,10 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     epochs = epochs
     batch_size = 256
 
-    filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
+    name = "mnist_dense_sr"
+    filename = name + str(start_rank) + "_v" + str(tolerance)
+    folder_name = name + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name_best = name + str(start_rank) + "_v" + str(tolerance) + '/best_model'
 
     # check if dir exists
     if not path.exists(folder_name):
@@ -38,6 +39,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
     model = DLRTNetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    model.build_model()
 
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)

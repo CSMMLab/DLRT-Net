@@ -1,4 +1,5 @@
-from dlranet import ReferenceNet, create_csv_logger_cb
+from networks.dense_dlrt_nets import ReferenceNet
+from networks.utils import create_csv_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras
@@ -13,7 +14,7 @@ def train(load_model=1):
     epochs = 250
     batch_size = 256
 
-    filename = "dense_500x5"
+    filename = "dense_weights"
     folder_name = filename + '/latest_model'
     folder_name_best = filename + '/best_model'
 
@@ -30,7 +31,7 @@ def train(load_model=1):
 
     dlra_layer_dim = 784
     model = ReferenceNet(input_dim=input_dim, output_dim=output_dim, layer_dim=dlra_layer_dim)
-
+    model.build_model()
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss

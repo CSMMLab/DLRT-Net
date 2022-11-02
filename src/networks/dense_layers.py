@@ -250,7 +250,7 @@ class DLRTLayer(keras.layers.Layer):
 
     def load_from_fullW(self, folder_name, layer_id, rank):
 
-        W_mat = np.load(folder_name + "/w_" + str(layer_id) + ".npy")
+        W_mat = np.load(folder_name + "/w" + str(layer_id) + ".npy")
         d, u, v = tf.linalg.svd(W_mat)  # d=singular values, u2 = left singuar vecs, v2= right singular vecss
 
         s_init = tf.linalg.tensor_diag(d[:rank])
