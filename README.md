@@ -8,7 +8,7 @@ Code supplement for all dense neural network experiments of the arXiv Preprint
    version incompatibilities of tensorflow
 2. Install the project requirements (example for pip):
    ``pip install -r requirements.txt``
-3. Copy the batch scripts from ``/run_scripts`` to the projects main folder and run the test cases
+3. Run the batch scripts for the test cases
     1. ``sh run_tests_dense_reference.sh`` trains a baseline traditional dense network.
     2. ``sh run_tests_fixed_rank.sh`` trains a fixed low-rank network using our proposed method. This method is used in
        section 5.1
@@ -25,4 +25,6 @@ Code supplement for all dense neural network experiments of the arXiv Preprint
     6. ``sh run_test_transformer_fix_rank.sh`` and ``sh run_test_transformer_big_fix_rank.sh`` trains a transformer on
        the portuguese to english translation task with fixed rank DLRT.
      
- 
+### Useful links
+
+The pytorch version can be found [here](https://github.com/COMPiLELab/DLRT/tree/efficient_gradient)
