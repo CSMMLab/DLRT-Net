@@ -1,4 +1,4 @@
-import networks.transformer_dlra_fr
+import networks.transformer_dlrt_fr
 import networks.transformer
 
 import tensorflow as tf

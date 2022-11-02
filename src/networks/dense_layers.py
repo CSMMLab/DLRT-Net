@@ -4,6 +4,7 @@ import numpy as np
 
 
 class Linear(keras.layers.Layer):
+    # same as denseLinear, but without activation
     def __init__(self, units=32, input_dim=32, name="linear", **kwargs):
         super(Linear, self).__init__(**kwargs)
         self.units = units
@@ -22,18 +23,18 @@ class Linear(keras.layers.Layer):
         config.update({"units": self.units})
         return config
 
-    def save(self, folder_name):
+    def save(self, folder_name, layer_id):
         w_np = self.w.numpy()
-        np.save(folder_name + "/w_out.npy", w_np)
+        np.save(folder_name + "/w" + str(layer_id) + ".npy", w_np)
         b_np = self.b.numpy()
-        np.save(folder_name + "/b_out.npy", b_np)
+        np.save(folder_name + "/b" + str(layer_id) + ".npy", b_np)
         return 0
 
-    def load(self, folder_name):
-        a_np = np.load(folder_name + "/w_out.npy")
+    def load(self, folder_name, layer_id):
+        a_np = np.load(folder_name + "/w" + str(layer_id) + ".npy")
         self.w = tf.Variable(initial_value=a_np,
                              trainable=True, name="w_", dtype=tf.float32)
-        b_np = np.load(folder_name + "/b_out.npy")
+        b_np = np.load(folder_name + "/b" + str(layer_id) + ".npy")
         self.b = tf.Variable(initial_value=b_np,
                              trainable=True, name="b_", dtype=tf.float32)
 
@@ -73,10 +74,10 @@ class DenseLinear(keras.layers.Layer):
                              trainable=True, name="b_", dtype=tf.float32)
 
 
-class DLRALayer(keras.layers.Layer):
+class DLRTLayer(keras.layers.Layer):
     def __init__(self, input_dim: int, units=32, low_rank=10, name="dlra_block",
                  **kwargs):
-        super(DLRALayer, self).__init__(**kwargs)
+        super(DLRTLayer, self).__init__(**kwargs)
         self.units = units
         self.low_rank = low_rank
         self.input_dim = input_dim
@@ -165,7 +166,7 @@ class DLRALayer(keras.layers.Layer):
         return 0
 
     def get_config(self):
-        config = super(DLRALayer, self).get_config()
+        config = super(DLRTLayer, self).get_config()
         config.update({"units": self.units})
         config.update({"low_rank": self.low_rank})
         return config
@@ -273,10 +274,10 @@ class DLRALayer(keras.layers.Layer):
         return low_rank_weights, full_rank_weights
 
 
-class DLRALayerAdaptive(keras.layers.Layer):
+class DLRTLayerAdaptive(keras.layers.Layer):
     def __init__(self, input_dim: int, units=32, low_rank=10, epsAdapt=0.1, rmax_total=100, name="dlra_block",
                  **kwargs):
-        super(DLRALayerAdaptive, self).__init__(**kwargs)
+        super(DLRTLayerAdaptive, self).__init__(**kwargs)
         self.epsAdapt = epsAdapt  # for unconventional integrator
         self.units = units
         self.low_rank = low_rank  # tf.Variable(value=low_rank, dtype=tf.int32, trainable=False)
@@ -388,7 +389,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         d, u2, v2 = tf.linalg.svd(s_small)
 
         tmp = 0.0
-        tol = self.epsAdapt * tf.linalg.norm(d)  # absolute value treshold (try also relative one)
+        tol = self.epsAdapt * tf.linalg.norm(d)  # tol=\vartheta in paper
         rmax = int(tf.floor(d.shape[0] / 2))
         for j in range(0, 2 * rmax - 1):
             tmp = tf.linalg.norm(d[j:2 * rmax - 1])
@@ -412,7 +413,7 @@ class DLRALayerAdaptive(keras.layers.Layer):
         return 0
 
     def get_config(self):
-        config = super(DLRALayer, self).get_config()
+        config = super(DLRTLayer, self).get_config()
         config.update({"units": self.units})
         config.update({"low_rank": self.low_rank})
         return config
@@ -485,10 +486,11 @@ class DLRALayerAdaptive(keras.layers.Layer):
         return low_rank_weights, full_rank_weights
 
 
-class DLRALayerLinear(keras.layers.Layer):
+class DLRTLayerLinear(keras.layers.Layer):
+    # Same as DLRTLayer but without activation function (legacy reasons)
     def __init__(self, input_dim: int, units=32, low_rank=10, name="dlra_block",
                  **kwargs):
-        super(DLRALayerLinear, self).__init__(**kwargs)
+        super(DLRTLayerLinear, self).__init__(**kwargs)
         self.units = units
         self.low_rank = low_rank
         self.input_dim = input_dim
@@ -577,7 +579,7 @@ class DLRALayerLinear(keras.layers.Layer):
         return 0
 
     def get_config(self):
-        config = super(DLRALayer, self).get_config()
+        config = super(DLRTLayer, self).get_config()
         config.update({"units": self.units})
         config.update({"low_rank": self.low_rank})
         return config
@@ -685,10 +687,11 @@ class DLRALayerLinear(keras.layers.Layer):
         return low_rank_weights, full_rank_weights
 
 
-class DLRALayerAdaptiveLinear(keras.layers.Layer):
+class DLRTLayerAdaptiveLinear(keras.layers.Layer):
+    # Same as DLRTLayerAdaptive but without activation function (legacy reasons)
     def __init__(self, input_dim: int, units=32, low_rank=10, epsAdapt=0.1, rmax_total=100, name="dlra_block",
                  **kwargs):
-        super(DLRALayerAdaptiveLinear, self).__init__(**kwargs)
+        super(DLRTLayerAdaptiveLinear, self).__init__(**kwargs)
         self.epsAdapt = epsAdapt  # for unconventional integrator
         self.units = units
         self.low_rank = low_rank  # tf.Variable(value=low_rank, dtype=tf.int32, trainable=False)
@@ -823,7 +826,7 @@ class DLRALayerAdaptiveLinear(keras.layers.Layer):
         return 0
 
     def get_config(self):
-        config = super(DLRALayer, self).get_config()
+        config = super(DLRTLayer, self).get_config()
         config.update({"units": self.units})
         config.update({"low_rank": self.low_rank})
         return config

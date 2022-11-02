@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from networks.dense_layers import DLRALayerAdaptiveLinear, DLRALayerAdaptive
+from networks.dense_layers import DLRTLayerAdaptiveLinear, DLRTLayerAdaptive
 
 # global constants !!!!! DANGEROUS!!!
 MAX_TOKENS = 128
@@ -18,14 +18,14 @@ class MultiHeadAttention(tf.keras.layers.Layer):
         self.depth = d_model // self.num_heads
         self.epsilon = tolerance
 
-        self.wq = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+        self.wq = DLRTLayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
                                           epsAdapt=self.epsilon)
-        self.wk = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+        self.wk = DLRTLayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
                                           epsAdapt=self.epsilon)
-        self.wv = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+        self.wv = DLRTLayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
                                           epsAdapt=self.epsilon)
 
-        self.dense = DLRALayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
+        self.dense = DLRTLayerAdaptiveLinear(input_dim=d_model, units=d_model, low_rank=d_model // 2,
                                              epsAdapt=self.epsilon)
 
         # Build low-rank
@@ -119,8 +119,8 @@ class EncoderLayer(tf.keras.layers.Layer):
         super(EncoderLayer, self).__init__()
 
         self.mha = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
-        self.ffn1 = DLRALayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
-        self.ffn2 = DLRALayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn1 = DLRTLayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn2 = DLRTLayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
 
         # Build low-rank layers
         self.ffn1.build_model()
@@ -194,8 +194,8 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.mha1 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
         self.mha2 = MultiHeadAttention(d_model=d_model, num_heads=num_heads, tolerance=tolerance)
 
-        self.ffn1 = DLRALayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
-        self.ffn2 = DLRALayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn1 = DLRTLayerAdaptive(input_dim=d_model, units=dff, low_rank=d_model // 2, epsAdapt=tolerance)
+        self.ffn2 = DLRTLayerAdaptiveLinear(input_dim=dff, units=d_model, low_rank=d_model // 2, epsAdapt=tolerance)
         # Build low-rank layers
         self.ffn1.build_model()
         self.ffn2.build_model()

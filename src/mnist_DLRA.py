@@ -1,4 +1,5 @@
-from dlranet import DLRANetAdaptive, create_csv_logger_cb
+from networks.dense_dlrt_nets import DLRTNetAdaptive
+from networks.utils import create_csv_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras
@@ -35,8 +36,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
     dlra_layer_dim = dim_layer
 
-    model = DLRANetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+    model = DLRTNetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
                             dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -95,7 +97,6 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             model.dlraBlock2.l_step_preprocessing()
             model.dlraBlock3.k_step_preprocessing()
             model.dlraBlock3.l_step_preprocessing()
-            
 
             # 1.b) Tape Gradients for K-Step
             model.toggle_non_s_step_training()
@@ -106,8 +107,8 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
-                
-            if step  == 0:
+
+            if step == 0:
                 # Network monotoring and verbosity
                 loss_metric.update_state(loss)
                 prediction = tf.math.argmax(out, 1)
@@ -119,7 +120,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
                 print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
                 print("Accuracy: " + str(acc_value))
-                print("Loss: "+ str(loss_value))
+                print("Loss: " + str(loss_value))
                 print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
                     int(model.dlraBlock1.low_rank)) + " | " + str(
                     int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
@@ -143,7 +144,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 acc_metric.update_state(prediction, y_val)
                 acc_val = acc_metric.result().numpy()
                 print("Accuracy: " + str(acc_val))
-                print("Loss: "+ str(loss_val))
+                print("Loss: " + str(loss_val))
                 # save current model if it's the best
                 if acc_val >= best_acc and loss_val <= best_loss:
                     best_acc = acc_val
@@ -155,9 +156,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 # Reset metrics
                 loss_metric.reset_state()
                 acc_metric.reset_state()
-                
+
                 print("----- Test Metrics (not used for early stopping) ----")
-                
+
                 # Test model
                 out = model(x_test, step=0, training=True)
                 out = tf.keras.activations.softmax(out)
@@ -169,19 +170,17 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 acc_metric.update_state(prediction, y_test)
                 acc_test = acc_metric.result().numpy()
                 print("Accuracy: " + str(acc_test))
-                print("Loss: "+ str(loss_test))
+                print("Loss: " + str(loss_test))
                 # Reset metrics
                 loss_metric.reset_state()
                 acc_metric.reset_state()
                 print("-------------------------------------\n\n")
 
-                
             # Gradient updates for k step
             grads_k_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_k_step)
 
-                
             # 1.b) Tape Gradients for L-Step
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=1, training=True)
@@ -198,7 +197,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
-            # Postprocessing K and L
+            # Postprocessing K and L (excplicitly writing down for each layer)
             model.dlraBlockInput.k_step_postprocessing_adapt()
             model.dlraBlockInput.l_step_postprocessing_adapt()
             model.dlraBlock1.k_step_postprocessing_adapt()
@@ -235,8 +234,6 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             model.dlraBlock2.rank_adaption()
             model.dlraBlock3.rank_adaption()
 
-            
-
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
             loss_val) + ";" + str(acc_val) + ";" + str(
@@ -262,7 +259,7 @@ if __name__ == '__main__':
     # --- parse options ---
     parser = OptionParser()
     parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
+    parser.add_option("-t", "--tolerance", dest="tolerance", default=0.05)
     parser.add_option("-l", "--load_model", dest="load_model", default=1)
     parser.add_option("-a", "--train", dest="train", default=1)
     parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
