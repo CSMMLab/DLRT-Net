@@ -3,9 +3,6 @@
 ## Codebase for the Tensorflow DLRT training implementation with rank adaption. 
 The NeurIPS publication to this work can be found at [Low-rank lottery tickets: finding efficient low-rank neural networks via matrix differential equations](https://arxiv.org/abs/2205.13571)
 
-
-Code supplement for all dense neural network experiments of the arXiv Preprint
-
 ### Usage
 
 1. create a python virtual environment (pyenv or conda). If you are using no virtual environment, please be aware of
