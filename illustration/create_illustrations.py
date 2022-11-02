@@ -505,7 +505,7 @@ def plot_timing_exec(load_folder, save_name):
     plt.xlabel("rank")
     plt.ylabel("time [s]")
 
-    plt.legend(["low-rank", "dense reference"])
+    plt.legend(["DLRT", "dense reference"])
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
@@ -544,7 +544,7 @@ def plot_timing_train(load_folder, save_name):
     plt.ylabel("time [s]")
     plt.xlim((df[["rank"]].to_numpy()[1], df[["rank"]].to_numpy()[-4]))
 
-    plt.legend(["low-rank", "dense reference"])
+    plt.legend(["DLRT", "dense reference"])
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
