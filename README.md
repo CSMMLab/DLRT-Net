@@ -1,6 +1,6 @@
 # DLRANet
 
-## Codebase for the Tensorflow DLRT training implementation with rank adaption. 
+## Codebase for the Tensorflow DLRT implementation with rank adaption. 
 The NeurIPS publication to this work can be found at [Low-rank lottery tickets: finding efficient low-rank neural networks via matrix differential equations](https://arxiv.org/abs/2205.13571)
 
 ### Usage
