@@ -20,3 +20,7 @@ Code supplement for all dense neural network experiments of the arXiv Preprint
     4. ``sh run_tests_fixed_rank_train_from_prune.sh`` loads the weights of a traditional network (provided in the
        folder "dense_weights"), then factorizes the weight matrix and truncates all but 20 eigenvalues. Then, fixed
        low-rank training is used to retrain the model. This method is used in Section 7.3
+       
+### Useful links
+
+The pytorch version can be found [https://github.com/emabuell/pytorch_dlr](https://github.com/emabuell/pytorch_dlr)
