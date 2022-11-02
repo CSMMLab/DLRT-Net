@@ -1,7 +1,6 @@
-# DLRANet
+## [Low-rank lottery tickets: finding efficient low-rank neural networks via matrix differential equations](https://arxiv.org/abs/2205.13571)
 
-## Codebase for the Tensorflow DLRT implementation with rank adaption. 
-The NeurIPS publication to this work can be found at [Low-rank lottery tickets: finding efficient low-rank neural networks via matrix differential equations](https://arxiv.org/abs/2205.13571)
+Code supplement for all dense neural network experiments of the arXiv Preprint
 
 ### Usage
 
@@ -21,7 +20,11 @@ The NeurIPS publication to this work can be found at [Low-rank lottery tickets: 
     4. ``sh run_tests_fixed_rank_train_from_prune.sh`` loads the weights of a traditional network (provided in the
        folder "dense_weights"), then factorizes the weight matrix and truncates all but 20 eigenvalues. Then, fixed
        low-rank training is used to retrain the model. This method is used in Section 7.3
-       
+    5. ``sh run_test_transformer_dlrt.sh`` and ``sh run_test_transformer_big_dlrt.sh`` trains a transformer on the
+       portuguese to english translation task with DLRT
+    6. ``sh run_test_transformer_fix_rank.sh`` and ``sh run_test_transformer_big_fix_rank.sh`` trains a transformer on
+       the portuguese to english translation task with fixed rank DLRT.
+     
 ### Useful links
 
 The pytorch version can be found [here](https://github.com/COMPiLELab/DLRT/tree/efficient_gradient)
