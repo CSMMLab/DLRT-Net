@@ -1,22 +1,22 @@
-from networks.dense_dlra_nets import DLRANet
+from networks.dense_dlrt_nets import DLRTNetAdaptive
 from networks.utils import create_csv_logger_cb
 
 import tensorflow as tf
 from tensorflow import keras
-
 import numpy as np
 from optparse import OptionParser
 from os import path, makedirs
 
 
-def train(start_rank, tolerance, load_model, dim_layer):
+def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     # specify training
-    epochs = 100
+    epochs = epochs
     batch_size = 256
 
-    filename = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance)
-    folder_name = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
-    folder_name_best = "e2edense_sr" + str(start_rank) + "_v" + str(tolerance) + '/best_model'
+    name = "mnist_dense_sr"
+    filename = name + str(start_rank) + "_v" + str(tolerance)
+    folder_name = name + str(start_rank) + "_v" + str(tolerance) + '/latest_model'
+    folder_name_best = name + str(start_rank) + "_v" + str(tolerance) + '/best_model'
 
     # check if dir exists
     if not path.exists(folder_name):
@@ -32,11 +32,15 @@ def train(start_rank, tolerance, load_model, dim_layer):
 
     starting_rank = start_rank  # starting rank of S matrix
     tol = tolerance  # eigenvalue treshold
-    max_rank = 350  # maximum rank of S matrix
+
+    max_rank = rmax  # maximum rank of S matrix
 
     dlra_layer_dim = dim_layer
-    model = DLRANet(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
-                    dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+
+    model = DLRTNetAdaptive(input_dim=input_dim, output_dim=output_dim, low_rank=starting_rank,
+                            dlra_layer_dim=dlra_layer_dim, tol=tol, rmax_total=max_rank)
+    model.build_model()
+
     # Build optimizer
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
     # Choose loss
@@ -77,8 +81,6 @@ def train(start_rank, tolerance, load_model, dim_layer):
     # load weights
     if load_model == 1:
         model.load(folder_name=folder_name)
-    else:
-        model.build_model()
 
     best_acc = 0
     best_loss = 10
@@ -107,6 +109,76 @@ def train(start_rank, tolerance, load_model, dim_layer):
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
+
+            if step == 0:
+                # Network monotoring and verbosity
+                loss_metric.update_state(loss)
+                prediction = tf.math.argmax(out, 1)
+                acc_metric.update_state(prediction, batch_train[1])
+
+                loss_value = loss_metric.result().numpy()
+                acc_value = acc_metric.result().numpy()
+                print("----- Training Metrics  ----")
+
+                print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
+                print("Accuracy: " + str(acc_value))
+                print("Loss: " + str(loss_value))
+                print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
+                    int(model.dlraBlock1.low_rank)) + " | " + str(
+                    int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
+                # Reset metrics
+                loss_metric.reset_state()
+                acc_metric.reset_state()
+
+                print("----- Validation Metrics----")
+                # Compute vallidation loss and accuracy
+                loss_val = 0
+                acc_val = 0
+
+                # Validate model
+                out = model(x_val, step=0, training=True)
+                out = tf.keras.activations.softmax(out)
+                loss_val = loss_fn(y_val, out)
+                loss_metric.update_state(loss_val)
+                loss_val = loss_metric.result().numpy()
+
+                prediction = tf.math.argmax(out, 1)
+                acc_metric.update_state(prediction, y_val)
+                acc_val = acc_metric.result().numpy()
+                print("Accuracy: " + str(acc_val))
+                print("Loss: " + str(loss_val))
+                # save current model if it's the best
+                if acc_val >= best_acc and loss_val <= best_loss:
+                    best_acc = acc_val
+                    best_loss = loss_val
+                    print("new best model with accuracy: " + str(best_acc) + " and loss " + str(best_loss))
+
+                    model.save(folder_name=folder_name_best)
+                model.save(folder_name=folder_name)
+                # Reset metrics
+                loss_metric.reset_state()
+                acc_metric.reset_state()
+
+                print("----- Test Metrics (not used for early stopping) ----")
+
+                # Test model
+                out = model(x_test, step=0, training=True)
+                out = tf.keras.activations.softmax(out)
+                loss_test = loss_fn(y_test, out)
+                loss_metric.update_state(loss_test)
+                loss_test = loss_metric.result().numpy()
+
+                prediction = tf.math.argmax(out, 1)
+                acc_metric.update_state(prediction, y_test)
+                acc_test = acc_metric.result().numpy()
+                print("Accuracy: " + str(acc_test))
+                print("Loss: " + str(loss_test))
+                # Reset metrics
+                loss_metric.reset_state()
+                acc_metric.reset_state()
+                print("-------------------------------------\n\n")
+
+            # Gradient updates for k step
             grads_k_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_k_step)
@@ -127,15 +199,15 @@ def train(start_rank, tolerance, load_model, dim_layer):
             optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
-            # Postprocessing K and L
-            model.dlraBlockInput.k_step_postprocessing()
-            model.dlraBlockInput.l_step_postprocessing()
-            model.dlraBlock1.k_step_postprocessing()
-            model.dlraBlock1.l_step_postprocessing()
-            model.dlraBlock2.k_step_postprocessing()
-            model.dlraBlock2.l_step_postprocessing()
-            model.dlraBlock3.k_step_postprocessing()
-            model.dlraBlock3.l_step_postprocessing()
+            # Postprocessing K and L (excplicitly writing down for each layer)
+            model.dlraBlockInput.k_step_postprocessing_adapt()
+            model.dlraBlockInput.l_step_postprocessing_adapt()
+            model.dlraBlock1.k_step_postprocessing_adapt()
+            model.dlraBlock1.l_step_postprocessing_adapt()
+            model.dlraBlock2.k_step_postprocessing_adapt()
+            model.dlraBlock2.l_step_postprocessing_adapt()
+            model.dlraBlock3.k_step_postprocessing_adapt()
+            model.dlraBlock3.l_step_postprocessing_adapt()
 
             # S-Step Preprocessing
             model.dlraBlockInput.s_step_preprocessing()
@@ -159,79 +231,10 @@ def train(start_rank, tolerance, load_model, dim_layer):
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
 
             # Rank Adaptivity
-            # model.dlraBlockInput.rank_adaption()
-            # model.dlraBlock1.rank_adaption()
-            # model.dlraBlock2.rank_adaption()
-            # model.dlraBlock3.rank_adaption()
-
-            # Network monotoring and verbosity
-            loss_metric.update_state(loss)
-            prediction = tf.math.argmax(out, 1)
-            acc_metric.update_state(prediction, batch_train[1])
-
-            loss_value = loss_metric.result().numpy()
-            acc_value = acc_metric.result().numpy()
-            if step % 100 == 0:
-                print("step %d: mean loss S-Step = %.4f" % (step, loss_value))
-                print("Accuracy: " + str(acc_value))
-                print("Current Rank: " + str(int(model.dlraBlockInput.low_rank)) + " | " + str(
-                    int(model.dlraBlock1.low_rank)) + " | " + str(
-                    int(model.dlraBlock2.low_rank)) + " | " + str(int(model.dlraBlock3.low_rank)) + " )")
-
-            # Reset metrics
-            loss_metric.reset_state()
-            acc_metric.reset_state()
-
-        # Compute vallidation loss and accuracy
-        loss_val = 0
-        acc_val = 0
-
-        #  K  Step Preproccessing
-        model.dlraBlockInput.k_step_preprocessing()
-        model.dlraBlock1.k_step_preprocessing()
-        model.dlraBlock2.k_step_preprocessing()
-        model.dlraBlock3.k_step_preprocessing()
-
-        # Validate model
-        out = model(x_val, step=0, training=False)
-        out = tf.keras.activations.softmax(out)
-        loss = loss_fn(y_val, out)
-        loss_metric.update_state(loss)
-        loss_val = loss_metric.result().numpy()
-
-        prediction = tf.math.argmax(out, 1)
-        acc_metric.update_state(prediction, y_val)
-        acc_val = acc_metric.result().numpy()
-        print("Val Accuracy: " + str(acc_val))
-
-        # save current model if it's the best
-        if acc_val >= best_acc and loss_val <= best_loss:
-            best_acc = acc_val
-            best_loss = loss_val
-            print("new best model with accuracy: " + str(best_acc) + " and loss " + str(best_loss))
-
-            model.save(folder_name=folder_name_best)
-        model.save(folder_name=folder_name)
-
-        # Reset metrics
-        loss_metric.reset_state()
-        acc_metric.reset_state()
-
-        # Test model
-        out = model(x_test, step=0, training=False)
-        out = tf.keras.activations.softmax(out)
-        loss = loss_fn(y_test, out)
-        loss_metric.update_state(loss)
-        loss_test = loss_metric.result().numpy()
-
-        prediction = tf.math.argmax(out, 1)
-        acc_metric.update_state(prediction, y_test)
-        acc_test = acc_metric.result().numpy()
-        log_string = "Loss: " + str(loss_test) + "| Accuracy" + str(acc_test) + "\n"
-        print("Test :" + log_string)
-        # Reset metrics
-        loss_metric.reset_state()
-        acc_metric.reset_state()
+            model.dlraBlockInput.rank_adaption()
+            model.dlraBlock1.rank_adaption()
+            model.dlraBlock2.rank_adaption()
+            model.dlraBlock3.rank_adaption()
 
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
@@ -258,10 +261,12 @@ if __name__ == '__main__':
     # --- parse options ---
     parser = OptionParser()
     parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-t", "--tolerance", dest="tolerance", default=10)
+    parser.add_option("-t", "--tolerance", dest="tolerance", default=0.05)
     parser.add_option("-l", "--load_model", dest="load_model", default=1)
-    parser.add_option("-a", "--train", dest="train", default=0)
+    parser.add_option("-a", "--train", dest="train", default=1)
     parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
+    parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
+    parser.add_option("-e", "--epochs", dest="epochs", default=10)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
@@ -269,7 +274,9 @@ if __name__ == '__main__':
     options.load_model = int(options.load_model)
     options.train = int(options.train)
     options.dim_layer = int(options.dim_layer)
+    options.max_rank = int(options.max_rank)
+    options.epochs = int(options.epochs)
 
     if options.train == 1:
         train(start_rank=options.start_rank, tolerance=options.tolerance, load_model=options.load_model,
-              dim_layer=options.dim_layer)
+              dim_layer=options.dim_layer, rmax=options.max_rank, epochs=options.epochs)
