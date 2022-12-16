@@ -141,7 +141,6 @@ def train():
         # inp -> portuguese, tar -> english
         for (batch, (inp, tar)) in enumerate(train_batches):
             train_step(inp, tar)
-
             if batch % 50 == 0:
                 print(
                     f'Epoch {epoch + 1} Batch {batch} Loss {train_loss.result():.4f} Accuracy {train_accuracy.result():.4f}')
