@@ -8,3 +8,4 @@ tensorflow==2.8.0
 matplotlib
 pandas
 seaborn
+adjustText

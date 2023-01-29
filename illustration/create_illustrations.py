@@ -11,33 +11,17 @@ import numpy as np
 
 
 def main():
-    plot_factorization(file1="_running_data_dlrtdlrt_lenet_0.01.csv",
-                       file2="_running_data_vanillavanilla_lenet0.01.csv")
-
-    print_param_counts()
-
+    # --- plot performance ---
+    # plot_factorization(file1="_running_data_dlrtdlrt_lenet_0.01.csv",                       file2="_running_data_vanillavanilla_lenet0.01.csv")
+    # print_param_counts()
+    # plot_runs()
     # print_param_cout()
-    name = "e2edense_sr300_v0.17"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.15"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.13"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.11"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.09"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.07"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.05"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
-    name = "e2edense_sr300_v0.03"
-    plot_run4layer(load_folder="200Neurons/" + name, save_name="200Neurons/" + name)
 
-    # plot_timings
-    plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
-    plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
+    # ---- plot_timings ---
+    # plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
+    # plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
 
+    beautify_factorizations()
     """
     name = "e2edense_sr200_v0.03"
     plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
@@ -333,10 +317,84 @@ def main():
     return 0
 
 
+def beautify_factorizations():
+    folder_name = "figures/naive_factor/"
+    font_size = 26
+    beautify_img(load_name="paper_data/naive_factor/acc_baseline.png", folder_name=folder_name, xlabel="epoch",
+                 ylabel="test acc. [%]",
+                 xticks=[0, 2, 4, 6, 8, 10], yticks=[20, 40, 60, 80, 100], name="baseline_acc", font_size=font_size)
+    beautify_img(load_name="paper_data/naive_factor/acc_diminishing.png", folder_name=folder_name, xlabel="epoch",
+                 ylabel="test acc. [%]",
+                 xticks=[0, 2, 4, 6, 8, 10], yticks=[20, 40, 60, 80, 100], name="linear_diminishing_acc",
+                 font_size=font_size)
+    beautify_img(load_name="paper_data/naive_factor/acc_exp_diminishing.png", folder_name=folder_name, xlabel="epoch",
+                 ylabel="test acc. [%]",
+                 xticks=[0, 2, 4, 6, 8, 10], yticks=[20, 40, 60, 80, 100], name="exp_diminishing_acc",
+                 font_size=font_size)
+    return 0
+
+
+def beautify_img(load_name: str, xlabel: str = None, ylabel: str = None, xticks: list = None, yticks: list = None,
+                 font_size: int = 14, folder_name: str = "figures", name: str = 'defaultName', cbar: str = None):
+    plt.clf()
+    fig = plt.figure(figsize=(5.8, 4.7), dpi=500)
+    ax = plt.axes()
+
+    sns.set_theme()
+    sns.set_style("ticks")
+    # sns.set_theme(style='white')
+
+    img = plt.imread(load_name)
+    plt.imshow(img, aspect="auto", extent=[0, 10, 10, 100])
+
+    if xlabel is not None:
+        plt.xlabel(xlabel, fontsize=font_size)
+        plt.xticks(fontsize=int(0.7 * font_size))
+        if xticks is not None:
+            plt.xticks(xticks, fontsize=int(0.7 * font_size))
+    if ylabel is not None:
+        plt.ylabel(ylabel, fontsize=font_size)
+        plt.yticks(fontsize=int(0.7 * font_size))
+        if yticks is not None:
+            plt.yticks(yticks, fontsize=int(0.7 * font_size))
+
+    # ax.set_aspect(2)
+    plt.tight_layout()
+    plt.savefig(folder_name + "/" + name + ".png", dpi=500)  # , bbox_inches='tight', pad_inches=0)
+    print("Figure successfully saved to file: " + str(folder_name + "/" + name + ".png"))
+    plt.close()
+    plt.clf()
+
+    return 0
+
+
+def plot_runs():
+    name = "e2edense_sr300_v0.17"
+    load_folder = "200Neurons/"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.15"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.13"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.11"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.09"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.07"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.05"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+    name = "e2edense_sr300_v0.03"
+    plot_run4layer(load_folder=load_folder + name, save_name="200Neurons/" + name)
+
+    return 0
+
+
 def plot_run(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -376,7 +434,8 @@ def plot_run(load_folder, save_name):
 def plot_factorization(file1="", file2=""):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -408,53 +467,60 @@ def plot_factorization(file1="", file2=""):
 def plot_run4layer(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
     markerwidth = 0.5
+
+    font_size = 17
+
     folder = "paper_data/" + load_folder + "/historyLogs"
     dlra_3layer = pd.read_csv(folder + "/history_final.csv", delimiter=";", index_col=None)
+    plt.figure(figsize=(5.8, 3.2), dpi=500)
 
-    plt.plot(dlra_3layer[["acc_val"]], '-k')
-    plt.plot(dlra_3layer[["acc_train"]], '-.r')
-    plt.plot(dlra_3layer[["acc_test"]], '--g')
-    plt.legend(["acc_val", "acc_train", "acc_test"])
-    plt.ylim([0.8, 1.05])
-    plt.ylabel("acc")
-    plt.xlabel("epoch")
-
-    ax = plt.gca()  # you first need to get the axis handle
-    x_left, x_right = ax.get_xlim()
-    y_low, y_high = ax.get_ylim()
-    ratio = 0.5
-    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
-
-    plt.savefig("figures/" + save_name + "_acc.png", dpi=500)
-    plt.clf()
-
-    plt.plot(dlra_3layer[["loss_val"]], '-k')
-    plt.plot(dlra_3layer[["loss_train"]], '-.r')
-    plt.plot(dlra_3layer[["loss_test"]], '--g')
-    plt.legend(["loss_val", "loss_train", "loss_test"])
-    plt.ylim([1e-3, 2.5])
-    plt.ylabel("loss")
-    ax = plt.gca()  # you first need to get the axis handle
-    x_left, x_right = ax.get_xlim()
-    y_low, y_high = ax.get_ylim()
-    ratio = 0.5
-    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
-
-    plt.savefig("figures/" + save_name + "_loss.png", dpi=500)
-    plt.yscale('log')
-    ax = plt.gca()  # you first need to get the axis handle
-    x_left, x_right = ax.get_xlim()
-    y_low, y_high = ax.get_ylim()
-    ratio = 0.5
-    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
-
-    plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
-    plt.clf()
+    # plt.plot(dlra_3layer[["acc_val"]], '-k')
+    # plt.plot(dlra_3layer[["acc_train"]], '-.r')
+    # plt.plot(dlra_3layer[["acc_test"]], '--g')
+    # plt.legend(["acc_val", "acc_train", "acc_test"], fontsize=int(0.75 * font_size))
+    # plt.ylim([0.8, 1.05])
+    # plt.ylabel("acc", fontsize=font_size)
+    # plt.xlabel("epoch", fontsize=font_size)
+    #
+    # ax = plt.gca()  # you first need to get the axis handle
+    # x_left, x_right = ax.get_xlim()
+    # y_low, y_high = ax.get_ylim()
+    # ratio = 0.5
+    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+    #
+    # plt.savefig("figures/" + save_name + "_acc.png", dpi=500)
+    # plt.clf()
+    #
+    # plt.plot(dlra_3layer[["loss_val"]], '-k')
+    # plt.plot(dlra_3layer[["loss_train"]], '-.r')
+    # plt.plot(dlra_3layer[["loss_test"]], '--g')
+    # plt.legend(["loss_val", "loss_train", "loss_test"])
+    # plt.ylim([1e-3, 2.5])
+    # plt.ylabel("loss")
+    # ax = plt.gca()  # you first need to get the axis handle
+    # x_left, x_right = ax.get_xlim()
+    # y_low, y_high = ax.get_ylim()
+    # ratio = 0.5
+    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+    #
+    # plt.tight_layout()
+    # plt.savefig("figures/" + save_name + "_loss.png", dpi=500)
+    # plt.yscale('log')
+    # ax = plt.gca()  # you first need to get the axis handle
+    # x_left, x_right = ax.get_xlim()
+    # y_low, y_high = ax.get_ylim()
+    # ratio = 0.5
+    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+    #
+    # plt.tight_layout()
+    # plt.savefig("figures/" + save_name + "_loss_log.png", dpi=500)
+    # plt.clf()
     # epochs = np.asarray(range(0, 250))
     t = dlra_3layer[["rank1"]].to_numpy()
     epochs = np.asarray(range(0, len(t)))
@@ -464,25 +530,29 @@ def plot_run4layer(load_folder, save_name):
     plt.plot(epochs, dlra_3layer[["rank3"]].to_numpy(), '-g')
     plt.plot(epochs, dlra_3layer[["rank4"]].to_numpy(), '-b')
     # plt.ylim([10, 120])
-    plt.xlim([0, 250])
-    plt.xlabel("epoch")
-    plt.ylabel("rank")
-    plt.legend(["rank layer 1", "rank layer 2", "rank layer 3", "rank layer 4"])
-    ax = plt.gca()  # you first need to get the axis handle
-    x_left, x_right = ax.get_xlim()
-    y_low, y_high = ax.get_ylim()
-    ratio = 0.5
-    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
-
-    plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
-    plt.yscale('log')
+    plt.xlim([1, 250])
+    plt.xlabel("epoch", fontsize=font_size)
+    plt.ylabel("rank", fontsize=font_size)
+    plt.legend(["rank layer 1", "rank layer 2", "rank layer 3", "rank layer 4"], fontsize=int(0.75 * font_size))
+    plt.xticks(fontsize=int(0.7 * font_size))
+    plt.yticks(fontsize=int(0.7 * font_size))
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ratio = 0.5
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
-    plt.savefig("figures/" + save_name + "_ranks_log.png", dpi=500)
+    plt.tight_layout()
+    plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
+    # plt.yscale('log')
+    # ax = plt.gca()  # you first need to get the axis handle
+    # x_left, x_right = ax.get_xlim()
+    # y_low, y_high = ax.get_ylim()
+    # ratio = 0.5
+    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+    #
+    # plt.tight_layout()
+    # plt.savefig("figures/" + save_name + "_ranks_log.png", dpi=500)
     plt.clf()
     return 0
 
@@ -490,11 +560,16 @@ def plot_run4layer(load_folder, save_name):
 def plot_timing_exec(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
     markerwidth = 0.5
+
+    font_size = 17
+
+    plt.figure(figsize=(5.8, 3.2), dpi=500)
+
     folder = "paper_data/" + load_folder
     df = pd.read_csv(folder, delimiter=",")
 
@@ -502,25 +577,31 @@ def plot_timing_exec(load_folder, save_name):
     plt.axhline(y=df[["avg_timing"]].to_numpy()[0], color='r')
     plt.xlim((df[["rank"]].to_numpy()[1], df[["rank"]].to_numpy()[-2]))
     # plt.plot(df[["rank"]].to_numpy()[0], df[["avg_timing"]].to_numpy()[0], 'or')
-    plt.xlabel("rank")
-    plt.ylabel("time [s]")
+    plt.xlabel("rank", fontsize=font_size)
+    plt.ylabel("time [s]", fontsize=font_size)
 
-    plt.legend(["DLRT", "dense reference"])
+    plt.yticks([0.2, 0.6, 1, 1.4], fontsize=int(0.7 * font_size))
+    plt.xticks(fontsize=int(0.7 * font_size))
+    plt.legend(["DLRT", "dense ref."], fontsize=int(0.75 * font_size))
     ax = plt.gca()  # you first need to get the axis handle
+
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ratio = 0.5
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
+    plt.tight_layout()
     plt.savefig("figures/" + save_name + ".png", dpi=500)
-    plt.yscale("log")
-    ax = plt.gca()  # you first need to get the axis handle
-    x_left, x_right = ax.get_xlim()
-    y_low, y_high = ax.get_ylim()
-    ratio = 0.5
-    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
-    plt.savefig("figures/" + save_name + "log.png", dpi=500)
+    # plt.yscale("log")
+    # ax = plt.gca()  # you first need to get the axis handle
+    # x_left, x_right = ax.get_xlim()
+    # y_low, y_high = ax.get_ylim()
+    # ratio = 0.5
+    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+    # plt.tight_layout()
+    # plt.savefig("figures/" + save_name + "log.png", dpi=500)
+
     plt.clf()
 
     return 0
@@ -529,37 +610,50 @@ def plot_timing_exec(load_folder, save_name):
 def plot_timing_train(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
     markerwidth = 0.5
+
+    font_size = 17
+
     folder = "paper_data/" + load_folder
     df = pd.read_csv(folder, delimiter=",")
 
+    plt.figure(figsize=(5.8, 3.2), dpi=500)
+
     plt.plot(df[["rank"]].to_numpy()[1:-3], df[["avg_timing"]].to_numpy()[1:-3], '-ok')
     plt.axhline(y=df[["avg_timing"]].to_numpy()[0], color='r')
-    # plt.plot(df[["rank"]].to_numpy()[0], df[["avg_timing"]].to_numpy()[0], 'or')
-    plt.xlabel("rank")
-    plt.ylabel("time [s]")
+
     plt.xlim((df[["rank"]].to_numpy()[1], df[["rank"]].to_numpy()[-4]))
 
     plt.legend(["DLRT", "dense reference"])
+
+    plt.xlabel("rank", fontsize=font_size)
+    plt.ylabel("time [s]", fontsize=font_size)
+
+    plt.yticks([0.2, 0.4, 0.6, 0.8], fontsize=int(0.7 * font_size))
+    plt.xticks(fontsize=int(0.7 * font_size))
+    plt.legend(["DLRT", "dense ref."], fontsize=int(0.75 * font_size))
+
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
     y_low, y_high = ax.get_ylim()
     ratio = 0.5
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
+    plt.tight_layout()
     plt.savefig("figures/" + save_name + ".png", dpi=500)
-    plt.yscale("log")
-    ax = plt.gca()  # you first need to get the axis handle
-    x_left, x_right = ax.get_xlim()
-    y_low, y_high = ax.get_ylim()
-    ratio = 0.5
-    ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
-    plt.savefig("figures/" + save_name + "log.png", dpi=500)
+    # plt.yscale("log")
+    # ax = plt.gca()  # you first need to get the axis handle
+    # x_left, x_right = ax.get_xlim()
+    # y_low, y_high = ax.get_ylim()
+    # ratio = 0.5
+    # ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
+    # plt.tight_layout()
+    # plt.savefig("figures/" + save_name + "log.png", dpi=500)
     plt.clf()
 
     return 0
@@ -758,25 +852,31 @@ def print_param_counts():
 def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
     markerwidth = 0.5
 
+    font_size = 17
+
+    plt.figure(figsize=(5.8, 3.2), dpi=500)
+
     # plt.plot(params1, accs1, '-ok')
-    plt.axvline(x=5e5, color='g')
+    # plt.axvline(x=5e5, color='g')
     plt.plot(params2, accs2, '-ok')
     plt.plot(params3, accs3, '-ob')
     # plt.plot(params1[0], accs1[0], 'or')
     plt.plot(params2[0], accs2[0], 'or')
     plt.plot(params3[0], accs3[0], 'or')
 
-    plt.xlabel("network weights")
-    plt.ylabel("test accuracy")
+    plt.xlabel("network weights", fontsize=font_size)
+    plt.ylabel("test accuracy", fontsize=font_size)
     plt.xscale("log")
-    plt.legend(["MNIST size", "500 neurons", "784 neurons", "full-rank"])
-
+    plt.legend(["500 neurons", "784 neurons", "dense ref."], fontsize=int(0.75 * font_size))
+    plt.xticks(fontsize=int(0.7 * font_size))
+    plt.yticks(fontsize=int(0.7 * font_size))
     #    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
 
     ax = plt.gca()  # you first need to get the axis handle
@@ -784,6 +884,7 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     y_low, y_high = ax.get_ylim()
     ratio = 0.5
     ax.set_aspect(abs(np.log(x_right - x_left) / (y_high - y_low)) * 0.54 * 1e-1)
+    plt.tight_layout()
     plt.savefig("figures/" + name + ".png", dpi=500)
     plt.clf()
     return 0
@@ -792,11 +893,16 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
 def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
     markerwidth = 0.5
+
+    font_size = 17
+
+    plt.figure(figsize=(5.8, 3.2), dpi=500)
 
     # plt.plot(tols, accs1, '-ok')
     plt.plot(tols, accs2, '-ok')
@@ -805,9 +911,11 @@ def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
     # plt.plot(tols[0], accs1[0], 'or')
     plt.plot(tols[0], accs2[0], 'or')
     plt.plot(tols[0], accs3[0], 'or')
-    plt.xlabel(r"tolerance $\tau$")
-    plt.ylabel("test accuracy")
-    plt.legend(["500 neurons", "784 neurons", "full-rank"])
+    plt.xlabel(r"tolerance $\tau$", fontsize=font_size)
+    plt.ylabel("test accuracy", fontsize=font_size)
+    plt.legend(["500 neurons", "784 neurons", "dense ref."], fontsize=int(0.75 * font_size))
+    plt.xticks(fontsize=int(0.7 * font_size))
+    plt.yticks(fontsize=int(0.7 * font_size))
     #    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
 
     ax = plt.gca()  # you first need to get the axis handle
@@ -824,12 +932,14 @@ def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
 def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, accs3, name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
     markerwidth = 0.5
 
+    font_size = 17
     # plt.plot(ratios200[:, 0], accs1, '-ok')
     plt.plot(ratios500[:, 0], accs2, '-ok')
     plt.plot(ratios784[:, 0], accs3, '-ob')
@@ -837,9 +947,11 @@ def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, acc
     # plt.plot(ratios200[0, 0], accs1[0], 'or')
     plt.plot(ratios500[0, 0], accs2[0], 'or')
     plt.plot(ratios784[0, 0], accs3[0], 'or')
-    plt.xlabel(r"compression [%]")
-    plt.ylabel("test accuracy")
-    plt.legend(["500 neurons", "784 neurons", "full-rank"])
+    plt.xlabel(r"compression [%]", fontsize=font_size)
+    plt.ylabel("test accuracy", fontsize=font_size)
+    plt.legend(["500 neurons", "784 neurons", "dense ref."], fontsize=int(0.75 * font_size))
+    plt.xticks(fontsize=int(0.7 * font_size))
+    plt.yticks(fontsize=int(0.7 * font_size))
     #    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
@@ -847,6 +959,7 @@ def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, acc
     ratio = 0.5
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
+    plt.tight_layout()
     plt.savefig("figures/" + name + ".png", dpi=500)
     plt.clf()
     return 0
@@ -875,7 +988,8 @@ def plot_1d(xs, ys, labels=None, name='defaultName', log=True, folder_name="figu
             linetypes = linetypes[0:len(labels)]
 
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     if len(xs) == 1:
@@ -934,7 +1048,8 @@ def plot_1dv2(xs, ys, labels=None, name='defaultName', log=True, loglog=False, f
             linetypes = linetypes[0:len(labels)]
 
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
+
     colors = ['k', 'r', 'g', 'b', 'c', 'm', 'y']
     symbol_size = 0.7
     if len(xs) == 1:

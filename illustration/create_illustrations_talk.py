@@ -13,7 +13,43 @@ from adjustText import adjust_text
 
 def main():
     plot_model_counts()
+    plot_compute_per_year()
+    plot_carbon_footprint()
     return 0
+
+
+def plot_carbon_footprint():
+    ywerte = [1000, 12500, 43000, 4600000]
+    xwerte = ["T2T", "BERT", "GPT-2", "GPT-3"]
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("white")
+    plt.barh(xwerte, ywerte, color="k")
+    plt.xlabel("Cloud compute cost, single training run [$]")
+    plt.xscale("log")
+    plt.savefig("figures_talk/training_cost_dollars.png", dpi=500, bbox_inches="tight")
+
+
+def plot_compute_per_year():
+    names = ["AlexNet", "VGG-19", "ResNets", "Xception", "AlphaZero", "AlphaGo Zero"]
+    year = [2013, 2015, 2016, 2017, 2018, 2018]
+    weights = [0.008, 0.1, 0.12, 9, 500, 1200]
+
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("white")
+    plt.plot(year, weights, 'ok')
+    plt.yscale("log")
+    plt.ylabel("Training compute [PetaFLOP/s-day]")
+    plt.xlabel("year of release")
+    texts = []
+
+    for i in range(len(names)):
+        texts.append(plt.text(year[i], weights[i], names[i]))
+
+    adjust_text(texts, only_move={'texts': 'y'})
+    #    plt.show()
+    plt.savefig("figures_talk/training_cost.png", dpi=500, bbox_inches="tight")
 
 
 def plot_model_counts():
