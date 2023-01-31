@@ -14,14 +14,14 @@ def main():
     # --- plot performance ---
     # plot_factorization(file1="_running_data_dlrtdlrt_lenet_0.01.csv",                       file2="_running_data_vanillavanilla_lenet0.01.csv")
     # print_param_counts()
-    # plot_runs()
+    plot_runs()
     # print_param_cout()
 
     # ---- plot_timings ---
     # plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
     # plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
 
-    beautify_factorizations()
+    # beautify_factorizations()
     """
     name = "e2edense_sr200_v0.03"
     plot_run4layer(load_folder="4layer/" + name, save_name="4layer/" + name)
@@ -534,7 +534,7 @@ def plot_run4layer(load_folder, save_name):
     plt.xlabel("epoch", fontsize=font_size)
     plt.ylabel("rank", fontsize=font_size)
     plt.legend(["rank layer 1", "rank layer 2", "rank layer 3", "rank layer 4"], fontsize=int(0.75 * font_size))
-    plt.xticks(fontsize=int(0.7 * font_size))
+    plt.xticks([1, 50, 100, 150, 200, 250], fontsize=int(0.7 * font_size))
     plt.yticks(fontsize=int(0.7 * font_size))
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
