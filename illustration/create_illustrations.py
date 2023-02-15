@@ -13,13 +13,13 @@ import numpy as np
 def main():
     # --- plot performance ---
     # plot_factorization(file1="_running_data_dlrtdlrt_lenet_0.01.csv",                       file2="_running_data_vanillavanilla_lenet0.01.csv")
-    # print_param_counts()
+    print_param_counts()
     plot_runs()
     # print_param_cout()
 
     # ---- plot_timings ---
-    # plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
-    # plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
+    plot_timing_exec(load_folder="timings/execution_timings.csv", save_name="timings/execution_timings")
+    plot_timing_train(load_folder="timings/fix_rank_training.csv", save_name="timings/fix_rank_training")
 
     # beautify_factorizations()
     """
@@ -474,7 +474,7 @@ def plot_run4layer(load_folder, save_name):
     markersize = 2.5
     markerwidth = 0.5
 
-    font_size = 17
+    font_size = 18
 
     folder = "paper_data/" + load_folder + "/historyLogs"
     dlra_3layer = pd.read_csv(folder + "/history_final.csv", delimiter=";", index_col=None)
@@ -543,7 +543,7 @@ def plot_run4layer(load_folder, save_name):
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
     plt.tight_layout()
-    plt.savefig("figures/" + save_name + "_ranks.png", dpi=500)
+    plt.savefig("figures/" + save_name + "_ranks.pdf", dpi=500)
     # plt.yscale('log')
     # ax = plt.gca()  # you first need to get the axis handle
     # x_left, x_right = ax.get_xlim()
@@ -591,7 +591,7 @@ def plot_timing_exec(load_folder, save_name):
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
     plt.tight_layout()
-    plt.savefig("figures/" + save_name + ".png", dpi=500)
+    plt.savefig("figures/" + save_name + ".pdf", dpi=500)
 
     # plt.yscale("log")
     # ax = plt.gca()  # you first need to get the axis handle
@@ -644,7 +644,7 @@ def plot_timing_train(load_folder, save_name):
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
     plt.tight_layout()
-    plt.savefig("figures/" + save_name + ".png", dpi=500)
+    plt.savefig("figures/" + save_name + ".pdf", dpi=500)
 
     # plt.yscale("log")
     # ax = plt.gca()  # you first need to get the axis handle
@@ -885,7 +885,7 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     ratio = 0.5
     ax.set_aspect(abs(np.log(x_right - x_left) / (y_high - y_low)) * 0.54 * 1e-1)
     plt.tight_layout()
-    plt.savefig("figures/" + name + ".png", dpi=500)
+    plt.savefig("figures/" + name + ".pdf", dpi=500)
     plt.clf()
     return 0
 
@@ -924,7 +924,7 @@ def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
     ratio = 0.5
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
-    plt.savefig("figures/" + name + ".png", dpi=500)
+    plt.savefig("figures/" + name + ".pdf", dpi=500)
     plt.clf()
     return 0
 
@@ -960,7 +960,7 @@ def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, acc
     ax.set_aspect(abs((x_right - x_left) / (y_low - y_high)) * ratio)
 
     plt.tight_layout()
-    plt.savefig("figures/" + name + ".png", dpi=500)
+    plt.savefig("figures/" + name + ".pdf", dpi=500)
     plt.clf()
     return 0
 

@@ -23,7 +23,7 @@ def plot_carbon_footprint():
     xwerte = ["T2T", "BERT", "GPT-2", "GPT-3"]
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     plt.barh(xwerte, ywerte, color="k")
     plt.xlabel("Cloud compute cost, single training run [$]")
     plt.xscale("log")
@@ -37,11 +37,14 @@ def plot_compute_per_year():
 
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     plt.plot(year, weights, 'ok')
     plt.yscale("log")
-    plt.ylabel("Training compute [PetaFLOP/s-day]")
-    plt.xlabel("year of release")
+    plt.ylabel("train cost [PetaFLOP/s-day]", fontsize=18)
+    plt.xlabel("year of release", fontsize=18)
+    plt.xticks(fontsize=int(0.7 * 18))
+    plt.yticks(fontsize=int(0.7 * 18))
+
     texts = []
 
     for i in range(len(names)):
@@ -59,11 +62,13 @@ def plot_model_counts():
 
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     plt.plot(year, weights, 'ok')
     plt.yscale("log")
-    plt.ylabel("parameters")
-    plt.xlabel("year of release")
+    plt.ylabel("parameters", fontsize=18)
+    plt.xlabel("year of release", fontsize=18)
+    plt.xticks(fontsize=int(0.7 * 18))
+    plt.yticks(fontsize=int(0.7 * 18))
     texts = []
 
     for i in range(len(names)):
@@ -79,7 +84,7 @@ def plot_model_counts():
 def plot_run(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -119,7 +124,7 @@ def plot_run(load_folder, save_name):
 def plot_factorization(file1="", file2=""):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -151,7 +156,7 @@ def plot_factorization(file1="", file2=""):
 def plot_run4layer(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -233,7 +238,7 @@ def plot_run4layer(load_folder, save_name):
 def plot_timing_exec(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -272,7 +277,7 @@ def plot_timing_exec(load_folder, save_name):
 def plot_timing_train(load_folder, save_name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -501,7 +506,7 @@ def print_param_counts():
 def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -533,7 +538,7 @@ def plot_acc_over_params(accs1, accs2, accs3, params1, params2, params3, name):
 def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -565,7 +570,7 @@ def plot_acc_over_tolerance(tols, accs1, accs2, accs3, name):
 def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, accs3, name):
     plt.clf()
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     markersize = 2.5
@@ -616,7 +621,7 @@ def plot_1d(xs, ys, labels=None, name='defaultName', log=True, folder_name="figu
             linetypes = linetypes[0:len(labels)]
 
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b']
     symbol_size = 0.7
     if len(xs) == 1:
@@ -675,7 +680,7 @@ def plot_1dv2(xs, ys, labels=None, name='defaultName', log=True, loglog=False, f
             linetypes = linetypes[0:len(labels)]
 
     sns.set_theme()
-    sns.set_style("white")
+    sns.set_style("ticks")
     colors = ['k', 'r', 'g', 'b', 'c', 'm', 'y']
     symbol_size = 0.7
     if len(xs) == 1:
