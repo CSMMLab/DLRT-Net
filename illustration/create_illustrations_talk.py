@@ -52,7 +52,7 @@ def plot_compute_per_year():
 
     adjust_text(texts, only_move={'texts': 'y'})
     #    plt.show()
-    plt.savefig("figures_talk/training_cost.png", dpi=500, bbox_inches="tight")
+    plt.savefig("figures_talk/training_cost.pdf", dpi=500, bbox_inches="tight")
 
 
 def plot_model_counts():
@@ -76,7 +76,7 @@ def plot_model_counts():
 
     adjust_text(texts, only_move={'texts': 'y'})
     #    plt.show()
-    plt.savefig("figures_talk/networks.png", dpi=500, bbox_inches="tight")
+    plt.savefig("figures_talk/networks.pdf", dpi=500, bbox_inches="tight")
 
     return 0
 
