@@ -3,8 +3,6 @@ from networks.translator import Translator
 
 import tensorflow as tf
 
-from nltk.translate.bleu_score import sentence_bleu
-
 
 def create_csv_logger_cb(folder_name: str):
     '''
@@ -87,9 +85,11 @@ def list_of_lists_to_string(list_o_lists: list) -> str:
     return res
 
 
-def test_transformer(transformer, tokenizers, test_examples, filename, dlra:False):
+def test_transformer(transformer, tokenizers, test_examples, filename, dlra: False):
+    from nltk.translate.bleu_score import sentence_bleu
+
     # Test the translator
-    translator = Translator(tokenizers, transformer,dlra)
+    translator = Translator(tokenizers, transformer, dlra)
 
     f_pt, f_en_pred, f_en_ref = create_test_output_files(filename)
 
