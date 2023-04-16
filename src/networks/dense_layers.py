@@ -485,6 +485,210 @@ class DLRTLayerAdaptive(keras.layers.Layer):
         low_rank_weights = self.low_rank * (self.input_dim + self.units + self.low_rank)
         return low_rank_weights, full_rank_weights
 
+class DLRTLayerParallel(keras.layers.Layer):
+    def __init__(self, input_dim: int, units=32, low_rank=10, epsAdapt=0.1, rmax_total=100, name="dlra_block",
+                 **kwargs):
+        super(DLRTLayerParallel, self).__init__(**kwargs)
+        self.epsAdapt = epsAdapt  # for unconventional integrator
+        self.units = units
+        self.low_rank = low_rank  # tf.Variable(value=low_rank, dtype=tf.int32, trainable=False)
+        self.rmax_total = rmax_total  # tf.constant(value=rmax_total, dtype=tf.int32)
+
+        self.rmax_total = min(self.rmax_total, int(min(self.units, input_dim) / 2))
+        print("Max Rank has been set to:" + str(
+            self.rmax_total) + " due to layer layout. Max allowed rank is min(in_dim,out_dim)/2")
+        if self.low_rank > self.rmax_total:
+            self.low_rank = int(self.rmax_total)
+        print("Start rank has been set to: " + str(self.low_rank) + " to match max rank")
+        self.input_dim = input_dim
+
+    def build_model(self):
+
+        self.k = self.add_weight(shape=(self.input_dim, self.rmax_total), initializer="random_normal",
+                                 trainable=True, name="k_")
+        self.l_t = self.add_weight(shape=(self.rmax_total, self.units), initializer="random_normal",
+                                   trainable=True, name="lt_")
+        self.s = self.add_weight(shape=(2 * self.rmax_total, 2 * self.rmax_total), initializer="random_normal",
+                                 trainable=True, name="s_")
+        self.b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=True, name="b_")
+        # auxiliary variables
+        self.aux_b = self.add_weight(shape=(self.units,), initializer="random_normal", trainable=False, name="aux_b")
+        self.aux_b.assign(self.b)  # non trainable bias or k and l step
+
+        self.aux_U = self.add_weight(shape=(self.input_dim, self.rmax_total), initializer="random_normal",
+                                     trainable=False, name="aux_U")
+        self.aux_Unp1 = self.add_weight(shape=(self.input_dim, 2 * self.rmax_total), initializer="random_normal",
+                                        trainable=False, name="aux_Unp1")
+        self.aux_Vt = self.add_weight(shape=(self.rmax_total, self.units), initializer="random_normal",
+                                      trainable=False, name="Vt")
+        self.aux_Vtnp1 = self.add_weight(shape=(2 * self.rmax_total, self.units), initializer="random_normal",
+                                         trainable=False, name="vtnp1")
+        self.aux_SK = self.add_weight(shape=(self.rmax_total, self.rmax_total), initializer="random_normal",
+                                     trainable=False, name="sk")
+        self.aux_SL = self.add_weight(shape=(self.rmax_total, self.rmax_total), initializer="random_normal",
+                                     trainable=False, name="sl")
+        # Todo: initializer with low rank
+
+    @tf.function
+    def call(self, inputs, step: int = 0):
+        """
+        :param
+        inputs: layer         input
+        :param
+        step: step         counter: k := 0, l := 1, s := 2
+        :return:
+        """
+        if step == 0:  # k-step
+            z = tf.matmul(tf.matmul(inputs, self.k[:, :self.low_rank]), self.aux_Vt[:self.low_rank, :])
+            z = z + self.aux_b
+        elif step == 1:  # l-step
+            z = tf.matmul(tf.matmul(inputs, self.aux_U[:, :self.low_rank]), self.l_t[:self.low_rank, :])
+            z = z + self.aux_b
+        else:  # s-step
+            z = tf.matmul(
+                tf.matmul(tf.matmul(inputs, self.aux_Unp1[:, :self.low_rank]),
+                          self.s[:self.low_rank, :self.low_rank]), self.aux_Vtnp1[:self.low_rank, :])
+            z = z + self.b
+
+        return tf.keras.activations.relu(z)
+
+    # @tf.function
+    def k_step_preprocessing(self):
+        k = tf.matmul(self.aux_U[:, :self.low_rank], self.s[:self.low_rank, :self.low_rank])
+        self.k[:, :self.low_rank].assign(k)
+        return 0
+
+    # @tf.function
+    def k_step_postprocessing_parallel(self):
+        k_extended = tf.concat((self.aux_U[:, :self.low_rank], self.k[:, :self.low_rank]), axis=1) # switch ordering of concatenation
+        aux_Unp1, _ = tf.linalg.qr(k_extended) 
+        self.aux_Unp1[:, :2 * self.low_rank].assign(aux_Unp1)
+        aux_SK = tf.matmul(tf.transpose(self.aux_Unp1[:, self.low_rank:2 * self.low_rank]), self.k[:, :self.low_rank])
+        self.aux_SK[:self.low_rank, :self.low_rank].assign(aux_SK)
+        return 0
+
+    # @tf.function
+    def l_step_preprocessing(self):
+        l_t = tf.matmul(self.s[:self.low_rank, :self.low_rank], self.aux_Vt[:self.low_rank, :])
+        self.l_t[:self.low_rank, :].assign(l_t)  # = tf.Variable(initial_value=l_t, trainable=True, name="lt_")
+        return 0
+
+    # @tf.function
+    def l_step_postprocessing_parallel(self):
+        l_extended = tf.concat(
+            (tf.transpose(self.aux_Vt[:self.low_rank, :]), tf.transpose(self.l_t[:self.low_rank, :])), axis=1)
+        aux_Vnp1, _ = tf.linalg.qr(l_extended)
+        self.aux_Vtnp1[:2 * self.low_rank, :].assign(tf.transpose(aux_Vnp1))
+        aux_SL = tf.matmul(self.aux_Vtnp1[self.low_rank:2 * self.low_rank, :], tf.transpose(self.l_t[:self.low_rank, :]))
+        self.aux_SL[:self.low_rank,:self.low_rank].assign(aux_SL)
+        return 0
+
+    # @tf.function
+    def rank_adaption(self):
+        # 1) compute SVD of S
+        # d=singular values, u2 = left singuar vecs, v2= right singular vecs
+        self.s[self.low_rank:2*self.low_rank,:self.low_rank].assign(self.aux_SK[:self.low_rank,:self.low_rank])
+        self.s[:self.low_rank,self.low_rank:2*self.low_rank].assign(self.aux_SL[:self.low_rank,:self.low_rank])
+        self.s[self.low_rank:2*self.low_rank,self.low_rank:2*self.low_rank].assign(np.zeros((self.low_rank,self.low_rank)))
+        s_small = self.s[:2 * self.low_rank, :2 * self.low_rank]
+        d, u2, v2 = tf.linalg.svd(s_small)
+
+        tmp = 0.0
+        tol = self.epsAdapt * tf.linalg.norm(d)  # tol=\vartheta in paper
+        rmax = int(tf.floor(d.shape[0] / 2))
+        for j in range(0, 2 * rmax - 1):
+            tmp = tf.linalg.norm(d[j:2 * rmax - 1])
+            if tmp < tol:
+                rmax = j
+                break
+
+        rmax = tf.minimum(rmax, self.rmax_total)
+        rmax = tf.maximum(rmax, 2)
+
+        # update s
+        self.s[:rmax, :rmax].assign(tf.linalg.tensor_diag(d[:rmax]))
+
+        # update u and v
+        self.aux_U[:, :rmax].assign(tf.matmul(self.aux_Unp1[:, :2 * self.low_rank], u2[:, :rmax]))
+        self.aux_Vt[:rmax, :].assign(tf.matmul(v2[:rmax, :], self.aux_Vtnp1[:2 * self.low_rank, :]))
+        self.low_rank = int(rmax)
+
+        # update bias
+        self.aux_b.assign(self.b)
+        return 0
+
+    def get_config(self):
+        config = super(DLRTLayer, self).get_config()
+        config.update({"units": self.units})
+        config.update({"low_rank": self.low_rank})
+        return config
+
+    def save(self, folder_name, layer_id):
+        # main_variables
+        k_np = self.k[:, :self.low_rank].numpy()
+        np.save(folder_name + "/k" + str(layer_id) + ".npy", k_np)
+        l_t_np = self.l_t[:self.low_rank, :self.low_rank].numpy()
+        np.save(folder_name + "/l_t" + str(layer_id) + ".npy", l_t_np)
+        s_np = self.s[:2 * self.low_rank, :2 * self.low_rank].numpy()
+        np.save(folder_name + "/s" + str(layer_id) + ".npy", s_np)
+        b_np = self.b.numpy()
+        np.save(folder_name + "/b" + str(layer_id) + ".npy", b_np)
+        # aux_variables
+        aux_U_np = self.aux_U[:, :self.low_rank].numpy()
+        np.save(folder_name + "/aux_U" + str(layer_id) + ".npy", aux_U_np)
+        aux_Unp1_np = self.aux_Unp1[:, :2 * self.low_rank].numpy()
+        np.save(folder_name + "/aux_Unp1" + str(layer_id) + ".npy", aux_Unp1_np)
+        aux_Vt_np = self.aux_Vt[:, :self.low_rank].numpy()
+        np.save(folder_name + "/aux_Vt" + str(layer_id) + ".npy", aux_Vt_np)
+        aux_Vtnp1_np = self.aux_Vtnp1[:, :2 * self.low_rank].numpy()
+        np.save(folder_name + "/aux_Vtnp1" + str(layer_id) + ".npy", aux_Vtnp1_np)
+        aux_SK = self.aux_SK[:self.low_rank, :self.low_rank].numpy()
+        np.save(folder_name + "/aux_SK" + str(layer_id) + ".npy", aux_SK)
+        aux_SL = self.aux_SL[:self.low_rank, :self.low_rank].numpy()
+        np.save(folder_name + "/aux_SL" + str(layer_id) + ".npy", aux_SL)
+        return 0
+
+    def load(self, folder_name, layer_id):
+
+        # main variables
+        k_np = np.load(folder_name + "/k" + str(layer_id) + ".npy")
+        self.low_rank = k_np.shape[1]
+        self.k = tf.Variable(initial_value=k_np,
+                             trainable=True, name="k_", dtype=tf.float32)
+        l_t_np = np.load(folder_name + "/l_t" + str(layer_id) + ".npy")
+        self.l_t = tf.Variable(initial_value=l_t_np,
+                               trainable=True, name="lt_", dtype=tf.float32)
+        s_np = np.load(folder_name + "/s" + str(layer_id) + ".npy")
+        self.s = tf.Variable(initial_value=s_np,
+                             trainable=True, name="s_", dtype=tf.float32)
+        # aux variables
+        aux_U_np = np.load(folder_name + "/aux_U" + str(layer_id) + ".npy")
+        self.aux_U = tf.Variable(initial_value=aux_U_np,
+                                 trainable=True, name="aux_U", dtype=tf.float32)
+        aux_Unp1_np = np.load(folder_name + "/aux_Unp1" + str(layer_id) + ".npy")
+        self.aux_Unp1 = tf.Variable(initial_value=aux_Unp1_np,
+                                    trainable=True, name="aux_Unp1", dtype=tf.float32)
+        Vt_np = np.load(folder_name + "/aux_Vt" + str(layer_id) + ".npy")
+        self.aux_Vt = tf.Variable(initial_value=Vt_np,
+                                  trainable=True, name="Vt", dtype=tf.float32)
+        vtnp1_np = np.load(folder_name + "/aux_Vtnp1" + str(layer_id) + ".npy")
+        self.aux_Vtnp1 = tf.Variable(initial_value=vtnp1_np,
+                                     trainable=True, name="vtnp1", dtype=tf.float32)
+        aux_SK = np.load(folder_name + "/aux_SK" + str(layer_id) + ".npy")
+        self.aux_SK = tf.Variable(initial_value=aux_SK,
+                                 trainable=True, name="sk", dtype=tf.float32)
+        aux_SL = np.load(folder_name + "/aux_SL" + str(layer_id) + ".npy")
+        self.aux_SL = tf.Variable(initial_value=aux_SK,
+                                 trainable=True, name="sl", dtype=tf.float32)
+        return 0
+
+    def get_rank(self):
+        return self.low_rank
+
+    def get_weights_num(self):
+        full_rank_weights = self.input_dim * self.units
+        low_rank_weights = self.low_rank * (self.input_dim + self.units + self.low_rank)
+        return low_rank_weights, full_rank_weights
 
 class DLRTLayerLinear(keras.layers.Layer):
     # Same as DLRTLayer but without activation function (legacy reasons)
