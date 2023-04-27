@@ -6,12 +6,13 @@ from tensorflow import keras
 import numpy as np
 from optparse import OptionParser
 from os import path, makedirs
+import time
 
 
 def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
     # specify training
     epochs = epochs
-    batch_size = 256
+    batch_size = 1000
 
     name = "mnist_dense_sr"
     filename = name + str(start_rank) + "_v" + str(tolerance)
@@ -52,6 +53,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
 
     # Build dataset
     (x_train, y_train), (x_test, y_test) = keras.datasets.mnist.load_data()
+
     x_train = np.reshape(x_train, (-1, input_dim))
     x_test = np.reshape(x_test, (-1, input_dim))
 
@@ -90,6 +92,8 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
         # Iterate over the batches of the dataset.
 
         for step, batch_train in enumerate(train_dataset):
+            print("start timing")
+            st = time.time()
             # 1.a) K and L Step Preproccessing
             model.dlraBlockInput.k_step_preprocessing()
             model.dlraBlockInput.l_step_preprocessing()
@@ -99,7 +103,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             model.dlraBlock2.l_step_preprocessing()
             model.dlraBlock3.k_step_preprocessing()
             model.dlraBlock3.l_step_preprocessing()
-
+            et = time.time()
+            print("K & L Step preprocessing: " + str(et - st))
+            st = time.time()
             # 1.b) Tape Gradients for K-Step
             model.toggle_non_s_step_training()
             with tf.GradientTape() as tape:
@@ -110,7 +116,7 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
 
-            if step == 0:
+            if step == 0 and False:
                 # Network monotoring and verbosity
                 loss_metric.update_state(loss)
                 prediction = tf.math.argmax(out, 1)
@@ -182,6 +188,9 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             grads_k_step = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_k_step)
+            et = time.time()
+            print("K Step grads: " + str(et - st))
+            st = time.time()
 
             # 1.b) Tape Gradients for L-Step
             with tf.GradientTape() as tape:
@@ -195,10 +204,16 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             model.set_none_grads_to_zero(grads_l_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_l_step)
 
+            et = time.time()
+            print("L Step grads: " + str(et - st))
+            st = time.time()
             # Gradient update for K and L
             optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
+            et = time.time()
+            print("K&L Step update.: " + str(et - st))
+            st = time.time()
             # Postprocessing K and L (excplicitly writing down for each layer)
             model.dlraBlockInput.k_step_postprocessing_adapt()
             model.dlraBlockInput.l_step_postprocessing_adapt()
@@ -209,12 +224,19 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
             model.dlraBlock3.k_step_postprocessing_adapt()
             model.dlraBlock3.l_step_postprocessing_adapt()
 
+            et = time.time()
+            print("K&L Step postprocessing.: " + str(et - st))
+            st = time.time()
+
             # S-Step Preprocessing
             model.dlraBlockInput.s_step_preprocessing()
             model.dlraBlock1.s_step_preprocessing()
             model.dlraBlock2.s_step_preprocessing()
             model.dlraBlock3.s_step_preprocessing()
 
+            et = time.time()
+            print("SStep preprocessing.: " + str(et - st))
+            st = time.time()
             model.toggle_s_step_training()
 
             # 3.b) Tape Gradients
@@ -225,16 +247,28 @@ def train(start_rank, tolerance, load_model, dim_layer, rmax, epochs):
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
+
+            et = time.time()
+            print("SStep grads.: " + str(et - st))
+            st = time.time()
             # 3.c) Apply Gradients
             grads_s = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_s, model.trainable_weights)
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
+            et = time.time()
+            print("SStep optimizer.: " + str(et - st))
+            st = time.time()
 
             # Rank Adaptivity
             model.dlraBlockInput.rank_adaption()
             model.dlraBlock1.rank_adaption()
             model.dlraBlock2.rank_adaption()
             model.dlraBlock3.rank_adaption()
+
+            et = time.time()
+            print("SStep rank adaption.: " + str(et - st))
+            st = time.time()
+            exit(0)
 
         # Log Data of current epoch
         log_string = str(loss_value) + ";" + str(acc_value) + ";" + str(
@@ -260,11 +294,11 @@ if __name__ == '__main__':
     print("Parsing options")
     # --- parse options ---
     parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
+    parser.add_option("-s", "--start_rank", dest="start_rank", default=50)
     parser.add_option("-t", "--tolerance", dest="tolerance", default=0.05)
-    parser.add_option("-l", "--load_model", dest="load_model", default=1)
+    parser.add_option("-l", "--load_model", dest="load_model", default=0)
     parser.add_option("-a", "--train", dest="train", default=1)
-    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
+    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=500)
     parser.add_option("-m", "--max_rank", dest="max_rank", default=200)
     parser.add_option("-e", "--epochs", dest="epochs", default=10)
 

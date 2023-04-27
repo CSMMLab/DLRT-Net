@@ -8,10 +8,12 @@ import numpy as np
 from optparse import OptionParser
 from os import path, makedirs
 
+import time
+
 
 def train(start_rank, load_model, dim_layer):
     # specify training
-    epochs = 100
+    epochs = 10
     batch_size = 256
 
     name = "mnist_dense_fr_sr"
@@ -89,6 +91,9 @@ def train(start_rank, load_model, dim_layer):
 
         for step, batch_train in enumerate(train_dataset):
             # 1.a) K and L Step Preproccessing
+            print("start timing")
+            st = time.time()
+
             model.dlraBlockInput.k_step_preprocessing()
             model.dlraBlockInput.l_step_preprocessing()
             model.dlraBlock1.k_step_preprocessing()
@@ -97,6 +102,10 @@ def train(start_rank, load_model, dim_layer):
             model.dlraBlock2.l_step_preprocessing()
             model.dlraBlock3.k_step_preprocessing()
             model.dlraBlock3.l_step_preprocessing()
+
+            et = time.time()
+            print("K & L Step preprocessing: " + str(et - st))
+            st = time.time()
 
             # 1.b) Tape Gradients for K-Step
             model.toggle_non_s_step_training()
@@ -111,6 +120,9 @@ def train(start_rank, load_model, dim_layer):
             model.set_none_grads_to_zero(grads_k_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_k_step)
 
+            et = time.time()
+            print("K Step grads: " + str(et - st))
+            st = time.time()
             # 1.b) Tape Gradients for L-Step
             with tf.GradientTape() as tape:
                 out = model(batch_train[0], step=1, training=True)
@@ -123,10 +135,16 @@ def train(start_rank, load_model, dim_layer):
             model.set_none_grads_to_zero(grads_l_step, model.trainable_weights)
             model.set_dlra_bias_grads_to_zero(grads_l_step)
 
+            et = time.time()
+            print("L Step grads: " + str(et - st))
+            st = time.time()
             # Gradient update for K and L
             optimizer.apply_gradients(zip(grads_k_step, model.trainable_weights))
             optimizer.apply_gradients(zip(grads_l_step, model.trainable_weights))
 
+            et = time.time()
+            print("K&L Step update.: " + str(et - st))
+            st = time.time()
             # Postprocessing K and L
             model.dlraBlockInput.k_step_postprocessing()
             model.dlraBlockInput.l_step_postprocessing()
@@ -136,13 +154,17 @@ def train(start_rank, load_model, dim_layer):
             model.dlraBlock2.l_step_postprocessing()
             model.dlraBlock3.k_step_postprocessing()
             model.dlraBlock3.l_step_postprocessing()
-
+            et = time.time()
+            print("K&L Step postprocessing.: " + str(et - st))
+            st = time.time()
             # S-Step Preprocessing
             model.dlraBlockInput.s_step_preprocessing()
             model.dlraBlock1.s_step_preprocessing()
             model.dlraBlock2.s_step_preprocessing()
             model.dlraBlock3.s_step_preprocessing()
-
+            et = time.time()
+            print("SStep preprocessing.: " + str(et - st))
+            st = time.time()
             model.toggle_s_step_training()
 
             # 3.b) Tape Gradients
@@ -153,11 +175,16 @@ def train(start_rank, load_model, dim_layer):
                 # Compute reconstruction loss
                 loss = loss_fn(batch_train[1], out)
                 loss += sum(model.losses)  # Add KLD regularization loss
+            et = time.time()
+            print("SStep grads.: " + str(et - st))
+            st = time.time()
             # 3.c) Apply Gradients
             grads_s = tape.gradient(loss, model.trainable_weights)
             model.set_none_grads_to_zero(grads_s, model.trainable_weights)
             optimizer.apply_gradients(zip(grads_s, model.trainable_weights))  # All gradients except K and L matrix
-
+            et = time.time()
+            print("SStep optimizer.: " + str(et - st))
+            exit(0)
             # Rank Adaptivity
             # model.dlraBlockInput.rank_adaption()
             # model.dlraBlock1.rank_adaption()
@@ -257,10 +284,10 @@ if __name__ == '__main__':
     print("Parsing options")
     # --- parse options ---
     parser = OptionParser()
-    parser.add_option("-s", "--start_rank", dest="start_rank", default=10)
-    parser.add_option("-l", "--load_model", dest="load_model", default=1)
-    parser.add_option("-a", "--train", dest="train", default=0)
-    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=200)
+    parser.add_option("-s", "--start_rank", dest="start_rank", default=20)
+    parser.add_option("-l", "--load_model", dest="load_model", default=0)
+    parser.add_option("-a", "--train", dest="train", default=1)
+    parser.add_option("-d", "--dim_layer", dest="dim_layer", default=500)
 
     (options, args) = parser.parse_args()
     options.start_rank = int(options.start_rank)
