@@ -31,16 +31,16 @@ def plot_carbon_footprint():
 
 
 def plot_compute_per_year():
-    names = ["AlexNet", "VGG-19", "ResNets", "Xception", "AlphaZero", "AlphaGo Zero"]
-    year = [2013, 2015, 2016, 2017, 2018, 2018]
-    weights = [0.008, 0.1, 0.12, 9, 500, 1200]
+    names = ["AlexNet", "VGG-19", "ResNets", "Xception",  "AlphaGo Zero"]
+    year = [2013, 2015, 2016, 2017,  2018]
+    weights = [0.008, 0.1, 0.12, 9,  1200]
 
     plt.clf()
     sns.set_theme()
     sns.set_style("ticks")
     plt.plot(year, weights, 'ok')
     plt.yscale("log")
-    plt.ylabel("train cost [PetaFLOP/s-day]", fontsize=18)
+    plt.ylabel("cost [PetaFLOP/s-days]", fontsize=18)
     plt.xlabel("year of release", fontsize=18)
     plt.xticks(fontsize=int(0.7 * 18))
     plt.yticks(fontsize=int(0.7 * 18))
@@ -52,8 +52,40 @@ def plot_compute_per_year():
 
     adjust_text(texts, only_move={'texts': 'y'})
     #    plt.show()
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    print(abs(np.log(x_right - x_left) / np.log(y_high - y_low)) * 2.2 )
+    ax.set_aspect(abs(np.log(x_right - x_left) / np.log(y_high - y_low)) * 2.2 )
+    plt.tight_layout()
     plt.savefig("figures_talk/training_cost.pdf", dpi=500, bbox_inches="tight")
 
+
+def plot_model_counts_alternative():
+    names = ["AlexNet", "VGG-19", "ResNets", "Xception", "AlphaZero", "AlphaGo Zero"]
+    year = [2013, 2015, 2016, 2017, 2018, 2018]
+    weights = [61000000, 138000000, 44500000, 22855952, 632000000, 12000000000]
+
+    plt.clf()
+    sns.set_theme()
+    sns.set_style("ticks")
+    plt.plot(year, weights, 'ok')
+    plt.yscale("log")
+    plt.ylabel("parameters", fontsize=18)
+    plt.xlabel("year of release", fontsize=18)
+    plt.xticks(fontsize=int(0.7 * 18))
+    plt.yticks(fontsize=int(0.7 * 18))
+    texts = []
+
+    for i in range(len(names)):
+        texts.append(plt.text(year[i], weights[i], names[i]))
+
+    adjust_text(texts, only_move={'texts': 'y'})
+    #    plt.show()
+    plt.savefig("figures_talk/networks_alt.pdf", dpi=500, bbox_inches="tight")
+
+    return 0
 
 def plot_model_counts():
     names = ["AlexNet", "VGG-19", "GPT-1", "BERT", "ViT", "Dall-E"]
@@ -76,6 +108,12 @@ def plot_model_counts():
 
     adjust_text(texts, only_move={'texts': 'y'})
     #    plt.show()
+    ax = plt.gca()  # you first need to get the axis handle
+    x_left, x_right = ax.get_xlim()
+    y_low, y_high = ax.get_ylim()
+    ratio = 0.5
+    ax.set_aspect(abs(np.log(x_right - x_left) / np.log(y_high - y_low)) * 19)
+    plt.tight_layout()
     plt.savefig("figures_talk/networks.pdf", dpi=500, bbox_inches="tight")
 
     return 0

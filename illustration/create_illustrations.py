@@ -8,6 +8,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from adjustText import adjust_text
 
 
 def main():
@@ -941,17 +942,25 @@ def plot_acc_over_compression(ratios200, ratios500, ratios784, accs1, accs2, acc
 
     font_size = 17
     # plt.plot(ratios200[:, 0], accs1, '-ok')
-    plt.plot(ratios500[:, 0], accs2, '-ok')
+    #plt.plot(ratios500[:, 0], accs2, '-ok')
     plt.plot(ratios784[:, 0], accs3, '-ob')
 
+    texts = []
+    names = ["0.03","0.05","0.07", "0.09", "0.11", "0.13","0.15", "0.17"]
+    for i in range(len(names)):
+        texts.append(plt.text(ratios784[i+1, 0], accs3[i+1], names[i], fontsize=int(font_size * 0.75)))
+
+    #texts = plt.text(ratios784[:, 0], accs3,["0.03","0.07", "0.09", "0.11", "0.13","0.15", "0.17"], fontsize=int(font_size * 0.7))
+    adjust_text(texts, only_move={'texts': 'y'})
+
     # plt.plot(ratios200[0, 0], accs1[0], 'or')
-    plt.plot(ratios500[0, 0], accs2[0], 'or')
+    # plt.plot(ratios500[0, 0], accs2[0], 'or')
     plt.plot(ratios784[0, 0], accs3[0], 'or')
     plt.xlabel(r"compression [%]", fontsize=font_size)
     plt.ylabel("test accuracy", fontsize=font_size)
-    plt.legend(["500 neurons", "784 neurons", "dense ref."], fontsize=int(0.75 * font_size))
-    plt.xticks(fontsize=int(0.7 * font_size))
-    plt.yticks(fontsize=int(0.7 * font_size))
+    plt.legend([r"DLRT, different $\tau$", "Full rank"], fontsize=int(0.75 * font_size))
+    plt.xticks(fontsize=int(0.75 * font_size))
+    plt.yticks(fontsize=int(0.75 * font_size))
     #    plt.legend(["200 neurons", "500 neurons", "784 neurons"])
     ax = plt.gca()  # you first need to get the axis handle
     x_left, x_right = ax.get_xlim()
